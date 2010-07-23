@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE template SYSTEM "query.dtd">
+<query>
+<title>mlepPerson User List</title>
+<bases>
+<base></base>
+</bases>
+<filter><![CDATA[(&(objectClass=mlepPerson)(cn=*))]]></filter>
+<description>mlepPerson User List</description>
+<icon>ldap-user.png</icon>
+<scope>sub</scope>
+<visible>1</visible>
+
+<attributes>
+<attribute id="cn">
+	<display>Common Name</display>
+	<order>1</order>
+	<ordersort>2</ordersort>
+</attribute>
+<attribute id="uid">
+	<display>User ID</display>
+	<order>2</order>
+	<ordersort>1</ordersort>
+</attribute>
+<attribute id="mlepUsername">
+	<display>MLEP Username</display>
+	<order>3</order>
+	<ordersort>3</ordersort>
+</attribute>
+<attribute id="mlepFirstName">
+	<display>MLEP Firstname</display>
+	<order>4</order>
+	<ordersort>4</ordersort>
+</attribute>
+<attribute id="mlepLastName">
+	<display>MLEP Lastname</display>
+	<order>5</order>
+	<ordersort>5</ordersort>
+</attribute>
+<attribute id="mlepEmail">
+	<display>MLEP Email</display>
+	<order>6</order>
+	<ordersort>6</ordersort>
+</attribute>
+<attribute id="mlepRole">
+	<display>MLEP Role</display>
+	<order>7</order>
+	<ordersort>7</ordersort>
+</attribute>
+<attribute id="mlepOrganisation">
+	<display>MLEP Organisation</display>
+	<order>8</order>
+	<ordersort>8</ordersort>
+</attribute>
+</attributes>
+</query>

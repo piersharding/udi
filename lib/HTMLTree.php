@@ -301,6 +301,19 @@ class HTMLTree extends Tree {
 
 				break;
 
+			case 'udi':
+				if (! $_SESSION[APPCONFIG]->isCommandAvailable('script','udi_form') || ! $_SESSION[APPCONFIG]->isCommandAvailable('script','udi') || $server->isReadOnly())
+					return '';
+
+				$menu['cmd'] = 'udi_form';
+				$menu['ajax'] = _('Loading UDI');
+				$menu['div'] = 'BODY';
+				$menu['title'] = _('UDI');
+				$menu['img'] = 'wifi-radar.png';
+				$menu['name'] = _('udi');
+
+				break;
+
 			default:
 				return false;
 		}
