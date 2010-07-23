@@ -457,6 +457,8 @@ table.forminput {
 	background-color: #F9F9FA;
 	padding: 10px;
 	border: 1px solid #AAAACC;
+    width: 100%;
+    min-height: 600px;
 }
 
 table.forminput td.title {
