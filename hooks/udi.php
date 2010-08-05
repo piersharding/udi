@@ -11,8 +11,12 @@
 
 require_once './common.php';
 require_once HOOKSDIR.'udi/UdiConfig.php';
+require_once HOOKSDIR.'udi/UdiRender.php';
 require_once HOOKSDIR.'udi/udi_functions.php';
 
+
+// setup the page renderer
+$request['page'] = new UdiRender($app['server']->getIndex(),get_request('template','REQUEST',false,'none'));
 
 // get the UDI config
 $udiconfig = new UdiConfig($app['server']);
@@ -24,13 +28,15 @@ $udi_nav = get_request('udi_nav','REQUEST');
 if (empty($udi_nav) && isset($_SESSION['udi_nav'])) {
     $udi_nav = $_SESSION['udi_nav'];
 }
-if (!in_array($udi_nav, array('admin', 'mapping', 'upload', 'process'))) {
+if (!in_array($udi_nav, array('admin', 'mapping', 'upload', 'process', 'reporting', 'help'))) {
     $udi_nav = 'admin';
 }
 
-// get the specific template for this panel
-require_once HOOKSDIR.'udi/'.$udi_nav.'_action.php';
-
+// get the specific action for this panel, if it was POSTed
+//var_dump($_SERVER['REQUEST_METHOD']); var_dump($_GET); var_dump($_POST); exit(0);
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    require_once HOOKSDIR.'udi/'.$udi_nav.'_action.php';
+}
 
 // now process output
 require_once HOOKSDIR.'udi_form.php';

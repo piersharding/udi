@@ -4,10 +4,24 @@
  *
  * These classes provide differnet import formats.
  *
- * @author The phpLDAPadmin development team
+ * @author Piers Harding
  * @package phpLDAPadmin
- * @see import.php and import_form.php
  */
+
+function check_dn_exists($dn, $msg, $area = 'configuration') {
+ //$query['filter'] = '(&(objectClass=*))';
+    global $app, $udiconfig, $request;
+    //$query = $app['server']->query(array('base' => $udiconfig->getBaseDN(), 'filter' => $dn, 'attrs' => array('dn')), 'login');
+    $query = $app['server']->query(array('base' => $dn, 'attrs' => array('dn')), 'login');
+    if (empty($query)) {
+        // base does not exist
+        $request['page']->error($msg, $area);
+        return false;
+    }
+    return true;
+}
+
+
 
 /**
  * Importer Class

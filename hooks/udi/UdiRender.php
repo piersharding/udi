@@ -16,6 +16,8 @@ class UdiRender extends PageRender {
 	# Page number
 	private $pagelast;
 
+	public $messages = array();
+
 	/** CORE FUNCTIONS **/
 
 	/**
@@ -94,6 +96,8 @@ class UdiRender extends PageRender {
                 array('name' => 'mapping', 'text' => _('Mapping'), 'title' => _('Perform data mapping'), 'image' => 'add.png', 'imagetext' => _('Mapping'),), 
                 array('name' => 'upload', 'text' => _('Upload'), 'title' => _('Upload a file'), 'image' => 'import.png', 'imagetext' => _('Upload'),), 
                 array('name' => 'process', 'text' => _('Process'), 'title' => _('Process the UDI'), 'image' => 'timeout.png', 'imagetext' => _('Process'),),
+                array('name' => 'reporting', 'text' => _('Reporting'), 'title' => _('Reporting on the UDI'), 'image' => 'files-small.png', 'imagetext' => _('Reporting'),),
+                array('name' => 'help', 'text' => _('Help'), 'title' => _('UDI Help'), 'image' => 'help-small.png', 'imagetext' => _('Help'),),
                 );
         
         foreach ($menus as $item) {
@@ -102,5 +106,193 @@ class UdiRender extends PageRender {
         $menu .= "</ul></div>";
         return $menu;
     }
+
+    public function configRow($label, $field, $required=true) {
+        if ($required) {
+            return '<div class="fitem required">' . $label . $field .  '</div>';
+        }
+        else {
+            return '<div class="fitem">' . $label . $field .  '</div>';
+        }
+    }
+
+    public function configFieldLabel($name, $text, $variant='') {
+        return '<div class="fitemtitle'.$variant.'"><label for="id_'.$name.'">'.$text.'</label></div>';
+    }
+
+    public function configField($name, $attrs = array(), $container = array('class' => 'felement ftext')) {
+        //return '<div class="felement ftext"><input name="'.$name.'" type="text" value="test 2004" onblur="validate_mod_scorm_mod_form_name(this)" onchange="validate_mod_scorm_mod_form_name(this)" id="id_'.$name.'"></div>';
+        $opts = array();
+        foreach  ($attrs as $k => $v) {
+            $opts[]= "$k='$v'";
+        }
+        $field_opts = implode(' ', $opts);
+        $opts = array();
+        foreach  ($container as $k => $v) {
+            $opts[]= "$k='$v'";
+        }
+        $container_opts = implode(' ', $opts);
+        if (empty($container_opts)) {
+            return '<input name="'.$name.'" '.$field_opts.' id="id_'.$name.'">';
+        }
+        else {
+            return '<div '.$container_opts.'><input name="'.$name.'" '.$field_opts.' id="id_'.$name.'"></div>';
+        }
+    }
+
+    public function configEntry($name, $text, $attrs = array(), $label=true, $required=true) {
+
+        if ($label) {
+            return  $this->configRow($this->configFieldLabel($name, $text), $this->configField($name, $attrs), $required);
+        }
+        else {
+            return  $this->configRow('', $this->configField($name, $attrs), $required);
+        }
+    }
+
+    public function configChooser($name) {
+        ob_start();
+        draw_chooser_link('udi_form.'.$name, false);
+        $chooser = ob_get_contents();
+        ob_end_clean();
+        return $chooser;
+    }
+
+    public function configMoreField($name, $text, $attrs = array(), $chooser=false, $link_text=false) {
+        $add_name = $name.'_ADD';
+        //$field = '<div class="felement ftext">';
+        $desc = $link_text ? '&nbsp;'.$text : '';
+        $field = '
+        <a href="" title="'._('Add '.$text).'" onclick="if (getDiv(\''.$add_name.'\').style.display == \'block\'){getDiv(\''.$add_name.'\').style.display = \'none\';}else{getDiv(\''.$add_name.'\').style.display = \'block\';};return false;"><img src="images/udi/add.png" alt="'._('Add '.$text).'"/>'.$desc.'</a></div>
+        <div id="aj'.$add_name.'" class="ftext" style="display: none; float:left; clear:both;"><table style="margin-left: 0px;"><tbody><tr>
+        <td><fieldset><legend>'.$text.'</legend>
+        <div id="aj'.$add_name.'ATTR"><table cellspacing="0" border="0"><tbody><tr><td valign="top"><span style="white-space: nowrap;">';
+        $field .= $this->configField($name, $attrs, array());
+        if ($chooser) {
+            $field .= $this->configChooser($name);
+        }
+        $field .= '</span></td></tr></tbody></table></div></fieldset></td></tr></tbody></table>';
+        //$field .= '</div>';
+        return $field;
+    }
+
+    public function configMoreSelect($name, $text, $attrs) {
+        $add_name = $name.'_ADD';
+        $field = '<div class="felement ftext">
+        <a href="" title="'._('Add '.$text).'" onclick="if (getDiv(\''.$add_name.'\').style.display == \'block\'){getDiv(\''.$add_name.'\').style.display = \'none\';}else{getDiv(\''.$add_name.'\').style.display = \'block\';};return false;"><img src="images/udi/add.png" alt="'._('Add '.$text).'"/></a></div>
+        <div id="aj'.$add_name.'" class="felement ftext" style="display: none; "><table style="margin-left: 0px;"><tbody><tr>
+        <td><fieldset><legend>'.$text.'</legend>
+        <div id="aj'.$add_name.'ATTR"><table cellspacing="0" border="0"><tbody><tr><td valign="top"><span style="white-space: nowrap;">';
+        $field .= $this->configSelect($name, $attrs, array());
+        $field .= '</span></td></tr></tbody></table></div></fieldset></td></tr></tbody></table></div>';
+        return $field;
+    }
+
+    public function configMoreOrSelect($name, $text, $attrs, $opts) {
+        $add_name = $name.'_ADD';
+        $field = '<div class="felement ftext">
+        <a href="" title="'._('Add '.$text).'" onclick="if (getDiv(\''.$add_name.'\').style.display == \'block\'){getDiv(\''.$add_name.'\').style.display = \'none\';}else{getDiv(\''.$add_name.'\').style.display = \'block\';};return false;"><img src="images/udi/add.png" alt="'._('Add '.$text).'"/>&nbsp;'.$text.'</a></div>
+        <div id="aj'.$add_name.'" class="felement ftext" style="display: none; "><table><tbody><tr>
+        <td><fieldset><legend>'.$text.'</legend>
+        <div id="aj'.$add_name.'ATTR"><table cellspacing="0" border="0"><tbody><tr><td valign="top"><span style="white-space: nowrap;">';
+        $field .= $this->configSelect($name.'_select', $opts, array());
+        $field .= '&nbsp;'._('or').'&nbsp;';
+        $field .= $this->configField($name.'_field', $attrs, array());
+        $field .= '</span></td></tr></tbody></table></div></fieldset></td></tr></tbody></table></div>';
+        return $field;
+    }
+
+
+    public function configSelect($name, $attrs = array(), $default = 'none') {
+        $select = '<select name="'.$name.'">';
+        foreach ($attrs as $attr) {
+            $opt_name = $attr->getName(false);
+            $opt_text = $attr->getName(false);
+            if (empty($opt_name)) {
+                $opt_name = 'none';
+                $opt_text = _(' - unselected - ');
+            }
+            $select .= sprintf('<option value="%s" %s>%s</option>', 
+                    $opt_name,strtolower($opt_name) == strtolower("".$default) ? 'selected ': '',$opt_text);
+        }   
+        $select .= '</select>';
+        return $select;
+    }
+
+    public function configSelectEntry($name, $text, $attrs = array(), $default='mlepSmsPersonId', $required=true) {
+
+        return  $this->configRow($this->configFieldLabel($name, $text), '<div class="felement ftext">'.$this->configSelect($name, $attrs, $default).'</div>', $required);
+    }
+
+    public function info($msg, $action='') {
+        $this->messages[]= "<div class='info'>".$msg.'</div>';
+        system_message(array(
+                     'title'=>_('UDI '.$action),
+                                'body'=> $msg,
+                                'type'=>'info'));
+    }
+
+    public function warning($msg, $action='') {
+        $this->messages[]= "<div class='warning'>".$msg.'</div>';
+        system_message(array(
+                     'title'=>_('UDI '.$action),
+                                'body'=> $msg,
+                                'type'=>'warn'));
+    }
+
+    public function error($msg, $action='') {
+        $this->messages[]= "<div class='error'>".$msg.'</div>';
+        system_message(array(
+                     'title'=>_('UDI '.$action),
+                                'body'=> $msg,
+                                'type'=>'error'));
+    }
+
+    public function outputMessages() {
+        $msgs = '';
+        foreach ($this->messages as $msg) {
+            $msgs.= $msg;
+        }
+        $this->messages = array();
+        return "<div class='messages'>".$msgs.'</div>';
+    }
+    
+    public function confirmationPage($title, $acronym, $element, $msg, $action, $params) {
+        global $app;
+        $out  =  '<table class="forminput" border=0>';
+        $out .= sprintf('<tr><td colspan=4>%s</td></tr>', $msg);
+        $out .=  '<tr><td colspan=4>&nbsp;</td></tr>';
+        $out .= sprintf('<tr><td width=10%%>%s:</td><td colspan=3 width=75%%><b>%s</b></td></tr>', _('Server'), $app['server']->getName());
+        $out .= sprintf('<tr><td width=10%%><acronym title="%s">%s</acronym></td><td colspan=3 width=75%%><b>%s</b></td></tr>',
+            $title, $acronym, $element);
+        $out .=  '<tr><td colspan=4>&nbsp;</td></tr>';
+        $out .=  "\n";
+        $out .=  '<tr>';
+        $out .=  '<td width"10%">&nbsp;</td>';
+        $out .=  '<td>';
+        $out .=  '<table><tr><td>';
+        $out .=  '<form action="cmd.php" method="post">';
+        $out .= sprintf('<input type="hidden" name="server_id" value="%s" />', $app['server']->getIndex());
+        foreach ($params as $k => $v) {
+            $out .= sprintf('<input type="hidden" name="%s" value="%s" />', $k, $v);
+        }
+        $out .=  '<input type="hidden" name="confirm" value="yes" />';
+        $out .= sprintf('<input type="submit" name="submit" value="%s" />', $action);
+        $out .=  '</form>';
+        $out .=  '</td><td>';
+        $out .=  '<form action="cmd.php" method="post">';
+        foreach ($params as $k => $v) {
+            $out .= sprintf('<input type="hidden" name="%s" value="%s" />', $k, $v);
+        }
+        $out .=  '<input type="hidden" name="confirm" value="no" />';
+        $out .= sprintf('<input type="submit" name="submit" value="%s" />', _('Cancel'));
+        $out .=  '</form>';
+        $out .=  '</td></tr></table>';
+        $out .=  '</td>';
+        $out .=  '</tr>';
+        $out .=  '</table>';
+        return $out;
+    }
+    
 }
 ?>

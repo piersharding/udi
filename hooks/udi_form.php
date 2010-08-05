@@ -11,20 +11,23 @@
  */
 
 require_once './common.php';
-require_once HOOKSDIR.'udi/UdiRender.php';
 require_once HOOKSDIR.'udi/UdiConfig.php';
+require_once HOOKSDIR.'udi/UdiRender.php';
+require_once HOOKSDIR.'udi/udi_functions.php';
 
 
 if (! ini_get('file_uploads'))
 	error(_('Your PHP.INI does not have file_uploads = ON. Please enable file uploads in PHP.'),'error','index.php');
 
-// setup the page renderer
-$request['page'] = new UdiRender($app['server']->getIndex(),get_request('template','REQUEST',false,'none'));
-
 // get the UDI config
 $udiconfig = new UdiConfig($app['server']);
-$config = $udiconfig->getConfig();
+$request['udiconfig'] = $udiconfig->getConfig();
 $udiconfigdn = $udiconfig->getBaseDN();
+
+// setup the page renderer - if not already there - it maybe there because of the POST action
+if (!isset($request['page'])) {
+    $request['page'] = new UdiRender($app['server']->getIndex(),get_request('template','REQUEST',false,'none'));
+}
 
 // set the headings
 $request['page']->setContainer($udiconfigdn);
@@ -37,27 +40,58 @@ $udi_nav = get_request('udi_nav','REQUEST');
 if (empty($udi_nav) && isset($_SESSION['udi_nav'])) {
     $udi_nav = $_SESSION['udi_nav'];
 }
-if (!in_array($udi_nav, array('admin', 'mapping', 'upload', 'process'))) {
+if (!in_array($udi_nav, array('admin', 'mapping', 'upload', 'process', 'reporting', 'help'))) {
     $udi_nav = 'admin';
 }
 
-echo "nav is: $udi_nav";
-var_dump($config);
+//echo "nav is: $udi_nav";
+//var_dump($request['udiconfig']);
 
+// include JS for form actions
+printf('<script type="text/javascript" language="javascript" src="%sdnChooserPopup.js"></script>',JSDIR);
+printf('<script type="text/javascript" language="javascript" src="%sform_field_toggle_enable.js"></script>',JSDIR);
+echo '
+<script id="post-click" type="text/JavaScript">
+function post_to_url(path, params, method) {
+    method = method || "post";
+    var form = document.createElement("form");
+    form.setAttribute("method", method);
+    form.setAttribute("action", path);
+
+    var all_params = {\'server_id\': \''.$app['server']->getIndex().'\', \'cmd\': \'udi\', \'udi_nav\': \''.$udi_nav.'\'};
+    for (attr in params) { all_params[attr] = params[attr]; }
+
+    for(var key in all_params) {
+        var hiddenField = document.createElement("input");
+        hiddenField.setAttribute("type", "hidden");
+        hiddenField.setAttribute("name", key);
+        hiddenField.setAttribute("value", all_params[key]);
+
+        form.appendChild(hiddenField);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+}
+</script>
+';
 
 // frame up the page - set the menus
 echo '<center>';
 echo '<table id="udi-nav" class="no-border"><tr><td>';
 echo $request['page']->getMenu($udi_nav);
 echo '</td></tr></table>';
-echo '<form action="cmd.php" method="post" class="new_value" enctype="multipart/form-data">';
+echo '<form name="udi_form" action="cmd.php" method="post" class="new_value" enctype="multipart/form-data">';
 printf('<input type="hidden" name="server_id" value="%s" />',$app['server']->getIndex());
 echo '<input type="hidden" name="cmd" value="udi" />';
 echo '<input type="hidden" name="udi_nav" value="'.$udi_nav.'" />';
 
 echo '<table class="forminput" border=0>';
 
-echo '<tr><td colspan=2>&nbsp;</td></tr>';
+echo '<tr><td>';
+echo $request['page']->outputMessages();
+echo '</td></tr>';
+//echo '<tr><td colspan=2>&nbsp;</td></tr>';
 echo '<tr>';
 echo '<td>';
 

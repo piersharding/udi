@@ -950,3 +950,65 @@ table.no-border td {
     border-collapse: collapse;
 }
 
+
+table.item-list {
+    border: 0px;
+    border-spacing: 0px;
+    padding-bottom: 2px;
+    border-collapse: collapse;
+}
+
+table.item-list tr {
+    border: 0px;
+    border-spacing: 0px;
+    padding-bottom: 2px;
+    border-collapse: collapse;
+}
+
+table.item-list td {
+    border: 0px;
+    border-spacing: 0px;
+    padding-bottom: 2px;
+    padding-left: 8px;
+    border-collapse: collapse;
+}
+
+
+/* Forms layout for UDI */
+.udiform .fitem {width:100%;overflow:hidden;margin-top:5px;margin-bottom:0px;clear:right;}
+.udiform .fitem .fitemtitle {width:20%;text-align:right;float:left;}
+.udiform .fitem .fitemtitle_left {width:20%;text-align:left;float:left;}
+.udiform .fitem .fitemtitle_free {text-align:right;float:left;}
+.udiform .fitem .fitemtitle div {display: inline;}
+.udiform .fitem .fitemtitle_left div {display: inline;}
+.udiform .fitem .felement {text-align: left;border-width: 0;width:100%;margin-left:21%;}
+.udiform .fitem .felement_free {text-align: left;border-width: 0;width:80%;margin-left:21%; padding-right: 550px;}
+.udiform .required {color:#A00;}
+.messages {text-align:center;}
+.messages .error {font-weigt:bold;color:red;}
+.messages .warning {font-weigt:bold;color:magenta;}
+.messages .info {font-weigt:bold;color:black;}
+h2.shrink {margin-bottom: 1px;}
+div.underline {
+	text-align: center;
+	margin: 0px;
+	margin-top: 1px;
+	margin-bottom: 10px;
+	color: #FFFFFF;
+	border-bottom: 1px solid #000000;
+	padding: 0px;
+	font-weight: normal;
+    width: 80%;
+}
+
+div.center {
+	display: block;
+	text-align: auto;
+    margin: 0 auto;
+    width:100%;
+}
+div.udiform {width:80%;float:left;margin:0 auto;display:block;}
+div.item-list {margin-left:10px;width:100%;display:block;}
+div.help {width:20%;text-align:auto;float:right;}
+div.tools-right {text-align:auto;float:right;padding-right:50px;}
+div.udi_footer {clear:both;}
