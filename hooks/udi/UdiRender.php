@@ -95,7 +95,7 @@ class UdiRender extends PageRender {
                 array('name' => 'admin', 'text' => _('Configuration'), 'title' => _('Configure the UDI'), 'image' => 'tools.png', 'imagetext' => _('Admin'),),
                 array('name' => 'mapping', 'text' => _('Mapping'), 'title' => _('Perform data mapping'), 'image' => 'add.png', 'imagetext' => _('Mapping'),), 
                 array('name' => 'upload', 'text' => _('Upload'), 'title' => _('Upload a file'), 'image' => 'import.png', 'imagetext' => _('Upload'),), 
-                array('name' => 'process', 'text' => _('Process'), 'title' => _('Process the UDI'), 'image' => 'timeout.png', 'imagetext' => _('Process'),),
+                array('name' => 'process', 'text' => _('Processing'), 'title' => _('Process the UDI'), 'image' => 'timeout.png', 'imagetext' => _('Process'),),
                 array('name' => 'reporting', 'text' => _('Reporting'), 'title' => _('Reporting on the UDI'), 'image' => 'files-small.png', 'imagetext' => _('Reporting'),),
                 array('name' => 'help', 'text' => _('Help'), 'title' => _('UDI Help'), 'image' => 'help-small.png', 'imagetext' => _('Help'),),
                 );
@@ -123,6 +123,9 @@ class UdiRender extends PageRender {
     public function configField($name, $attrs = array(), $container = array('class' => 'felement ftext')) {
         //return '<div class="felement ftext"><input name="'.$name.'" type="text" value="test 2004" onblur="validate_mod_scorm_mod_form_name(this)" onchange="validate_mod_scorm_mod_form_name(this)" id="id_'.$name.'"></div>';
         $opts = array();
+        if (isset($attrs['type']) && $attrs['type'] == 'submit') {
+            $attrs['class'] = 'udi-button';
+        }
         foreach  ($attrs as $k => $v) {
             $opts[]= "$k='$v'";
         }
@@ -140,6 +143,25 @@ class UdiRender extends PageRender {
         }
     }
 
+    public function configButton($name, $attrs = array(), $container = array('class' => 'felement ftext')) {
+        $opts = array();
+        foreach  ($attrs as $k => $v) {
+            $opts[]= "$k='$v'";
+        }
+        $field_opts = implode(' ', $opts);
+        $opts = array();
+        foreach  ($container as $k => $v) {
+            $opts[]= "$k='$v'";
+        }
+        $container_opts = implode(' ', $opts);
+        if (empty($container_opts)) {
+            return '<input type="button" '.$field_opts.' />';
+        }
+        else {
+            return '<div '.$container_opts.'><input type="button" '.$field_opts.'/></div>';
+        }
+    }
+    
     public function configEntry($name, $text, $attrs = array(), $label=true, $required=true) {
 
         if ($label) {
@@ -176,15 +198,27 @@ class UdiRender extends PageRender {
         return $field;
     }
 
-    public function configMoreSelect($name, $text, $attrs) {
+    public function configMoreSelect($name, $text, $attrs, $container = array('class' => 'felement ftext')) {
+        $opts = array();
+        foreach  ($container as $k => $v) {
+            $opts[]= "$k='$v'";
+        }
+        $container_opts = implode(' ', $opts);
         $add_name = $name.'_ADD';
-        $field = '<div class="felement ftext">
+        $field = '';
+        if (!empty($container_opts)) {
+            $field .= '<div '.$container_opts.'>';
+        }
+        $field .= '
         <a href="" title="'._('Add '.$text).'" onclick="if (getDiv(\''.$add_name.'\').style.display == \'block\'){getDiv(\''.$add_name.'\').style.display = \'none\';}else{getDiv(\''.$add_name.'\').style.display = \'block\';};return false;"><img src="images/udi/add.png" alt="'._('Add '.$text).'"/></a></div>
         <div id="aj'.$add_name.'" class="felement ftext" style="display: none; "><table style="margin-left: 0px;"><tbody><tr>
         <td><fieldset><legend>'.$text.'</legend>
         <div id="aj'.$add_name.'ATTR"><table cellspacing="0" border="0"><tbody><tr><td valign="top"><span style="white-space: nowrap;">';
         $field .= $this->configSelect($name, $attrs, array());
-        $field .= '</span></td></tr></tbody></table></div></fieldset></td></tr></tbody></table></div>';
+        $field .= '</span></td></tr></tbody></table></div></fieldset></td></tr></tbody></table>';
+        if (!empty($container_opts)) {
+             $field .= '</div>';
+        }
         return $field;
     }
 
@@ -203,8 +237,11 @@ class UdiRender extends PageRender {
     }
 
 
-    public function configSelect($name, $attrs = array(), $default = 'none') {
-        $select = '<select name="'.$name.'">';
+    public function configSelect($name, $attrs = array(), $default = 'none', $class='') {
+        if (!empty($class)) {
+            $class = " class='$class' ";
+        }
+        $select = '<select '.$class.' name="'.$name.'">';
         foreach ($attrs as $attr) {
             $opt_name = $attr->getName(false);
             $opt_text = $attr->getName(false);
@@ -229,7 +266,10 @@ class UdiRender extends PageRender {
         system_message(array(
                      'title'=>_('UDI '.$action),
                                 'body'=> $msg,
-                                'type'=>'info'));
+                                'type'=>'info',
+                sprintf('cmd.php?cmd=udi_form&udi_nav=%s&server_id=%s',
+                    get_request('udi_nav','REQUEST'),
+                    get_request('server_id','REQUEST'))));
     }
 
     public function warning($msg, $action='') {
@@ -237,7 +277,10 @@ class UdiRender extends PageRender {
         system_message(array(
                      'title'=>_('UDI '.$action),
                                 'body'=> $msg,
-                                'type'=>'warn'));
+                                'type'=>'warn',
+                sprintf('cmd.php?cmd=udi_form&udi_nav=%s&server_id=%s',
+                    get_request('udi_nav','REQUEST'),
+                    get_request('server_id','REQUEST'))));
     }
 
     public function error($msg, $action='') {
@@ -245,7 +288,11 @@ class UdiRender extends PageRender {
         system_message(array(
                      'title'=>_('UDI '.$action),
                                 'body'=> $msg,
-                                'type'=>'error'));
+                                'type'=>'error',
+                sprintf('cmd.php?cmd=udi_form&udi_nav=%s&server_id=%s',
+                    get_request('udi_nav','REQUEST'),
+                    get_request('server_id','REQUEST'))));
+        return false;
     }
 
     public function outputMessages() {

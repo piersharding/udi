@@ -135,6 +135,13 @@ default:
     $cfg = $udiconfig->updateMappings($cfg_mappings);
 
     // process group membership mappings
+    
+    
+    
+    // WE NEED TO CHECK THAT THESE ARE REAL GROUPS eg. posixGroup objectClass XXX !!!!!!!!!!!!!!!
+    
+    
+    
     $no_mappings = (int)get_request('no_of_group_mappings');
     $cfg_group_mappings = array();
     // do we have any mappings

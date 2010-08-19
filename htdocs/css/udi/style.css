@@ -1,5 +1,10 @@
 /* $Header$ */
 
+body { margin-top: 0px; }
+
+/* hide the standard phpldapadmin log at the top - takes up too much room */
+.pagehead div#ajHEAD table tr td img { display: none; } 
+
 /* Global Page */
 table.page {
 	font-weight: normal;
@@ -973,6 +978,13 @@ table.item-list td {
     border-collapse: collapse;
 }
 
+table.item-list-config td {
+    border: 0px;
+    border-spacing: 0px;
+    padding-bottom: 2px;
+    padding-left: 0px;
+    border-collapse: collapse;
+}
 
 /* Forms layout for UDI */
 .udiform .fitem {width:100%;overflow:hidden;margin-top:5px;margin-bottom:0px;clear:right;}
@@ -1007,8 +1019,47 @@ div.center {
     margin: 0 auto;
     width:100%;
 }
-div.udiform {width:80%;float:left;margin:0 auto;display:block;}
+div.udiform {width:80%;float:left;margin:0 auto;padding:0px;display:block;}
 div.item-list {margin-left:10px;width:100%;display:block;}
 div.help {width:20%;text-align:auto;float:right;}
 div.tools-right {text-align:auto;float:right;padding-right:50px;}
-div.udi_footer {clear:both;}
+div.udi_clear {clear:both;}
+
+input.udi-buttonx { border: 1px solid #BBB;
+					border-bottom-left-radius: 3px 3px; 
+					border-bottom-right-radius: 3px 3px;
+					border-top-left-radius: 3px 3px; 
+					border-top-right-radius: 3px 3px; 
+					padding: 3px 8px; 
+					text-align: center; 
+					vertical-align: middle; 
+					white-space: nowrap; 
+					border-collapse: collapse;
+					border-spacing: 2px 2px;
+					display: inline-block;
+					position: relative;
+					cursor: default;
+					color: black;
+					background: #008800;
+					background: -webkit-gradient(linear, 0% 40%, 0% 70%, from(#F9F9F9), to(#E3E3E3));
+					background-image: -webkit-gradient(linear, 0% 40%, 0% 70%, from(#F9F9F9), to(#E3E3E3));
+				    background: -moz-linear-gradient(top, #F9F9F9, #E3E3E3);
+				    filter: progid:DXImageTransform.Microsoft.Gradient(
+				                StartColorStr='#F9F9F9', EndColorStr='#E3E3E3', GradientType=0);
+}
+input.udi-buttonx:hover {
+                    border: 1px solid #555;
+}
+
+select.udi-select {
+                text-align: center;
+                vertical-align: middle;
+                padding-bottom: 3px;
+}
+
+fieldset.config-block {
+	display: block;
+	margin-top: 8px;
+    margin-bottom: 8px;
+    margin-right: 50px;
+}

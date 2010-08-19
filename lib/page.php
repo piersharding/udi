@@ -123,7 +123,16 @@ class page {
 			echo "\n";
 			printf('<script type="text/javascript" language="javascript" src="%sajax_functions.js"></script>',JSDIR);
 			printf('<script type="text/javascript" language="javascript" src="%sjscalendar/calendar.js"></script>',JSDIR);
-			echo "\n";
+
+			// modification to support dhtmlx grid control for UDI file upload
+			printf('<script type="text/javascript" language="javascript" src="%sdhtmlx/codebase/dhtmlxcommon.js"></script>',JSDIR);
+            printf('<script type="text/javascript" language="javascript"  src="%sdhtmlx/codebase/dhtmlxgrid.js"></script>',JSDIR);
+            printf('<script type="text/javascript" language="javascript" src="%sdhtmlx/codebase/ext/dhtmlxgrid_srnd.js"></script>',JSDIR);
+            printf('<script type="text/javascript" language="javascript" src="%sdhtmlx/codebase/dhtmlxgridcell.js"></script>',JSDIR);
+            printf('<script type="text/javascript" language="javascript" src="%sdhtmlx/codebase/dhtmlxdataprocessor.js"></script>',JSDIR);
+            printf('<link rel="stylesheet" type="text/css" href="%sdhtmlx/codebase/dhtmlxgrid.css">', JSDIR);
+            printf('<link rel="stylesheet" type="text/css" href="%sdhtmlx/codebase/skins/dhtmlxgrid_dhx_skyblue.css">', JSDIR);
+            echo "\n";
 		}
 
 		# HTML head requirements.
@@ -150,7 +159,7 @@ class page {
 		printf('<td align="left"><a href="%s" target="_blank"><img src="%s" alt="Logo" class="logo" /></a></td>',get_href('sf'),$this->_app['logo']);
 
 		echo '<td class="imagetop">';
-		$empty = true;
+ 		$empty = true;
 		if (function_exists('cmd_control_pane'))
 			foreach (cmd_control_pane('top') as $cmddetails)
 				if ((isset($cmddetails['enable']) && $cmddetails['enable']) || ! isset($cmddetails['enable'])) {

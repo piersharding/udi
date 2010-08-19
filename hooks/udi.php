@@ -34,7 +34,7 @@ if (!in_array($udi_nav, array('admin', 'mapping', 'upload', 'process', 'reportin
 
 // get the specific action for this panel, if it was POSTed
 //var_dump($_SERVER['REQUEST_METHOD']); var_dump($_GET); var_dump($_POST); exit(0);
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+if ($_SERVER['REQUEST_METHOD'] == 'POST' || get_request('udi_decoration', 'REQUEST') == 'none') {
     require_once HOOKSDIR.'udi/'.$udi_nav.'_action.php';
 }
 

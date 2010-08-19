@@ -90,7 +90,7 @@ echo $request['page']->configRow(
                                 $request['page']->configMoreOrSelect(
                                                         'new_mapping', 
                                                         _('New Mapping'),
-                                                        array('type' => 'text', 'value' => '', 'size' => 50),
+                                                        array('type' => 'text', 'value' => '', 'size' => 35),
                                                         $imo_attrs 
                                                         ).
                                 '</div>',
@@ -154,13 +154,13 @@ if (!empty($cfg['group_mappings'])) {
             $no_fields += 1;
             $field .= '<tr><td>';
             $field .= '<span style="white-space: nowrap;">';
-            $field .= $request['page']->configField('group_mapping_'.$no_mappings.'_field_'.$no_fields, array('type' => 'text', 'value' => $target, 'size' => 50), array());
+            $field .= $request['page']->configField('group_mapping_'.$no_mappings.'_field_'.$no_fields, array('type' => 'text', 'value' => $target, 'size' => 45), array());
             $field .= '&nbsp;<a href="" title="'._('Delete target').'" onclick="post_to_url(\'cmd.php\', {\'delete\': \'group_field_mapping\', \'group_field_mapping\': \''.$group.':'.$no_fields.'\'}); return false;"><img src="images/udi/trash.png" alt="'._('Delete target').'"/></a> &nbsp;';
             $field .= '</span>';
             $field .= '</td></tr>';
         }
         //$field .= '<tr><td>'.$request['page']->configMoreSelect('new_mapping_'.$no_mappings, _('New Target'), $dmo_attrs).'</td></tr>';
-        $field .= '<tr><td>'.$request['page']->configMoreField('new_group_mapping_'.$no_mappings, _('New Target'), array('type' => 'text', 'value' => '', 'size' => 50), true).'</td></tr>';
+        $field .= '<tr><td>'.$request['page']->configMoreField('new_group_mapping_'.$no_mappings, _('New Target'), array('type' => 'text', 'value' => '', 'size' => 45), true).'</td></tr>';
         $field .= '</table>';
         $field .= $request['page']->configField('no_of_fields_in_group_mapping_'.$no_mappings, array('type' => 'hidden', 'value' => $no_fields), array());
 
@@ -170,7 +170,7 @@ if (!empty($cfg['group_mappings'])) {
         '<span style="white-space: nowrap;"><a href="" title="'._('Delete entire group').'" onclick="post_to_url(\'cmd.php\', {\'delete\': \'group_mapping\', \'group_mapping\': \''.$group.'\'}); return false;"><img src="images/udi/trash.png" alt="'._('Delete entire group').'"/></a> &nbsp;'.
                                         $request['page']->configField(
                                                             'group_mapping_'.$no_mappings, 
-                                                            array('type' => 'text', 'value' => $group, 'size' => 17), array()).'</span>'
+                                                            array('type' => 'text', 'value' => $group, 'size' => 10), array()).'</span>'
                                         ), 
                     '<div class="felement_free ftext">'.$field.'</div>', 
                     //$field, 
@@ -197,6 +197,6 @@ echo $request['page']->configEntry('submitbutton', '', array('type' => 'submit',
 
 echo '</div>'; // end of item-list
 echo '</div>'; // end of udiform
-echo '<div class="udi_footer"></div>';
+echo '<div class="udi_clear"></div>';
 echo '</div>'; // end of center
 ?>

@@ -337,6 +337,7 @@ class ldap_pla extends ldap {
 			if ($result) {
 				# Update the tree
 				$tree = get_cached_item($this->index,'tree');
+				if (!$tree) return $result;
 				$tree->addEntry($dn);
 
 				set_cached_item($this->index,'tree','null',$tree);

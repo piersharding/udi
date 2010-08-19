@@ -16,6 +16,9 @@ class UdiConfig {
 
     public static $DEFAULTS = array(
                     'enabled' => null,
+                    'ignore_deletes' => null,
+                    'ignore_creates' => null,
+                    'ignore_updates' => null,
                     'move_on_delete' => null,
                     'move_to' => '',
                     'filepath' => '',
@@ -25,6 +28,8 @@ class UdiConfig {
                     'mappings' => 'mlepSmsPersonId(mlepSmsPersonId);mlepStudentNSN(mlepStudentNSN);mlepUsername(mlepUsername,uid);mlepFirstAttending(mlepFirstAttending);mlepLastAttendance(mlepLastAttendance);mlepFirstName(mlepFirstName,givenName);mlepLastName(mlepLastName,sn);mlepRole(mlepRole);mlepAssociatedNSN(mlepAssociatedNSN);mlepEmail(mlepEmail,mail);mlepOrganisation(mlepOrganisation,o)',
                     'group_mappings' => '',
                     'group_attr' => '',
+                    'create_in' => '',
+                    'objectclasses' => 'top;mlepPerson;inetOrgPerson',
                     );
     
     private $server;
@@ -85,7 +90,76 @@ class UdiConfig {
         $this->unpackConfig($query);
         return $this->config;
     }
-
+    
+    /**
+     * Validate the Config
+     */
+    public function validate() {
+        global $request;
+        
+        $valid = true;
+        
+        // validate the file path - must exist
+        if (preg_match('/^http/', $this->config['filepath'])) {
+            $hdrs = get_headers($this->config['filepath']);
+            if (!preg_match('/^HTTP.*? 200 .*?OK/', $hdrs[0])) {
+                $request['page']->warning(_('Source import URL does not exist: ').$this->config['filepath'], _('configuration'));
+            }
+        } 
+        else if (!file_exists($this->config['filepath'])) {
+            $request['page']->warning(_('Source import file does not exist: ').$this->config['filepath'], _('configuration'));
+        }
+    
+        // get the search bases
+        $bases = explode(';', $this->config['search_bases']);
+        foreach ($bases as $base) {
+            if (!empty($base)) {
+                check_search_base($base) ? true : $valid = false;
+            }
+        }
+        
+        // The create in bucket for new accounts
+        if (!empty($this->config['create_in'])) {
+            if (check_dn_exists($this->config['create_in'], _('Create new accounts target DN does not exist: ').$this->config['create_in'])) {
+                if (!in_array($this->config['create_in'], $bases)) {
+                    $request['page']->warning(_('Create new accounts target DN must be one of the search bases: ').$this->config['create_in'], _('configuration'));
+                    $valid = false;
+                }
+            }
+            else {
+                $valid = false;
+            }
+        }
+        
+        // validate the target DN for moving deletes
+        if (isset($this->config['move_on_delete']) && $this->config['move_on_delete'] !== null) {
+            if (isset($this->config['move_to']) && check_dn_exists($this->config['move_to'], _('Target delete DN does not exist: ').$this->config['move_to'])) {
+                // check that deletes are not going to the new bucket or one of the search bases
+                if ($this->config['move_to'] == $this->config['create_in']) {
+                    $request['page']->error(_('Target delete DN must be different from the create new accounts target: ').$this->config['create_in'], _('configuration'));
+                    $valid = false;
+                }
+                else if (in_array($this->config['move_to'], $bases)){
+                    $request['page']->error(_('Target delete DN must not be one of the search bases: ').$this->config['move_to'], _('configuration'));
+                    $valid = false;   
+                }
+            }
+            else {
+                $valid = false;
+            }
+        }
+        
+        // get the objectClasses
+        $classes = explode(';', $this->config['objectclasses']);
+        foreach ($classes as $class) {
+            if (!empty($class)) {
+                check_objectclass($class) ? true : $valid = false;
+            }
+        }
+        
+        return $valid;
+    }
+    
     /**
      * Set a config value
      */
@@ -114,6 +188,29 @@ class UdiConfig {
         }
     }
 
+
+    /**
+     * Get the objectclasses config value
+     */
+    public function getObjectClasses() {
+        $cfg_objectclasses = array();
+        $this->getConfig();
+        if (isset($this->config['objectclasses'])) {
+            $cfg_objectclasses = explode(';', $this->config['objectclasses']);
+        }
+        return $cfg_objectclasses;
+    }
+
+
+    /**
+     * Set the objectclasses config value
+     */
+    public function updateObjectClasses($objectclasses) {
+        $objectclasses = implode(';', $objectclasses);
+        $this->setConfig('objectclasses', $objectclasses);
+        return $this->updateConfig();
+    }
+    
 
     /**
      * Get the mapping config value

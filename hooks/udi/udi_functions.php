@@ -8,10 +8,18 @@
  * @package phpLDAPadmin
  */
 
+/**
+ *  Check that a DN exists in the directory
+ *  
+ * @param string $dn DN to check
+ * @param string $msg message on failure
+ * @param string $area message area
+ * 
+ * @return bool true on success
+ */
 function check_dn_exists($dn, $msg, $area = 'configuration') {
- //$query['filter'] = '(&(objectClass=*))';
+    //$query['filter'] = '(&(objectClass=*))';
     global $app, $udiconfig, $request;
-    //$query = $app['server']->query(array('base' => $udiconfig->getBaseDN(), 'filter' => $dn, 'attrs' => array('dn')), 'login');
     $query = $app['server']->query(array('base' => $dn, 'attrs' => array('dn')), 'login');
     if (empty($query)) {
         // base does not exist
@@ -21,6 +29,56 @@ function check_dn_exists($dn, $msg, $area = 'configuration') {
     return true;
 }
 
+/**
+ * Check that a search base exists
+ * 
+ * @param string $base the DN of a search base
+ * 
+ * @returm bool true on success
+ */
+function check_search_base($base) {
+    // base does not exist
+    return check_dn_exists($base, _('Search base DN does not exist: ').$base);
+}
+
+
+/**
+ * Check that an objectClass exists
+ * 
+ * @param string $class objectClass to check
+ * 
+ * @return bool true on success
+ */
+function check_objectclass($class) {
+    // objectClass does not exist
+    global $app, $udiconfig, $request;
+
+    $socs = $app['server']->SchemaObjectClasses();
+    if (!isset($socs[strtolower($class)])) {
+        $request['page']->error(_('objectClass does not exist: ').$class, 'configuration');
+        return false;
+    }
+    return true;
+}
+
+
+/**
+ * clean a dn value
+ * 
+ * @param string $dn
+ * 
+ * @return string cleaned DN value
+ */
+function udi_clean_dn($dn) {
+    if (substr($dn,0,1) == ':') {
+        $value = base64_decode(trim(substr($dn,1)));
+    }
+    else {
+        $value = trim($dn);
+    }
+    return $value;
+}
+
 
 
 /**
@@ -28,54 +86,77 @@ function check_dn_exists($dn, $msg, $area = 'configuration') {
  *
  * This class serves as a top level importer class, which will return
  * the correct Import class.
+ * This is derived from the core PLA LDIF import functionality, and has been
+ * specialised for CSV files
  *
  * @package phpLDAPadmin
- * @subpackage Import
+ * @subpackage UDIImport
  */
 class Importer {
-	# Server ID that the export is linked to
-	private $server_id;
-	# Import Type
-	private $template_id;
-	private $template;
+    # Server ID that the export is linked to
+    private $server_id;
+    # Import Type
+    private $template_id;
+    private $template;
+    private $delimiter;
 
-	public function __construct($server_id,$template_id) {
-		$this->server_id = $server_id;
-		$this->template_id = $template_id;
+    /**
+     * Constructor - this builds the environment connected to the 
+     * currently selected LDAP server, and hands off to CSV file
+     * importer object
+     * 
+     * @param Integer $server_id LDAP server connection Id
+     * @param Integer $template_id Id of template
+     * @param char $delimiter delimiter of the file
+     */
+    public function __construct($server_id, $template_id, $delimiter) {
+        $this->server_id = $server_id;
+        $this->template_id = $template_id;
+        $this->delimiter = $delimiter;
 
-		$this->accept();
-	}
+        $this->accept();
+    }
 
-	static function types() {
-		$type = array();
+    /**
+     * Accept the file for upload from the browser
+     * then trigger the initial file processing
+     * 
+     */
+    private function accept() {
+        switch($this->template_id) {
+            case 'CSV':
+                if (isset($_FILES['csv_file']) && is_array($_FILES['csv_file']) && ! $_FILES['csv_file']['error']) {
+                    $this->template = new ImportCSV($this->server_id, $_FILES['csv_file']['tmp_name'], $_FILES['csv_file']['name']);
+                } else {
+                    system_message(array(
+                        'title'=>_('No UDI import input'),
+                        'body'=>_('You must specify a file for upload.'),
+                        'type'=>'error'),
+                    sprintf('cmd.php?cmd=udi_form&udi_nav=%s&server_id=%s',
+                    get_request('udi_nav','REQUEST'),
+                    get_request('server_id','REQUEST')));
+                    die();
+                }
+                break;
 
-		$details = ImportLDIF::getType();
-		$type[$details['type']] = $details;
-
-		return $type;
-	}
-
-	private function accept() {
-		switch($this->template_id) {
-			case 'LDIF':
-				$this->template = new ImportLDIF($this->server_id);
-				break;
-
-			default:
-				system_message(array(
+            default:
+                system_message(array(
 					'title'=>sprintf('%s %s',_('Unknown Import Type'),$this->template_id),
 					'body'=>_('phpLDAPadmin has not been configured for that import type'),
 					'type'=>'warn'),'index.php');
+                die();
+        }
+        $this->template->accept($this->delimiter);
+    }
 
-				die();
-		}
-
-		$this->template->accept();
-	}
-
-	public function getTemplate() {
-		return $this->template;
-	}
+    /**
+     * accessor for the template object
+     * 
+     * @return object template
+     */
+    public function getTemplate() {
+        return $this->template;
+    }
 }
 
 /**
@@ -83,541 +164,1029 @@ class Importer {
  *
  * This abstract classes provides all the common methods and variables for the
  * custom import classes.
+ * Copied from the original abstract class for PLA LDIF file imports -
+ * specialised for CSV files, including selection of file delimiter.
  *
  * @package phpLDAPadmin
- * @subpackage Import
+ * @subpackage UDIImport
  */
 abstract class Import {
-	protected $server_id = null;
-	protected $input = null;
-	protected $source = array();
+    protected $server_id = null;
+    protected $filename;
+    protected $realname;
+    protected $input = null;
+    protected $source = array();
+    protected $delimiter;
 
-	public function __construct($server_id) {
-		$this->server_id = $server_id;
-	}
+    /**
+     * Constructor
+     * hook in the current directory environment, and the file details
+     * 
+     * @param Integer $server_id - LDAP connection Id
+     * @param String $file file - could be tmp name
+     * @param String $realname name of the file
+     */
+    public function __construct($server_id, $file, $realname='') {
+        $this->server_id = $server_id;
+        $this->filename = $file;
+        $this->realname = ($realname ? $realname : $file);
+    }
 
-	public function accept() {
-		if (get_request('ldif','REQUEST')) {
-			$this->input = explode("\n",get_request('ldif','REQUEST'));
-			$this->source['name'] = 'STDIN';
-			$this->source['size'] = strlen(get_request('ldif','REQUEST'));
+    /**
+     * Accept the file - pull in it's contents and split into lines
+     * 
+     * @param Char $delimiter delimiter of csv file - tab, ',', ;
+     */
+    public function accept($delimiter) {
+        $this->delimiter = $delimiter;
+        if (file_exists($this->filename)) {
+            $this->source['name'] = $this->realname;
+            $this->source['size'] = filesize($this->filename);
+            $input = file_get_contents($this->filename);
+            $this->input = preg_split("/\n|\r\n|\r/",$input);
+            	
+        } else {
+            system_message(array(
+                'title'=>_('No UDI import input'),
+                'body'=>_('You must specify a valid file for upload: ').$this->realname,
+                'type'=>'error'),
+            sprintf('cmd.php?cmd=udi_form&udi_nav=%s&server_id=%s',
+            get_request('udi_nav','REQUEST'),
+            get_request('server_id','REQUEST')));
+            die();
+        }
+    }
 
-		} elseif (isset($_FILES['ldif_file']) && is_array($_FILES['ldif_file']) && ! $_FILES['ldif_file']['error']) {
-			$input = file_get_contents($_FILES['ldif_file']['tmp_name']);
-			$this->input = preg_split("/\n|\r\n|\r/",$input);
-			$this->source['name'] = $_FILES['ldif_file']['name'];
-			$this->source['size'] = $_FILES['ldif_file']['size'];
-
-		} else {
-			system_message(array(
-				'title'=>_('No import input'),
-				'body'=>_('You must either upload a file or provide an import in the text box.'),
-				'type'=>'error'),sprintf('cmd.php?cmd=udi_form&udi_nav=%s&server_id=%s',get_request('udi_nav','REQUEST'),get_request('server_id','REQUEST')));
-
-			die();
-		}
-	}
-
-	public function getSource($attr) {
-		if (isset($this->source[$attr]))
-			return $this->source[$attr];
-		else
-			return null;
-	}
-
-	# @todo integrate hooks
-	public function LDAPimport() {
-		$template = $this->getTemplate();
-		$server = $this->getServer();
-
-		switch ($template->getType()) {
-			case 'add': 
-				return $server->add($template->getDN(),$template->getLDAPadd());
-
-			case 'modify':
-				return $server->modify($template->getDN(),$template->getLDAPmodify());
-
-			case 'moddn':
-			case 'modrdn':
-				return $server->rename($template->getDN(),$template->modrdn['newrdn'],$template->modrdn['newsuperior'],$template->modrdn['deleteoldrdn']);
-
-			default:
-				debug_dump_backtrace(sprintf('Unknown template type %s',$template->getType()),1);
-		}
-
-		return true;
-	}
+    /**
+     * Accessor for source file details
+     * 
+     * @param $attr - which source file detail - name/size
+     * 
+     * @return String file attrbute value
+     */
+    public function getSource($attr) {
+        if (isset($this->source[$attr])) {
+            return $this->source[$attr];
+        }
+        return null;
+    }
 }
 
 /**
- * Import entries from LDIF
- *
- * The LDIF spec is described by RFC2849
- * http://www.ietf.org/rfc/rfc2849.txt
+ * Import entries from the UDI CSV file format
+ * Implementation of abstract class
+ * 
  *
  * @package phpLDAPadmin
- * @subpackage Import
+ * @subpackage UDIImport
  */
-class ImportLDIF extends Import {
-	private $_currentLineNumber = 0;
-	private $_currentLine = '';
-	private $template;
-	public $error = array();
-
-	static public function getType() {
-		return array('type'=>'LDIF','description' => _('LDIF Import'),'extension'=>'ldif');
-	}
-
-	protected function getTemplate() {
-		return $this->template;
-	}
-
-	protected function getServer() {
-		return $_SESSION[APPCONFIG]->getServer($this->server_id);
-	}
-
-	public function readEntry() {
-		static $haveVersion = false;
-
-		if ($lines = $this->nextLines()) {
-
-			# If we have a version line.
-			if (! $haveVersion && preg_match('/^version:/',$lines[0])) {
-				list($text,$version) = $this->getAttrValue(array_shift($lines));
-
-				if ($version != 1)
-					return $this->error(sprintf('%s %s',_('LDIF import only suppports version 1'),$version),$lines);
-
-				$haveVersion = true;
-				$lines = $this->nextLines();
-			}
-
-			$server = $this->getServer();
-
-			# The first line should be the DN
-			if (preg_match('/^dn:/',$lines[0])) {
-				list($text,$dn) = $this->getAttrValue(array_shift($lines));
-
-				# The second line should be our changetype
-				if (preg_match('/^changetype:[ ]*(delete|add|modrdn|moddn|modify)/i',$lines[0])) {
-					$attrvalue = $this->getAttrValue($lines[0]);
-					$changetype = $attrvalue[1];
-					array_shift($lines);
-
-				} else
-					$changetype = 'add';
-
-				$this->template = new Template($this->server_id,null,null,$changetype);
-
-				switch ($changetype) {
-					case 'add':
-						$rdn = get_rdn($dn);
-						$container = $server->getContainer($dn);
-
-						$this->template->setContainer($container);
-						$this->template->accept();
-
-						$this->getAddDetails($lines);
-						$this->template->setRDNAttributes($rdn);
-
-						return $this->template;
-
-						break;
-
-					case 'modify':
-						if (! $server->dnExists($dn))
-							return $this->error(sprintf('%s %s',_('DN does not exist'),$dn),$lines);
-
-						$this->template->setDN($dn);
-						$this->template->accept();
-
-						return $this->getModifyDetails($lines);
-
-						break;
-
-					case 'moddn':
-					case 'modrdn':
-						if (! $server->dnExists($dn))
-							return $this->error(sprintf('%s %s',_('DN does not exist'),$dn),$lines);
-
-						$this->template->setDN($dn);
-						$this->template->accept();
-
-						return $this->getModRDNAttributes($lines);
-
-						break;
-
-					default:
-						if (! $server->dnExists($dn))
-							return $this->error(_('Unkown change type'),$lines);
-				}
-
-			} else
-				return $this->error(_('A valid dn line is required'),$lines);
-
-		} else
-			return false;
-	}
-
-	/**
-	 * Get the Attribute and Decoded Value
-	 */
-	private function getAttrValue($line) {
-		list($attr,$value) = explode(':',$line,2);
-
-		# Get the DN
-		if (substr($value,0,1) == ':')
-			$value = base64_decode(trim(substr($value,1)));
-		else
-			$value = trim($value);
-
-		return array($attr,$value);
-	}
-
-	/**
-	 * Get the lines of the next entry
-	 *
-	 * @return The lines (unfolded) of the next entry
-	 */
-	private function nextLines() {
-		$current = array();
-		$endEntryFound = false;
-
-		if ($this->hasMoreEntries() && ! $this->eof()) {
-			# The first line is the DN one
-			$current[0]= trim($this->_currentLine);
-
-			# While we end on a blank line, fetch the attribute lines
-			$count = 0;
-			while (! $this->eof() && ! $endEntryFound) {
-				# Fetch the next line
-				$this->nextLine();
-
-				/* If the next line begin with a space, we append it to the current row
-				 * else we push it into the array (unwrap)*/
-				if ($this->isWrappedLine())
-					$current[$count] .= trim($this->_currentLine);
-				elseif ($this->isCommentLine()) {}
-				# Do nothing
-				elseif (! $this->isBlankLine())
-					$current[++$count] = trim($this->_currentLine);
-				else
-					$endEntryFound = true;
-			}
-
-			# Return the LDIF entry array
-			return $current;
-
-		} else
-			return false;
-	}
-
-	/**
-	 * Private method to check if there is more entries in the input.
-	 *
-	 * @return boolean true if an entry was found, false otherwise.
-	 */
-	private function hasMoreEntries() {
-		$entry_found = false;
-
-		while (! $this->eof() && ! $entry_found) {
-			# If it's a comment or blank line, switch to the next line
-			if ($this->isCommentLine() || $this->isBlankLine()) {
-				# Do nothing
-				$this->nextLine();
-
-			} else {
-				$this->_currentDnLine = $this->_currentLine;
-				$this->dnLineNumber = $this->_currentLineNumber;
-				$entry_found = true;
-			}
-		}
-
-		return $entry_found;
-	}
-
-	/**
-	 * Helper method to switch to the next line
-	 */
-	private function nextLine() {
-		$this->_currentLineNumber++;
-		$this->_currentLine = array_shift($this->input);
-	}
-
-	/**
-	 * Check if it's a comment line.
-	 *
-	 * @return boolean true if it's a comment line,false otherwise
-	 */
-	private function isCommentLine() {
-		return substr(trim($this->_currentLine),0,1) == '#' ? true : false;
-	}
-
-	/**
-	 * Check if it's a wrapped line.
-	 *
-	 * @return boolean true if it's a wrapped line,false otherwise
-	 */
-	private function isWrappedLine() {
-		return substr($this->_currentLine,0,1) == ' ' ? true : false;
-	}
-
-	/**
-	 * Check if is the current line is a blank line.
-	 *
-	 * @return boolean if it is a blank line,false otherwise.
-	 */
-	private function isBlankLine() {
-		return(trim($this->_currentLine) == '') ? true : false;
-	}
-
-	/**
-	 * Returns true if we reached the end of the input.
-	 *
-	 * @return boolean true if it's the end of file, false otherwise.
-	 */
-	public function eof() {
-		return count($this->input) > 0 ? false : true;
-	}
-
-	private function error($msg,$data) {
-		$this->error['message'] = sprintf('%s [%s]',$msg,$this->template ? $this->template->getDN() : '');
-		$this->error['line'] = $this->_currentLineNumber;
-		$this->error['data'] = $data;
-		$this->error['changetype'] = $this->template ? $this->template->getType() : 'Not set';
-
-		return false;
-	}
-
-	/**
-	 * Method to retrieve the attribute value of a ldif line,
-	 * and get the base 64 decoded value if it is encoded
-	 */
-	private function getAttributeValue($value) {
-		$return = '';
-
-		if (substr($value,0,1) == '<') {
-			$url = trim(substr($value,1));
-
-			if (preg_match('^file://',$url)) {
-				$filename = substr(trim($url),7);
-
-				if ($fh = @fopen($filename,'rb')) {
-					if (! $return = @fread($fh,filesize($filename)))
-						return $this->error(_('Unable to read file for'),$value);
-
-					@fclose($fh);
-
-				} else
-					return $this->error(_('Unable to open file for'),$value);
-
-			} else
-				return $this->error(_('The url attribute value should begin with file:// for'),$value);
-
-		# It's a string
-		} else
-			$return = $value;
-
-		return trim($return);
-	}
-
-	/**
-	 * Build the attributes array when the change type is add.
-	 */
-	private function getAddDetails($lines) {
-		foreach ($lines as $line) {
-			list($attr,$value) = $this->getAttrValue($line);
-
-			if (is_null($attribute = $this->template->getAttribute($attr))) {
-				$attribute = $this->template->addAttribute($attr,array('values'=>array($value)));
-				$attribute->justModified();
-
-			} else
-				if ($attribute->hasBeenModified())
-					$attribute->addValue($value);
-				else
-					$attribute->setValue(array($value));
-		}
-	}
-
-	/**
-	 * Build the attributes array for the entry when the change type is modify
-	 */
-	private function getModifyDetails($lines) {
-		if (! count($lines))
-			return $this->error(_('Missing attributes for'),$lines);
-
-		# While the array is not empty
-		while (count($lines)) {
-			$processline = false;
-			$deleteattr = false;
-
-			# Get the current line with the action
-			$currentLine = array_shift($lines);
-			$attrvalue = $this->getAttrValue($currentLine);
-			$action_attribute = $attrvalue[0];
-			$action_attribute_value = $attrvalue[1];
-
-			if (! in_array($action_attribute,array('add','delete','replace')))
-				return $this->error(_('Missing modify command add, delete or replace'),array_merge(array($currentLine),$lines));
-
-			$processline = true;
-			switch ($action_attribute) {
-				case 'add':
-
-					break;
-
-				case 'delete':
-					$attribute = $this->template->getAttribute($action_attribute_value);
-
-					if (is_null($attribute))
-						return $this->error(sprintf('%s %s',_('Attempting to delete a non existant attribute'),$action_attribute_value),
-							array_merge(array($currentLine),$lines));
-
-					$deleteattr = true;
-
-					break;
-
-				case 'replace':
-					$attribute = $this->template->getAttribute($action_attribute_value);
-
-					if (is_null($attribute))
-						return $this->error(sprintf('%s %s',_('Attempting to replace a non existant attribute'),$action_attribute_value),
-							array_merge(array($currentLine),$lines));
-
-					break;
-
-				default:
-					debug_dump_backtrace(sprintf('Unknown action %s',$action_attribute),1);
-			}
-
-			# Fetch the attribute for the following line
-			$currentLine = array_shift($lines);
-
-			while ($processline && trim($currentLine) && (trim($currentLine) != '-')) {
-				$processline = false;
-
-				# If there is a valid line
-				if (preg_match('/:/',$currentLine)) {
-					$attrvalue = $this->getAttrValue($currentLine);
-					$attr = $attrvalue[0];
-					$attribute_value_part = $attrvalue[1];
-
-					# Check that it correspond to the one specified before
-					if ($attr == $action_attribute_value) {
-						# Get the value part of the attribute
-						$attribute_value = $this->getAttributeValue($attribute_value_part);
-
-						$attribute = $this->template->getAttribute($attr);
-
-						# This should be a add/replace operation
-						switch ($action_attribute) {
-							case 'add':
-								if (is_null($attribute))
-									$attribute = $this->template->addAttribute($attr,array('values'=>array($attribute_value_part)));
-								else
-									$attribute->addValue($attribute_value_part,-1);
-
-								$attribute->justModified();
-
-								break;
-
-							case 'delete':
-								$deleteattr = false;
-
-								if ($key = array_search($attribute_value_part,$attribute->getValues()))
-									$attribute->delValue($key);
-								else
-									return $this->error(sprintf('%s %s',_('Delete value doesnt exist in DN'),$attribute_value_part),
-										array_merge(array($currentLine),$lines));
-
-
-								break;
-
-							case 'replace':
-								if ($attribute->hasBeenModified())
-									$attribute->addValue($attribute_value_part,-1);
-								else
-									$attribute->setValue(array($attribute_value_part));
-
-								break;
-
-							default:
-								debug_dump_backtrace(sprintf('Unexpected operation %s',$action_attribute));
-						}
-
-					} else
-						return $this->error(sprintf('%s %s',_('The attribute to modify doesnt match the one specified by'),$action_attribute),
-							array_merge(array($currentLine),$lines));
-
-				} else
-					return $this->error(sprintf('%s %s',_('Attribute not valid'),$currentLine),
-						array_merge(array($currentLine),$lines));
-
-				$currentLine = array_shift($lines);
-				if (trim($currentLine))
-					$processline = true;
-			}
-
-			if ($action_attribute == 'delete' && $deleteattr)
-				$attribute->setValue(array());
-
-		}
-
-		return $this->template;
-	}
-
-	/**
-	 * Build the attributes for the entry when the change type is modrdn
-	 */
-	function getModRDNAttributes($lines) {
-		$server = $this->getServer();
-		$attrs = array();
-
-		# MODRDN MODDN should only be 2 or 3 lines.
-		if (count($lines) != 2 && count($lines) !=3)
-			return $this->error(_('Invalid entry'),$lines);
-
-		else {
-			$currentLine = array_shift($lines);
-
-			# First we need to check if there is an new rdn specified
-			if (preg_match('/^newrdn:(:?)/',$currentLine)) {
-
-				$attrvalue = $this->getAttrValue($currentLine);
-				$attrs['newrdn'] = $attrvalue[1];
-
-				$currentLine = array_shift($lines);
-
-				if (preg_match('/^deleteoldrdn:[ ]*(0|1)/',$currentLine)) {
-					$attrvalue = $this->getAttrValue($currentLine);
-					$attrs['deleteoldrdn'] = $attrvalue[1];
-
-					# Switch to the possible new superior attribute
-					if (count($lines)) {
-						$currentLine = array_shift($lines);
-
-						# then the possible new superior attribute
-						if (preg_match('/^newsuperior:/',$currentLine)) {
-							$attrvalue = $this->getAttrValue($currentLine);
-							$attrs['newsuperior'] = $attrvalue[1];
-
-						} else
-							return $this->error(_('A valid newsuperier attribute should be specified'),$lines);
-
-					} else
-						$attrs['newsuperior'] = $server->getContainer($this->template->getDN());
-
-				} else
-					return $this->error(_('A valid deleteoldrdn attribute should be specified'),$lines);
-
-			} else
-				return $this->error(_('A valid newrdn attribute should be specified'),$lines);
-		}
-
-		# Well do something out of the ordinary here, since our template doesnt handle mod[r]dn yet.
-		$this->template->modrdn = $attrs;
-		return $this->template;
-	}
+class ImportCSV extends Import {
+    private $_currentLineNumber = 0;
+    private $_currentLine = '';
+    private $_valid_attrs;
+    private $_headers;
+    private $_header_line;
+    private $template;
+    public $error = array();
+
+    /**
+     * Accept the file details, and then grab the first line
+     * as a header
+     * 
+     * Validate the header line - this gives assurance that:
+     * a) it is actually a headerline
+     * b) that it will map to directory elements
+     * 
+     * @param String $delimiter csv file delimiter
+     */
+    public function accept($delimiter) {
+        global $app;
+        parent::accept($delimiter);
+        $this->_header_line = $this->readEntry(true);
+        // header must exists
+        if (empty($this->_header_line)) {
+            system_message(array(
+                'title'=>_('No valid header line in UDI import'),
+                'body'=>_('You must specify a valid file for upload, with the first record being the column headings.'),
+                'type'=>'error'),
+            sprintf('cmd.php?cmd=udi_form&udi_nav=%s&server_id=%s',
+            get_request('udi_nav','REQUEST'),
+            get_request('server_id','REQUEST')));
+            die();
+        }
+
+        // mandatory headers must exist
+        $socs = $app['server']->SchemaObjectClasses();
+        $mlepPerson = $socs['mlepperson'];
+        $must = $mlepPerson->getMustAttrs();
+        $dmo_attrs = $app['server']->SchemaAttributes();
+        $dmo_attrs = array_merge(array("mlepgroupmembership" => new ObjectClass_ObjectClassAttribute("mlepgroupmembership", "mlepGroupMembership")), $dmo_attrs);
+        //        $this->_valid_attrs = $dmo_attrs;
+        $headers = array();
+        foreach ($this->_header_line as $hdr) {
+            $headers[strtolower($hdr)]= $hdr;
+        }
+        foreach ($must as $attr) {
+            if (!isset($headers[$attr->getName()])) {
+                system_message(array(
+                    'title'=>_('UDI import mandatory field missing: ').$attr->getName(false),
+                    'body'=>_('You must specify a valid file for upload, with the first record being the column headings, that must atleast contain all the mandatory fields, and fields that correspond to valid LDAP schema attributes.'),
+                    'type'=>'error'),
+                sprintf('cmd.php?cmd=udi_form&udi_nav=%s&server_id=%s',
+                get_request('udi_nav','REQUEST'),
+                get_request('server_id','REQUEST')));
+                die();
+            }
+        }
+
+        // all other headers must exist in the schema as a valid attribute
+        foreach ($headers as $hdr => $name) {
+            if (!isset($dmo_attrs[$hdr])) {
+                system_message(array(
+                    'title'=>_('UDI import illegal field specified: ').$name,
+                    'body'=>_('You must specify a valid file for upload, with the first record being the column headings, that must atleast contain all the mandatory fields, and fields that correspond to valid LDAP schema attributes.'),
+                    'type'=>'error'),
+                sprintf('cmd.php?cmd=udi_form&udi_nav=%s&server_id=%s',
+                get_request('udi_nav','REQUEST'),
+                get_request('server_id','REQUEST')));
+                die();
+            }
+        }
+
+        // save headers
+        $this->_headers = $headers;
+
+    }
+
+    /**
+     * Accessor for the unpacked csv header line
+     * 
+     * @return array header line columns
+     */
+    public function getCSVHeader() {
+        return $this->_header_line;
+    }
+
+    /**
+     * declaration of this type of object
+     * 
+     * @return array of class attributes
+     */
+    static public function getType() {
+        return array('type'=>'CSV','description' => _('CSV Import'),'extension'=>'csv');
+    }
+
+    /**
+     * Accessor for template object
+     * 
+     * @return object the template
+     */
+    protected function getTemplate() {
+        return $this->template;
+    }
+
+    /**
+     * Get the current LDAP server object
+     * 
+     * @return object server
+     */
+    protected function getServer() {
+        return $_SESSION[APPCONFIG]->getServer($this->server_id);
+    }
+
+    /**
+     * Get the next line of the file
+     * 
+     * @param bool $header true - get the header line
+     * 
+     * @return the next line of the file or false
+     */
+    public function readEntry($header=false) {
+
+        if ($line = $this->nextLine($header)) {
+            return $line;
+        }
+        else {
+            return false;
+        }
+    }
+
+    /**
+     * Get the line of the next entry
+     *
+     * @return The lines (unfolded) of the next entry
+     */
+    private function nextLine($header=false) {
+
+        if (!$this->eof()) {
+            $this->advanceNextLine();
+            while (!$this->eof() && ($this->isCommentLine() || $this->isBlankLine())) {
+                $this->advanceNextLine();
+            }
+            if ($this->isCommentLine() || $this->isBlankLine()) {
+                return false;
+            }
+            else {
+                if ($header) {
+                    return str_getcsv(trim($this->_currentLine), $this->delimiter);
+                }
+                return $this->validateLine();
+            }
+        }
+        else {
+            return false;
+        }
+    }
+
+    /**
+     * Get the line of the next entry - check that it has the correct number of 
+     * columns
+     *
+     * @return The lines (unfolded) of the next entry
+     */
+    private function validateLine() {
+        $line = str_getcsv(trim($this->_currentLine), $this->delimiter);
+
+        if (count($line) != count($this->_headers)) {
+            system_message(array(
+                'title'=>sprintf(_('UDI import invalid record: %s'), $this->_currentLineNumber),
+                'body'=>sprintf(_('You must specify a valid file for upload, with all records having the same number and type of column as specified by the column headings. <br/> Record no. %s is: %s <br/> Header is: %s'), $this->_currentLineNumber, $this->_currentLine, implode(', ', $this->_header_line)),
+                'type'=>'error'),
+            sprintf('cmd.php?cmd=udi_form&udi_nav=%s&server_id=%s',
+            get_request('udi_nav','REQUEST'),
+            get_request('server_id','REQUEST')));
+            die();
+        }
+
+        return $line;
+    }
+
+    /**
+     * Get the line of the next entry
+     *
+     * @return The lines (unfolded) of the next entry
+     */
+    private function advanceNextLine() {
+
+        $this->_currentLineNumber++;
+        $this->_currentLine = array_shift($this->input);
+    }
+
+    /**
+     * Check if it's a comment line.
+     *
+     * @return boolean true if it's a comment line,false otherwise
+     */
+    private function isCommentLine() {
+        return substr(trim($this->_currentLine),0,1) == '#' ? true : false;
+    }
+
+    /**
+     * Check if is the current line is a blank line.
+     *
+     * @return boolean if it is a blank line,false otherwise.
+     */
+    private function isBlankLine() {
+        $blank = trim($this->_currentLine);
+        return empty($blank) ? true : false;
+    }
+
+    /**
+     * Returns true if we reached the end of the input.
+     *
+     * @return boolean true if it's the end of file, false otherwise.
+     */
+    public function eof() {
+        return count($this->input) > 0 ? false : true;
+    }
+
+    /**
+     * Store errors for later display
+     * 
+     * @param String $msg message to display
+     * @param String $data to attach to error
+     */
+    private function error($msg,$data) {
+        $this->error['message'] = sprintf('%s [%s]',$msg,$this->template ? $this->template->getDN() : '');
+        $this->error['line'] = $this->_currentLineNumber;
+        $this->error['data'] = $data;
+        $this->error['changetype'] = $this->template ? $this->template->getType() : 'Not set';
+
+        return false;
+    }
+}
+
+/**
+ * CSV Import file processor
+ * 
+ * validation, create, update, delete routines for user accounts
+ * 
+ * @author piers
+ *
+ * @package phpLDAPadmin
+ * @subpackage UDIProcessor
+ *
+ */
+class Processor {
+    // Server that the export is linked to
+    private $server;
+
+    // The actual import data
+    private $data;
+
+    // Current config
+    private $cfg;
+
+    // arrays of the different record types
+    private $to_be_deleted;
+    private $to_be_created;
+    private $to_be_updated;
+
+    // user groups derived from config
+    private $total_groups;
+    private $group_mappings;
+    
+    /**
+     * Constructor
+     * build connection to environment and LDAP directory
+     * pull in the UDI config
+     * 
+     * @param object $server LDAP directory
+     * @param array $data CSV file contents
+     */
+    public function __construct($server, $data) {
+        $this->server = $server;
+        $this->data = $data;
+        $this->udiconfig = new UdiConfig($this->server);
+        $this->cfg = $this->udiconfig->getConfig();
+    }
+
+
+    /**
+     * Validates the import against the user directory
+     *
+     * @return boolean true if file validates.
+     */
+    public function validate() {
+        global $request;
+        /*
+         * Validation
+         *
+         * 3 main cases:
+         *
+         * user exists in file but not in directory
+         *      - create account
+         *
+         * user exists in directory - but not in file
+         *      - delete/deactivate account
+         *
+         * user exists in directory and file
+         *      - update account
+         *
+         * When creating or updating an account - ensure
+         * that the account has all the correct objectClasses
+         * This may require some to be added
+         * This also requires checking that the MUST attributes either
+         * exist already, or will be added
+         *
+         * user existance is checked by using the match_from / match_to
+         *
+         * New accounts created into a specified bucket - must be one
+         * of the search bases
+         * 
+         * Validation stashes the sets of creates/updates/deletes ready for the 
+         * next phase of processing
+         *
+         */
+        
+        // is the UDI enabled
+        if ($this->cfg['enabled'] != 'checked') {
+            $request['page']->error(_('Processing is not enabled - check configuration'), _('processing'));
+            return false;
+        }
+
+        // first, find a list of all the existing user accounts
+        $accounts = array();
+        $bases = explode(';', $this->cfg['search_bases']);
+        
+        // target identifier - this is the attribute in the directory to match accounts on
+        $id = strtolower($this->cfg['dir_match_on']);
+        
+        // run through all the search bases
+        foreach ($bases as $base) {
+            $query = $this->server->query(array('base' => $base, 'filter' => "($id=*)"), 'login');
+            if (empty($query)) {
+                // base does not exist
+                $request['page']->warning(_('No user accounts found in search base: ').$base, _('processing'));
+            }
+            else {
+                // run through each discovered account
+                foreach ($query as $user) {
+                    $uid = $user[$id][0];
+                    // uid MUST NOT already exist
+                    if (isset($accounts[$uid])) {
+                        $request['page']->error(_('Duplicate user accounts found: ').
+                        $user['dn'].
+                        _(' clashes with: ').
+                        $accounts[$uid]['dn'].
+                        _(' on matching: ').
+                        $id.'/'.$uid, _('processing'));
+                        return false;
+                    }
+                    $accounts[$uid] = $user;
+                }
+            }
+        }
+
+       // get mapping configuration - map input file fields to LDAP attributes
+        $cfg_mappings = $this->udiconfig->getMappings();
+        $mappings = array();
+        foreach ($cfg_mappings as $mapping) {
+            $mappings[$mapping['source']] = $mapping['targets'];
+        }        
+        $field_mappings = array();
+        $total_fields = array();
+        
+        // check for duplication of fields in header line
+        foreach ($this->data['header'] as $header) {
+            // skip the group membership column
+            if (strtolower($header) == 'mlepgroupmembership') {
+                continue;
+            }
+            // dont worry about the ones covered by mappings
+            if (isset($mappings[$header])) {
+                continue;
+            }
+            if (isset($total_fields[strtolower($header)])) {
+                $request['page']->error(_('Duplicate target field in header: ').$header, _('processing'));
+                return false;
+            }
+            $total_fields[strtolower($header)] = $header;
+        }
+        
+        // check for compounded duplication from the mapping
+        foreach ($cfg_mappings as $mapping) {
+            foreach($mapping['targets'] as $field) {
+                if (isset($total_fields[strtolower($field)])) {
+                    $request['page']->error(_('Duplicate target field in mapping source: ').$mapping['source']._(' to target: ').$field, _('processing'));
+                    return false;
+                }
+                $total_fields[strtolower($field)] = $field;
+            }
+        }
+        
+        // all target fields must exist in the schema
+        $total_attrs = array();
+        $classes = $this->udiconfig->getObjectClasses();
+        $socs = $this->server->SchemaObjectClasses();
+        foreach ($classes as $class) {
+            foreach ($socs[strtolower($class)]->getMustAttrs(true) as $attr) {
+                $total_attrs[$attr->getName()] = true;
+            }
+            foreach ($socs[strtolower($class)]->getMayAttrs(true) as $attr) {
+                $total_attrs[$attr->getName()] = false;
+            }
+        }
+        foreach ($total_fields as $field) {
+            if (!isset($total_attrs[strtolower($field)])) {
+                $request['page']->error(_('Unknown target attribute name (check the column headings, and mapping): ').$field, _('processing'));
+                return false;
+            }
+        }
+
+        // make sure that all mandatory attributes from the required object classes
+        // are present
+        foreach ($total_attrs as $attr => $mandatory) {
+            // skip some core attributes
+            if ($attr == 'objectclass' || $attr == 'cn') {
+                continue;
+            }
+            if ($mandatory && !isset($total_fields[$attr])) {
+                $request['page']->error(_('Mandatory LDAP attribute missing from import: ').$attr, _('processing'));
+                return false;
+            }
+        }
+        
+        // reorder the list of import users based on their match_from
+        $imports = array();
+        $iuid = $this->cfg['import_match_on'];
+        $row_cnt = 0;
+        foreach ($this->data['contents'] as $row) {
+            $row_cnt++;
+            $cell = 0;
+            $user = array();
+            // check for MUST mapped values
+            foreach ($this->data['header'] as $header) {
+                $user[$header] = $row[$cell];
+                if (strtolower($header) == 'mlepgroupmembership') {
+                    $cell++;
+                    continue;
+                }
+                if (isset($field_mappings[$header])) {
+                    foreach ($field_mappings[$header] as $target) {
+                        if ($total_attrs[strtolower($target)] && empty($user[$header])) {
+                            return $request['page']->error(_('Mandatory value: ').$header._(' (maps to: ').$target.')'._(' is empty in row: ').$row_cnt, _('processing'));
+                        }
+                    }
+                }
+                else {
+                    if ($total_attrs[strtolower($header)] && empty($user[$header])) {
+                        return $request['page']->error(_('Mandatory value: ').$header._(' (maps to: ').$header.')'._(' is empty in row: ').$row_cnt, _('processing'));
+                    }
+                }
+                $cell++;
+            }
+            $imports[$user[$iuid]] = $user;
+        }
+
+        // find the missing accounts in the directory
+        $this->to_be_deleted = array_diff_key($accounts, $imports);
+        
+        // find the new accounts in the file
+        $this->to_be_created = array_diff_key($imports, $accounts);
+
+        // find the accounts to be updated
+        $to_be_updated = array_intersect_key($accounts, $imports);
+        $this->to_be_updated = array();  
+        foreach ($to_be_updated as $id => $account) {
+            $data = $imports[$id];
+            $data['dn'] = $account['dn'];
+            $this->to_be_updated[$id] = $data;
+        }
+        
+        // Hunt down existing uid/mlepUsernames to avoid duplicates
+        $duplicates = array();
+        foreach ($this->to_be_created as $account) {
+            $uid = (isset($account['mlepUsername']) ? $account['mlepUsername'] : false);
+            if (isset($duplicates[$uid])) {
+                $request['page']->error(_('User account is duplicate in import file: '), _('processing'));
+                return false;
+            }
+            $duplicates[$uid] = $uid;
+             
+            // make sure that an account doesn't allready exist in the directory
+            // with this Id 
+            if ($uid) {
+                // check for mlepUsername
+                $query = $this->server->query(array('base' => $this->udiconfig->getBaseDN(), 'filter' => "(mlepUsername=$uid)", 'attrs' => array('dn')), 'login');
+                if (!empty($query)) {
+                    // base does not exist
+                    $request['page']->warning(_('User account is duplicate in directory for mlepUsername: ').$uid, _('processing'));
+                }
+                // check for uid
+                $query = $this->server->query(array('base' => $this->udiconfig->getBaseDN(), 'filter' => "(uid=$uid)", 'attrs' => array('dn')), 'login');
+                if (!empty($query)) {
+                    // base does not exist
+                    $request['page']->warning(_('User account is duplicate in directory for uid: ').$uid, _('processing'));
+                }
+
+                // check for mlepUsername in the deletions directory
+                if (!empty($this->cfg['move_to'])) {
+                    $query = $this->server->query(array('base' => $this->cfg['move_to'], 'filter' => "(mlepUsername=$uid)", 'attrs' => array('dn')), 'login');
+                    if (!empty($query)) {
+                        // base does not exist
+                        $request['page']->warning(_('User account is duplicate in deletion (').$this->cfg['move_to']._(') directory for mlepUsername: ').$uid, _('processing'));
+                    }
+                }
+            }
+        }
+        
+        $request['page']->info(_('Calculated: ').count($this->to_be_created)._(' creates'), _('processing'));
+        $request['page']->info(_('Calculated: ').count($this->to_be_updated)._(' updates'), _('processing'));
+        $request['page']->info(_('Calculated: ').count($this->to_be_deleted)._(' deletes'), _('processing'));
+        return true;
+    }
+
+
+    
+    /**
+     * Process the entire file according to the config
+     * 
+     * @return bool true on success
+     */
+    public function import() {
+        
+        $result = true;
+        if ($this->cfg['enabled'] != 'checked') {
+            $request['page']->error(_('Processing is not enabled - check configuration'), _('processing'));
+            return false;
+        }
+        
+        if ($this->cfg['ignore_creates'] != 'checked') {
+            $result = $this->processCreates();
+        }
+
+        if ($result && $this->cfg['ignore_updates'] != 'checked') {
+            $result = $this->processUpdates();
+        }
+
+        if ($result && $this->cfg['ignore_deletes'] != 'checked') {
+            $result = $this->processDeletes();
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * Process user create records
+     * cycle through each record mapping out the user attributes for creation
+     * remove (as a caution) the user from configured user groups, and then readd them
+     * to the specified ones on the group mapping
+     * 
+     * @return bool true on success
+     */
+    public function processCreates() {
+        global $request;
+
+        // get mapping configuration
+        $cfg_mappings = $this->udiconfig->getMappings();
+        $cfg_group_mappings = $this->udiconfig->getGroupMappings();
+        $group_mappings = array();
+        $total_groups = array();
+        foreach ($cfg_group_mappings as $mapping) {
+            $group_mappings[$mapping['source']] = $mapping['targets'];
+            foreach ($mapping['targets'] as $target) {
+                $total_groups[$target] = $target;
+            }
+        }
+        $field_mappings = array();
+        foreach ($cfg_mappings as $mapping) {
+            $field_mappings[$mapping['source']] = $mapping['targets'];
+        }
+
+        // create the missing
+        foreach ($this->to_be_created as $account) {
+
+            // inject object classes
+            $account['objectclass'] = $this->udiconfig->getObjectClasses();
+
+            // start building up the creation template
+            $template = new Template($this->server->getIndex(),null,null,'add');
+            
+            $cn = $account['mlepFirstName'].' '.$account['mlepLastName'];
+            $dn = 'cn='.$cn.','.$this->cfg['create_in'];
+            $rdn = get_rdn($dn);
+            $container = $this->server->getContainer($dn);
+            $template->setContainer($container);
+            $template->accept();
+
+            $group_membership = false;
+            // need to prevent doubling up of attribute values
+            $total_fields = array();
+            foreach ($account as $attr => $cluster) {
+                // skip the mlepgroupmembership
+                if (strtolower($attr) == 'mlepgroupmembership') {
+                    $group_membership = $cluster;
+                    continue;
+                }
+                // map attributes here
+                if (isset($field_mappings[$attr])) {
+                    foreach ($field_mappings[$attr] as $target) {
+                        if (isset($total_fields[$target])) {
+                            continue;
+                        }
+                        $total_fields[$target] = $target;
+                        $this->addAttribute($template, $target, $cluster);
+                    }
+                }
+                else {
+                    if (!isset($total_fields[$attr])) {
+                        $total_fields[$attr] = $attr;
+                        $this->addAttribute($template, $attr, $cluster);
+                    }
+                }
+            }
+            $template->setRDNAttributes($rdn);
+            // set the CN
+            $result = $this->server->add($dn, $template->getLDAPadd());
+            if (!$result) {
+                $request['page']->error(_('Could not create: ').$dn, _('processing'));
+                return $result;
+            }
+            else {
+                // need to set the group membership
+                // need to find all existing groups, and then delete those memberships first
+                $uid = (isset($account['mlepUsername']) ? $account['mlepUsername'] : false);
+                if (!$this->replaceGroupMembership($uid, $group_membership)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Add a DN to the internal PLA tree cache - must be done prior to 
+     * manipulation
+     * 
+     * @param String $dn DN of tree node
+     */
+    private function addTreeItem($dn) {
+        $tree = get_cached_item($this->server->getIndex(),'tree');
+        if (!$tree->getEntry($dn)) {
+            $tree->addEntry($dn);
+        }
+    }
+   
+    
+    /**
+     * Process user update records
+     * 
+     * @return bool true on success
+     */
+    public function processUpdates() {
+        global $request;
+
+        // get mapping configuration
+        $cfg_mappings = $this->udiconfig->getMappings();
+
+        $field_mappings = array();
+        foreach ($cfg_mappings as $mapping) {
+            $field_mappings[$mapping['source']] = $mapping['targets'];
+        }
+
+        // process the updates
+        foreach ($this->to_be_updated as $account) {
+
+            // start building up the creation template
+            $template = new Template($this->server->getIndex(),null,null,'modify');
+            
+            $dn = $account['dn'];
+            $rdn = get_rdn($dn);
+            $template->setDN($dn);
+            $template->accept();
+
+            $group_membership = false;
+            foreach ($account as $attr => $value) {
+                // ignore the dn
+                if ($attr == 'dn') {
+                    continue;
+                }
+                // skip the mlepgroupmembership
+                if (strtolower($attr) == 'mlepgroupmembership') {
+                    $group_membership = $value;
+                    continue;
+                }
+                
+                // map attributes here
+                if (isset($field_mappings[$attr])) {
+                    foreach ($field_mappings[$attr] as $target) {
+                        $this->modifyAttribute($template, $target, $value);
+                    }
+                }
+                else {
+                    $this->modifyAttribute($template, $attr, $value);
+                }
+            }
+            // make sure item exists in the tree
+            $this->addTreeItem($dn);
+            $result = $this->server->modify($dn, $template->getLDAPmodify());
+            if (!$result) {
+                $request['page']->error(_('Could not create: ').$dn, _('processing'));
+                return $result;
+            }
+            else {
+                // need to set the group membership
+                // need to find all existing groups, and then delete those memberships first
+                $uid = (isset($account['mlepUsername']) ? $account['mlepUsername'] : false);
+                if (!$this->replaceGroupMembership($uid, $group_membership)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Replace a users group membership 
+     * 
+     * @param String $uid userid relative to the configured user attribute 
+     * @param String $group_membership as per mlepGroupMembership export schema definition
+     * 
+     * @return bool true on success
+     */
+    private function replaceGroupMembership($uid, $group_membership) {
+        
+        // must have a user id
+        if (!$uid) {
+            return false;
+        }
+        
+        // cache the groups to deal with
+        if (!$this->total_groups) {
+            $cfg_group_mappings = $this->udiconfig->getGroupMappings();
+            $this->total_groups = array();
+            $this->group_mappings = array();
+            foreach ($cfg_group_mappings as $mapping) {
+                $this->group_mappings[$mapping['source']] = $mapping['targets'];
+                foreach ($mapping['targets'] as $target) {
+                    $this->total_groups[$target] = $target;
+                }
+            }
+        }
+        
+        // hunt for existing group membership and remove
+        $group_attr = $this->cfg['group_attr'];
+        foreach ($this->total_groups as $group) {
+            // check and delete from group
+            $query = $this->server->query(array('base' => $group, 'filter' => "($group_attr=$uid)"), 'login');
+            if (!empty($query)) {
+                // user exists in group
+                $query = $this->server->query(array('base' => $group), 'login');
+                //if (empty($query)) {
+                //    // group does not exist
+                //    return $request['page']->error(_('Membership group does not exist: ').$group, _('processing'));
+                //}
+                // remove user from membership attribute and then save again
+                $template = $this->createModifyTemplate($group);
+                $existing = array_shift($query);
+                $attribute = $template->getAttribute(strtolower($group_attr));
+                $values = $existing[strtolower($group_attr)];
+                $values = array_merge(preg_grep('/^'.$uid.'$/', $values, PREG_GREP_INVERT), array());
+                $attribute->setValue($values);
+                // Perform the modification
+                $this->addTreeItem($group);
+                $result = $this->server->modify($group, $template->getLDAPmodify());
+                if (!$result) {
+                    return $request['page']->error(_('Could not remove user from group: ').$uid.'/'.$group, _('processing'));
+                }
+            }
+        }
+
+        // then re add memberships
+        if ($group_membership) {
+            $groups = explode('#', $group_membership);
+            foreach ($groups as $group) {
+                if (isset($this->group_mappings[$group])) {
+                    foreach($this->group_mappings[$group] as $mapping) {
+                        // insert mlepUsername in to the group from here
+                        $template = $this->createModifyTemplate($mapping);
+                        $query = $this->server->query(array('base' => $mapping), 'login');
+                        if (empty($query)) {
+                            // group does not exist
+                            return $request['page']->error(_('Membership group does not exist: ').$mapping, _('processing'));
+                        }
+
+                        // add back all the existing attribute values
+                        $existing = array_shift($query);
+                        if (isset($existing[strtolower($group_attr)])) {
+                            $values = $existing[strtolower($group_attr)];
+                        }
+                        else {
+                            $values = array();
+                        }
+                        $values[] = $uid;
+                        $this->modifyAttribute($template, $group_attr, $values);
+                        # Perform the modification
+                        $this->addTreeItem($mapping);
+                        $result = $this->server->modify($mapping,$template->getLDAPmodify());
+                        if (!$result) {
+                            return $request['page']->error(_('Could not add user to group: ').$uid.'/'.$mapping, _('processing'));
+                        }
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+   
+    
+    /**
+     * Process user delete records
+     * 
+     * @return bool true on success
+     */
+    public function processDeletes() {
+        global $request;
+        
+        // process the deletes, which are really moves
+        foreach ($this->to_be_deleted as $account) {
+
+            // start building up the creation template
+            $template = new Template($this->server->getIndex(),null,null,'modrdn');
+            $dn = $account['dn'];
+            $rdn = get_rdn($dn);
+            $template->setDN($dn);
+            $template->accept();
+            $attrs = array();
+            $attrs['newrdn'] = $rdn;
+            $attrs['deleteoldrdn'] = '1';
+            $attrs['newsuperior'] = $this->cfg['move_to'];
+            $template->modrdn = $attrs;
+
+            // DN must exist
+            if (! $this->server->dnExists($dn)) {
+                return $request['page']->error(sprintf('%s %s',_('DN does not exist'),$dn), _('processing'));
+            }
+            
+            // might not be able to rename branches
+            if (! $this->server->isBranchRenameEnabled()) {
+                // We search all children, not only the visible children in the tree
+                $children = $this->server->getContainerContents($dn,null,0,'(objectClass=*)',LDAP_DEREF_NEVER);
+            
+                if (count($children) > 0) {
+                    return $request['page']->error(_('You cannot rename an entry which has children entries (eg, the rename operation is not allowed on non-leaf entries)'), _('processing'));
+                }
+           }
+
+           // make sure that this rename wont attempt an overwrite
+           $query = $this->server->query(array('base' => $rdn.','.$this->cfg['move_to']), 'login');
+            if (!empty($query)) {
+                // group does not exist
+                $request['page']->warning(_('Target DN allready exists for deactivate of : ').$dn, _('processing'));
+                continue;
+            }
+            
+            // make sure that the existing dn is in the tree
+            $this->addTreeItem($dn);
+            $result = $this->server->rename($dn, $template->modrdn['newrdn'], $template->modrdn['newsuperior'], $template->modrdn['deleteoldrdn']);
+            if (!$result) {
+                $request['page']->error(_('Could not delete (rename): ').$dn, _('processing'));
+                return $result;
+            }
+        }
+        
+        return true;
+    }
+        
+    /**
+     * create a modify template
+     * 
+     * @param String $dn DN of the node to be modified
+     * 
+     * @return object Template object
+     */    
+    private function createModifyTemplate($dn) {
+        $template = new Template($this->server->getIndex(),null,null,'modify');
+        $rdn = get_rdn($dn);
+        $container = $this->server->getContainer($dn);
+        $template->setDN($dn);
+        $template->accept();
+        return $template;
+    }
+
+    /**
+     * modify an attribute of a DN defined by a template
+     * 
+     * @param object $template Template of the DN
+     * @param String $attr name of the attribute to be modified
+     * @param String/Array $value new value of the attribute
+     */
+    private function modifyAttribute($template, $attr, $value) {
+        // skip the DN attribute
+        if ($attr == 'dn') {
+            return;
+        }
+        if (!is_array($value)) {
+            $value = array($value);
+        }
+        if (is_null($attribute = $template->getAttribute(strtolower($attr)))) {
+            $attribute = $template->addAttribute(strtolower($attr),array('values'=> $value));
+            $attribute->justModified();
+        }
+        else {
+            $attribute->clearValue();
+            $attribute->setValue($value);
+        }
+    }
+    
+    
+    /**
+     * Add a new attribute to a DN Template
+     * 
+     * @param object $template Template of the DN being created
+     * @param String $attr attribute name
+     * @param String/Array $cluster value of the attribute
+     */
+    private function addAttribute($template, $attr, $cluster) {
+        // skip the DN attribute
+        if ($attr == 'dn') {
+            return;
+        }
+
+        // skip empty attributes
+        if (empty($cluster)) {
+            return;
+        }
+
+        if (!is_array($cluster)) {
+            $cluster = array($cluster);
+        }
+        foreach ($cluster as $value) {
+            if (is_null($attribute = $template->getAttribute($attr))) {
+                $attribute = $template->addAttribute($attr,array('values'=>array($value)));
+                $attribute->justModified();
+            }
+            else {
+                if ($attribute->hasBeenModified()) {
+                    $attribute->addValue($value);
+                }
+                else {
+                    $attribute->setValue(array($value));
+                }
+            }
+        }
+    }
 }
 ?>
