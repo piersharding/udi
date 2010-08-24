@@ -35,6 +35,25 @@ case 'delete':
                 }
             }
             break;
+            
+        case 'container_mapping':
+            $container_mapping = get_request('container_mapping');
+            $mappings = $udiconfig->getContainerMappings();
+            if (!empty($container_mapping) && !empty($mappings)) {
+                $pos = 0;
+                foreach ($mappings as $map) {
+                    if ($map['source'] == $container_mapping) {
+                        // delete this group mapping
+                        array_splice($mappings, $pos, 1);
+                        $cfg = $udiconfig->updateContainerMappings($mappings);
+                        $cfg = $udiconfig->updateConfig();
+                        $request['page']->info(_('Container mapping deleted: ').$container_mapping);
+                        break;
+                    }
+                    $pos += 1;
+                }
+            }
+            break;
     }
     break;
 
@@ -63,10 +82,13 @@ case 'restore':
 default:
     // get the config values posted
     $update = true;
-    foreach (array('filepath', 'udi_version', 'enabled', 'ignore_deletes', 'ignore_creates', 'ignore_updates', 'move_on_delete', 'move_to', 'dir_match_on', 'import_match_on') as $config) {
+    foreach (array('filepath', 'udi_version', 'enabled', 'ignore_deletes', 
+                   'ignore_creates', 'ignore_updates', 'move_on_delete', 
+                   'move_to', 'dir_match_on', 'import_match_on', 'dn_attribute') as $config) {
         $cfg[$config] = get_request($config);
         // enabled is a checkbox
-        if ($config == 'enabled' || $config == 'ignore_deletes' || $config == 'move_on_delete' || $config == 'ignore_creates' || $config == 'ignore_updates') {
+        if ($config == 'enabled' || $config == 'ignore_deletes' || $config == 'move_on_delete' || 
+            $config == 'ignore_creates' || $config == 'ignore_updates') {
             $udiconfig->setConfigCheckBox($config, $cfg[$config]);
         }
         else {
@@ -111,7 +133,34 @@ default:
         $classes[]= $class;
     }
     $udiconfig->setConfig('objectclasses', implode(';', $classes));
+
     
+    $no_mappings = (int)get_request('no_of_container_mappings');
+    $cfg_container_mappings = array();
+    // do we have any mappings
+    if ($no_mappings > 0) {
+        // cycle through each source mapping
+        foreach (range(1, $no_mappings) as $this_mapping) {
+            $map = get_request('container_mapping_'.$this_mapping);
+            if (empty($map)) {
+                continue;
+            }
+            $target = get_request('container_mapping_'.$this_mapping.'_target');
+            if (empty($target)) {
+                continue;
+            }
+            // collect this source
+            $cfg_container_mappings []= array('source' => $map, 'target' => $target);
+        }
+    }
+    // did we add a new mapping source
+    $source = get_request('new_container_mapping');
+    if (!empty($source)) {
+        $cfg_container_mappings []= array('source' => $source, 'target' => '');
+    }
+    
+    // finally update all the config
+    $cfg = $udiconfig->updateContainerMappings($cfg_container_mappings);
     
     // commit the config changes
     if ($udiconfig->validate()) {

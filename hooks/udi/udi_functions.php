@@ -53,7 +53,7 @@ function check_objectclass($class) {
     // objectClass does not exist
     global $app, $udiconfig, $request;
 
-    $socs = $app['server']->SchemaObjectClasses();
+    $socs = $app['server']->SchemaObjectClasses('login');
     if (!isset($socs[strtolower($class)])) {
         $request['page']->error(_('objectClass does not exist: ').$class, 'configuration');
         return false;
@@ -78,6 +78,93 @@ function udi_clean_dn($dn) {
     }
     return $value;
 }
+
+
+/**
+ * UDI version of run hook - the difference is that it collects the results and passes them back
+ * 
+ * Runs procedures attached to a hook.
+ *
+ * @param hook_name Name of hook to run.
+ * @param args Array of optional arguments set by phpldapadmin. It is normally in a form known by call_user_func_array() :
+ *
+ * <pre>[ 'server_id' => 0,
+ * 'dn' => 'uid=epoussa,ou=tech,o=corp,o=fr' ]</pre>
+ *
+ * @return true if no hooks
+ *         false if there was a failure
+ *         if all hooks run OK then return an array of results
+ */
+function udi_run_hook($hook_name,$args,$instance=false) {
+    if (DEBUG_ENABLED && (($fargs=func_get_args())||$fargs='NOARGS'))
+        debug_log('Entered (%%)',257,0,__FILE__,__LINE__,__METHOD__,$fargs);
+
+    $hooks = isset($_SESSION[APPCONFIG]) ? $_SESSION[APPCONFIG]->hooks : array();
+
+    if (! count($hooks) || ! array_key_exists($hook_name,$hooks)) {
+        if (DEBUG_ENABLED)
+            debug_log('Returning, HOOK not defined (%s)',257,0,__FILE__,__LINE__,__METHOD__,$hook_name);
+
+        return true;
+    }
+
+    $rollbacks = array();
+    reset($hooks[$hook_name]);
+
+    /* Execution of procedures attached is done using a numeric order
+     * since all procedures have been attached to the hook with a
+     * numerical weight. */
+    $all_results = array();
+    while (list($key,$hook) = each($hooks[$hook_name])) {
+        if ($instance && $instance != $hook['hook_function']) {
+            continue;
+        }
+//        var_dump($key);
+//        var_dump($hook);
+//        exit(0);
+        if (DEBUG_ENABLED)
+            debug_log('Calling HOOK Function (%s)(%s)',257,0,__FILE__,__LINE__,__METHOD__,
+                $hook['hook_function'],$args);
+
+        array_push($rollbacks,$hook['rollback_function']);
+
+        $result = call_user_func_array($hook['hook_function'],$args);
+        if (DEBUG_ENABLED)
+            debug_log('Called HOOK Function (%s)',257,0,__FILE__,__LINE__,__METHOD__,
+                $hook['hook_function']);
+
+        /* If a procedure fails (identified by a false return), its optional rollback is executed with
+         * the same arguments. After that, all rollbacks from
+         * previously executed procedures are executed in the reverse
+         * order. */
+        if (! is_null($result) && $result == false) {
+            if (DEBUG_ENABLED)
+                debug_log('HOOK Function [%s] return (%s)',257,0,__FILE__,__LINE__,__METHOD__,
+                    $hook['hook_function'],$result);
+
+            while ($rollbacks) {
+                $rollback = array_pop($rollbacks);
+
+                if ($rollback != false) {
+                    if (DEBUG_ENABLED)
+                        debug_log('HOOK Function Rollback (%s)',257,0,__FILE__,__LINE__,__METHOD__,
+                            $rollback);
+
+                    call_user_func_array($rollback,$args);
+                }
+            }
+
+            return false;
+        }
+        else {
+            // collect results
+            $all_results[]= $result;
+        }
+    }
+
+    return $all_results;
+}
+
 
 
 
@@ -276,10 +363,10 @@ class ImportCSV extends Import {
         }
 
         // mandatory headers must exist
-        $socs = $app['server']->SchemaObjectClasses();
+        $socs = $app['server']->SchemaObjectClasses('login');
         $mlepPerson = $socs['mlepperson'];
         $must = $mlepPerson->getMustAttrs();
-        $dmo_attrs = $app['server']->SchemaAttributes();
+        $dmo_attrs = $app['server']->SchemaAttributes('login');
         $dmo_attrs = array_merge(array("mlepgroupmembership" => new ObjectClass_ObjectClassAttribute("mlepgroupmembership", "mlepGroupMembership")), $dmo_attrs);
         //        $this->_valid_attrs = $dmo_attrs;
         $headers = array();
@@ -638,7 +725,7 @@ class Processor {
         // all target fields must exist in the schema
         $total_attrs = array();
         $classes = $this->udiconfig->getObjectClasses();
-        $socs = $this->server->SchemaObjectClasses();
+        $socs = $this->server->SchemaObjectClasses('login');
         foreach ($classes as $class) {
             foreach ($socs[strtolower($class)]->getMustAttrs(true) as $attr) {
                 $total_attrs[$attr->getName()] = true;
@@ -684,13 +771,15 @@ class Processor {
                 }
                 if (isset($field_mappings[$header])) {
                     foreach ($field_mappings[$header] as $target) {
-                        if ($total_attrs[strtolower($target)] && empty($user[$header])) {
+                        $value = trim($user[$header]);
+                        if ($total_attrs[strtolower($target)] && empty($value)) {
                             return $request['page']->error(_('Mandatory value: ').$header._(' (maps to: ').$target.')'._(' is empty in row: ').$row_cnt, _('processing'));
                         }
                     }
                 }
                 else {
-                    if ($total_attrs[strtolower($header)] && empty($user[$header])) {
+                    $value = trim($user[$header]);
+                    if ($total_attrs[strtolower($header)] && empty($value)) {
                         return $request['page']->error(_('Mandatory value: ').$header._(' (maps to: ').$header.')'._(' is empty in row: ').$row_cnt, _('processing'));
                     }
                 }
@@ -801,8 +890,13 @@ class Processor {
         // get mapping configuration
         $cfg_mappings = $this->udiconfig->getMappings();
         $cfg_group_mappings = $this->udiconfig->getGroupMappings();
+        $cfg_container_mappings = $this->udiconfig->getContainerMappings();
+        $container_mappings = array();
         $group_mappings = array();
         $total_groups = array();
+        foreach ($cfg_container_mappings as $mapping) {
+            $container_mappings[$mapping['source']] = $mapping['target'];
+        }
         foreach ($cfg_group_mappings as $mapping) {
             $group_mappings[$mapping['source']] = $mapping['targets'];
             foreach ($mapping['targets'] as $target) {
@@ -823,42 +917,116 @@ class Processor {
             // start building up the creation template
             $template = new Template($this->server->getIndex(),null,null,'add');
             
-            $cn = $account['mlepFirstName'].' '.$account['mlepLastName'];
-            $dn = 'cn='.$cn.','.$this->cfg['create_in'];
+            // sort out the common name
+            $cn = '';
+            if (isset($acount['cn'])) {
+                $cn = $acount['cn'];
+            }
+            else {
+                $cn = $account['mlepFirstName'].' '.$account['mlepLastName'];
+            }
+            
+            // sort out uid
+            $uid = '';
+            if (isset($acount['uid'])) {
+                $uid = $acount['uid'];
+            }
+            else {
+                $uid = $account['mlepUsername'];
+            }
+            
+            // store the mlepGroupMembership
+            $group_membership = false;
+            if (isset($account['mlepgroupmembership'])) {
+                $group_membership = $account['mlepgroupmembership'];
+            }
+            else if (isset($account['mlepGroupMembership'])) {
+                $group_membership = $account['mlepGroupMembership'];
+            }
+
+            // determine the target container
+            $user_container = $this->cfg['create_in'];
+            if ($group_membership) {
+                $groups = explode('#', $group_membership);
+                foreach ($groups as $group) {
+                    if (isset($container_mappings[$group])) {
+                        $user_container = $container_mappings[$group];
+                        break;
+                    }
+                }
+            }
+            
+            // sort out what the dn attribute is
+            $dn = '';
+            switch ($this->cfg['dn_attribute']) {
+                case 'cn':
+                    $dn = 'cn='.$cn.','.$user_container;
+                    break;
+                case 'uid':
+                    $dn = 'uid='.$uid.','.$user_container;
+                    break;
+            }
             $rdn = get_rdn($dn);
             $container = $this->server->getContainer($dn);
             $template->setContainer($container);
             $template->accept();
+            
+            // run hooks
+            $result = udi_run_hook('userid_algorithm',array($this->server, $this->udiconfig, $account), $this->cfg['userid_algo']);
+            if (is_array($result)) {
+                $result = array_pop($result);
+                if (is_array($result)) {
+                    $account = $result;
+                }
+            }
+//            var_dump($account);
 
-            $group_membership = false;
             // need to prevent doubling up of attribute values
             $total_fields = array();
-            foreach ($account as $attr => $cluster) {
+            foreach ($account as $attr => $value) {
                 // skip the mlepgroupmembership
                 if (strtolower($attr) == 'mlepgroupmembership') {
-                    $group_membership = $cluster;
                     continue;
                 }
+
+                if ($attr != 'objectclass') {
+                    $value = trim($value);
+                }
+                
+                // split the multi-value attributes
+                if (strtolower($attr) == 'mlepassociatednsn') {
+                    $value = empty($value) ? array() : explode('#', $value);
+                }
+                
                 // map attributes here
                 if (isset($field_mappings[$attr])) {
                     foreach ($field_mappings[$attr] as $target) {
+                        // dont allow doubling up
                         if (isset($total_fields[$target])) {
                             continue;
                         }
                         $total_fields[$target] = $target;
-                        $this->addAttribute($template, $target, $cluster);
+                        $this->addAttribute($template, $target, $value);
                     }
                 }
                 else {
+                    // dont allow doubling up
                     if (!isset($total_fields[$attr])) {
                         $total_fields[$attr] = $attr;
-                        $this->addAttribute($template, $attr, $cluster);
+                        $this->addAttribute($template, $attr, $value);
                     }
                 }
             }
+            // ensure the sanity fields are set
+            if (!isset($total_fields['cn'])) {
+                $this->addAttribute($template, 'cn', array($cn));
+            }
+            if (!isset($total_fields['uid'])) {
+                $this->addAttribute($template, 'uid', array($uid));
+            }
             $template->setRDNAttributes($rdn);
             // set the CN
-            $result = $this->server->add($dn, $template->getLDAPadd());
+            $result = $this->server->add($dn, $template->getLDAPadd(), 'login');
             if (!$result) {
                 $request['page']->error(_('Could not create: ').$dn, _('processing'));
                 return $result;
@@ -866,8 +1034,15 @@ class Processor {
             else {
                 // need to set the group membership
                 // need to find all existing groups, and then delete those memberships first
-                $uid = (isset($account['mlepUsername']) ? $account['mlepUsername'] : false);
-                if (!$this->replaceGroupMembership($uid, $group_membership)) {
+                $uid = '';
+                if (strtolower($this->cfg['group_attr']) == 'memberuid') {
+                    $uid = (isset($account['mlepUsername']) ? $account['mlepUsername'] : false);
+                }
+                else {
+                    // it must a member style DN group
+                    $uid = $dn; 
+                }
+                if (!$this->replaceGroupMembership($uid, $group_membership, $dn)) {
                     return false;
                 }
             }
@@ -899,6 +1074,9 @@ class Processor {
 
         // get mapping configuration
         $cfg_mappings = $this->udiconfig->getMappings();
+        
+        // inject object classes
+        $objectclass = $this->udiconfig->getObjectClasses();        
 
         $field_mappings = array();
         foreach ($cfg_mappings as $mapping) {
@@ -908,14 +1086,26 @@ class Processor {
         // process the updates
         foreach ($this->to_be_updated as $account) {
 
-            // start building up the creation template
+            $dn = $account['dn'];
+            
+            // find the existing one
+            $query = $this->server->query(array('base' => $dn), 'login');
+            $existing_account = array_shift($query);
+            $user_total_classes = array_unique(array_merge($existing_account['objectclass'], $objectclass));
+            
+            // start building up the modification template
             $template = new Template($this->server->getIndex(),null,null,'modify');
             
-            $dn = $account['dn'];
             $rdn = get_rdn($dn);
             $template->setDN($dn);
             $template->accept();
 
+            // check object classes
+            if (count($existing_account['objectclass']) < $user_total_classes) {
+                // update user object classes
+                $this->modifyAttribute($template, 'objectclass', $user_total_classes);
+            }
+            
             $group_membership = false;
             foreach ($account as $attr => $value) {
                 // ignore the dn
@@ -927,20 +1117,31 @@ class Processor {
                     $group_membership = $value;
                     continue;
                 }
+                                
+                $value = trim($value);
+                
+                // split the multi-value attributes
+                if (strtolower($attr) == 'mlepassociatednsn') {
+                    $value = empty($value) ? array() : explode('#', $value);
+                }
                 
                 // map attributes here
                 if (isset($field_mappings[$attr])) {
                     foreach ($field_mappings[$attr] as $target) {
-                        $this->modifyAttribute($template, $target, $value);
+                        if (isset($existing_account[strtolower($attr)]) || !empty($value)) {
+                            $this->modifyAttribute($template, $target, $value);
+                        }
                     }
                 }
                 else {
-                    $this->modifyAttribute($template, $attr, $value);
+                    if (isset($existing_account[strtolower($attr)]) || !empty($value)) {
+                        $this->modifyAttribute($template, $attr, $value);
+                    }
                 }
             }
             // make sure item exists in the tree
             $this->addTreeItem($dn);
-            $result = $this->server->modify($dn, $template->getLDAPmodify());
+            $result = $this->server->modify($dn, $template->getLDAPmodify(), 'login');
             if (!$result) {
                 $request['page']->error(_('Could not create: ').$dn, _('processing'));
                 return $result;
@@ -948,8 +1149,15 @@ class Processor {
             else {
                 // need to set the group membership
                 // need to find all existing groups, and then delete those memberships first
-                $uid = (isset($account['mlepUsername']) ? $account['mlepUsername'] : false);
-                if (!$this->replaceGroupMembership($uid, $group_membership)) {
+                $uid = '';
+                if (strtolower($this->cfg['group_attr']) == 'memberuid') {
+                    $uid = (isset($account['mlepUsername']) ? $account['mlepUsername'] : false);
+                }
+                else {
+                    // it must a member style DN group
+                    $uid = $dn; 
+                }
+                if (!$this->replaceGroupMembership($uid, $group_membership, $dn)) {
                     return false;
                 }
             }
@@ -965,7 +1173,8 @@ class Processor {
      * 
      * @return bool true on success
      */
-    private function replaceGroupMembership($uid, $group_membership) {
+    private function replaceGroupMembership($uid, $group_membership, $user_dn) {
+        global $request;
         
         // must have a user id
         if (!$uid) {
@@ -993,20 +1202,16 @@ class Processor {
             if (!empty($query)) {
                 // user exists in group
                 $query = $this->server->query(array('base' => $group), 'login');
-                //if (empty($query)) {
-                //    // group does not exist
-                //    return $request['page']->error(_('Membership group does not exist: ').$group, _('processing'));
-                //}
                 // remove user from membership attribute and then save again
-                $template = $this->createModifyTemplate($group);
                 $existing = array_shift($query);
+                $template = $this->createModifyTemplate($group);
                 $attribute = $template->getAttribute(strtolower($group_attr));
                 $values = $existing[strtolower($group_attr)];
                 $values = array_merge(preg_grep('/^'.$uid.'$/', $values, PREG_GREP_INVERT), array());
                 $attribute->setValue($values);
                 // Perform the modification
                 $this->addTreeItem($group);
-                $result = $this->server->modify($group, $template->getLDAPmodify());
+                $result = $this->server->modify($group, $template->getLDAPmodify(), 'login');
                 if (!$result) {
                     return $request['page']->error(_('Could not remove user from group: ').$uid.'/'.$group, _('processing'));
                 }
@@ -1014,6 +1219,7 @@ class Processor {
         }
 
         // then re add memberships
+        $memberof_groups = array();
         if ($group_membership) {
             $groups = explode('#', $group_membership);
             foreach ($groups as $group) {
@@ -1029,28 +1235,47 @@ class Processor {
 
                         // add back all the existing attribute values
                         $existing = array_shift($query);
-                        if (isset($existing[strtolower($group_attr)])) {
-                            $values = $existing[strtolower($group_attr)];
+                        // check for memberOf, as this goes on the user - not the group container
+                        if (strtolower($group_attr) == 'memberof') {
+                            $memberof_groups []= $existing['dn'];
                         }
                         else {
-                            $values = array();
-                        }
-                        $values[] = $uid;
-                        $this->modifyAttribute($template, $group_attr, $values);
-                        # Perform the modification
-                        $this->addTreeItem($mapping);
-                        $result = $this->server->modify($mapping,$template->getLDAPmodify());
-                        if (!$result) {
-                            return $request['page']->error(_('Could not add user to group: ').$uid.'/'.$mapping, _('processing'));
+                            if (isset($existing[strtolower($group_attr)])) {
+                                $values = $existing[strtolower($group_attr)];
+                            }
+                            else {
+                                $values = array();
+                            }
+                            $values[] = $uid;
+                            $this->modifyAttribute($template, $group_attr, $values);
+                            # Perform the modification
+                            $this->addTreeItem($mapping);
+                            $result = $this->server->modify($mapping,$template->getLDAPmodify(), 'login');
+                            if (!$result) {
+                                $request['page']->error(_('Could not add user to group: ').$uid.'/'.$mapping, _('processing'));
+                            }
                         }
                     }
                 }
+            }
+            // if this is controlled by memberOf - then update the user with the list of group DNs
+            if (strtolower($group_attr) == 'memberof') {
+                $template = new Template($this->server->getIndex(),null,null,'modify');
+                $rdn = get_rdn($user_dn);
+                $template->setDN($user_dn);
+                $template->accept();
+                $this->modifyAttribute($template, $group_attr, $memberof_groups);
+                # Perform the modification
+                $result = $this->server->modify($user_dn,$template->getLDAPmodify(), 'login');
+                if (!$result) {
+                    $request['page']->error(_('Could not update user groups: ').$user_dn.'/'.implode('|', $memberof_groups), _('processing'));
+                }
+                
             }
         }
         return true;
     }
 
-   
     
     /**
      * Process user delete records
@@ -1083,7 +1308,7 @@ class Processor {
             // might not be able to rename branches
             if (! $this->server->isBranchRenameEnabled()) {
                 // We search all children, not only the visible children in the tree
-                $children = $this->server->getContainerContents($dn,null,0,'(objectClass=*)',LDAP_DEREF_NEVER);
+                $children = $this->server->getContainerContents($dn, 'login', 0, '(objectClass=*)', LDAP_DEREF_NEVER);
             
                 if (count($children) > 0) {
                     return $request['page']->error(_('You cannot rename an entry which has children entries (eg, the rename operation is not allowed on non-leaf entries)'), _('processing'));
@@ -1100,7 +1325,7 @@ class Processor {
             
             // make sure that the existing dn is in the tree
             $this->addTreeItem($dn);
-            $result = $this->server->rename($dn, $template->modrdn['newrdn'], $template->modrdn['newsuperior'], $template->modrdn['deleteoldrdn']);
+            $result = $this->server->rename($dn, $template->modrdn['newrdn'], $template->modrdn['newsuperior'], $template->modrdn['deleteoldrdn'], 'login');
             if (!$result) {
                 $request['page']->error(_('Could not delete (rename): ').$dn, _('processing'));
                 return $result;
@@ -1149,8 +1374,10 @@ class Processor {
             $attribute->clearValue();
             $attribute->setValue($value);
         }
+        if (empty($value) || empty($value[0])) {
+            $attribute->setForceDelete();
+        }
     }
-    
     
     /**
      * Add a new attribute to a DN Template
@@ -1159,21 +1386,21 @@ class Processor {
      * @param String $attr attribute name
      * @param String/Array $cluster value of the attribute
      */
-    private function addAttribute($template, $attr, $cluster) {
+    private function addAttribute($template, $attr, $values) {
         // skip the DN attribute
         if ($attr == 'dn') {
             return;
         }
 
         // skip empty attributes
-        if (empty($cluster)) {
+        if (empty($values)) {
             return;
         }
 
-        if (!is_array($cluster)) {
-            $cluster = array($cluster);
+        if (!is_array($values)) {
+            $values = array($values);
         }
-        foreach ($cluster as $value) {
+        foreach ($values as $value) {
             if (is_null($attribute = $template->getAttribute($attr))) {
                 $attribute = $template->addAttribute($attr,array('values'=>array($value)));
                 $attribute->justModified();

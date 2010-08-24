@@ -987,13 +987,13 @@ table.item-list-config td {
 }
 
 /* Forms layout for UDI */
-.udiform .fitem {width:100%;overflow:hidden;margin-top:5px;margin-bottom:0px;clear:right;}
+.udiform .fitem {width:100%;overflow:hidden;margin-top:5px;margin-bottom:0px;clear:right; vertical-align: middle;}
 .udiform .fitem .fitemtitle {width:20%;text-align:right;float:left;}
 .udiform .fitem .fitemtitle_left {width:20%;text-align:left;float:left;}
 .udiform .fitem .fitemtitle_free {text-align:right;float:left;}
 .udiform .fitem .fitemtitle div {display: inline;}
 .udiform .fitem .fitemtitle_left div {display: inline;}
-.udiform .fitem .felement {text-align: left;border-width: 0;width:100%;margin-left:21%;}
+.udiform .fitem .felement {text-align: left;border-width: 0;width:100%;margin-left:21%; vertical-align: middle;}
 .udiform .fitem .felement_free {text-align: left;border-width: 0;width:80%;margin-left:21%; padding-right: 550px;}
 .udiform .required {color:#A00;}
 .messages {text-align:center;}
@@ -1001,6 +1001,10 @@ table.item-list-config td {
 .messages .warning {font-weigt:bold;color:magenta;}
 .messages .info {font-weigt:bold;color:black;}
 h2.shrink {margin-bottom: 1px;}
+p.shrink {margin-bottom: 1px;}
+img.chooser {vertical-align: middle; }
+
+
 div.underline {
 	text-align: center;
 	margin: 0px;

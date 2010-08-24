@@ -5,5 +5,7 @@
 </p>
 <p>  
 This is the UDI administration and configuration console.  Here, you can specify the various parameters that control aspects of user account creation, update, and deletion.
-
+</p>
+<p>
+User accounts can be mapped to directory tree containers, based on the mlepGroupMembership values.
 </p>

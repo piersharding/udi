@@ -122,15 +122,15 @@ default:
             // collect this source
             $cfg_mappings []= array('source' => $source, 'targets' => $targets);
         }
-        // did we add a new mapping source
-        $source_field = get_request('new_mapping_field');
-        $source = get_request('new_mapping_select');
-        if (!empty($source_field)) {
-            $source = $source_field;
-        }
-        if (!empty($source) && $source != 'none') {
-            $cfg_mappings []= array('source' => $source, 'targets' => array());
-        }
+    }
+    // did we add a new mapping source
+    $source_field = get_request('new_mapping_field');
+    $source = get_request('new_mapping_select');
+    if (!empty($source_field)) {
+        $source = $source_field;
+    }
+    if (!empty($source) && $source != 'none') {
+        $cfg_mappings []= array('source' => $source, 'targets' => array());
     }
     $cfg = $udiconfig->updateMappings($cfg_mappings);
 
@@ -174,11 +174,11 @@ default:
             // collect this source
             $cfg_group_mappings []= array('source' => $map, 'targets' => $targets);
         }
-        // did we add a new mapping source
-        $source = get_request('new_group_mapping');
-        if (!empty($source)) {
-            $cfg_group_mappings []= array('source' => $source, 'targets' => array());
-        }
+    }
+    // did we add a new mapping source
+    $source = get_request('new_group_mapping');
+    if (!empty($source)) {
+        $cfg_group_mappings []= array('source' => $source, 'targets' => array());
     }
 
     // groups_enabled is a checkbox

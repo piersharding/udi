@@ -41,7 +41,7 @@ $udi_nav = get_request('udi_nav','REQUEST');
 if (empty($udi_nav) && isset($_SESSION['udi_nav'])) {
     $udi_nav = $_SESSION['udi_nav'];
 }
-if (!in_array($udi_nav, array('admin', 'mapping', 'upload', 'process', 'reporting', 'help'))) {
+if (!in_array($udi_nav, array('admin', 'userpass', 'mapping', 'upload', 'process', 'reporting', 'help'))) {
     $udi_nav = 'admin';
 }
 

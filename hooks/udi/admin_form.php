@@ -1,6 +1,6 @@
 <?php
 $cfg = $request['udiconfig'];
-$socs = $app['server']->SchemaObjectClasses();
+$socs = $app['server']->SchemaObjectClasses('login');
 
 $configuration_action = get_request('configuration');
 $confirm = get_request('confirm');
@@ -41,6 +41,10 @@ else {
     echo '</div>';
     echo '</span>';
     echo '<div class="udi_clear"></div>';
+    
+    /*
+     * Basic Data configuration group
+     */
     // the configured version
     echo '<fieldset class="config-block"><legend>'._('Basic data').'</legend>';
     echo $request['page']->configEntry('udi_version', _('Configuration version:'), array('type' => 'text', 'value' => $cfg['udi_version'], 'disabled' => 'disabled'), true, false);
@@ -55,13 +59,12 @@ else {
     echo $request['page']->configEntry('enabled', _('Processing Enabled:'), $enabled_opts, true, false);
     echo '</fieldset>';
 
+    /*
+     * File control configuration group
+     */
     // file path for the UDI import
     echo '<fieldset class="config-block"><legend>'._('File control').'</legend>';
     echo $request['page']->configEntry('filepath', _('File path:'), array('type' => 'text', 'value' => $cfg['filepath'], 'size' => 75));
-    
-    
-    // XXX what about the batch program username/password ?
-    
     
     $objectclasses = array_merge(array("none" => new ObjectClass_ObjectClassAttribute("", "")), $socs);
     $mlepPerson = $socs['mlepperson'];
@@ -72,7 +75,7 @@ else {
     echo $request['page']->configSelectEntry('import_match_on', _('Match from Import on:'), $imo_attrs, $imo_default);
     
     $dmo_default = isset($cfg['dir_match_on']) ? $cfg['dir_match_on'] : 'mlepsmspersonid';
-    $dmo_attrs = $app['server']->SchemaAttributes();
+    $dmo_attrs = $app['server']->SchemaAttributes('login');
     echo $request['page']->configSelectEntry('dir_match_on', _('Match to Directory on:'), $dmo_attrs, $dmo_default);
     
     // Allow for multiple search bases
@@ -93,6 +96,9 @@ else {
     echo $request['page']->configRow($request['page']->configFieldLabel('search_bases', _('Search bases for users:')), $field, true);
     echo '</fieldset>';
     
+    /*
+     * Account creation group
+     */
     // Create In bucket for new accounts - must be one of the search bases
     echo '<fieldset class="config-block"><legend>'._('Account creation').'</legend>';
     // ignore account creations
@@ -105,18 +111,7 @@ else {
     }
     echo $request['page']->configEntry('ignore_creates', _('Ignore account creations:'), $ignore_creates_opts, true, false);    
     
-    // where to create new accounts
-    $field = '<div class="felement ftext"><span style="white-space: nowrap;">';
-    $field .= $request['page']->configField('create_in', $create_in_opts, array());
-    if (isset($create_in_opts['disabled'])) {
-        echo $request['page']->configEntry('create_in', '', array('type' => 'hidden', 'value' => $cfg['create_in']), false);
-    }
-    else {
-        $field .= $request['page']->configChooser('create_in');
-    }
-    $field .= '</span></div>';
-    echo $request['page']->configRow($request['page']->configFieldLabel('create_in', _('Create new accounts in (with base):')), $field, (isset($create_in_opts['disabled']) ? false : true));
-    
+    // objectClasses for account creation
     $no_classes = 0;
     $class = '<div class="felement ftext"><table class="item-list-config">';
     if (isset($cfg['objectclasses'])) {
@@ -149,9 +144,104 @@ else {
                                     ), 
                 $class, 
                 (isset($create_in_opts['disabled']) ? false : true));
+
+    // DN attribute
+    $dn_default = isset($cfg['dn_attribute']) ? $cfg['dn_attribute'] : 'cn';
+    if (isset($create_in_opts['disabled'])) {
+        echo $request['page']->configEntry('dn_attribute', _('DN Attribute:'), array('type' => 'text', 'value' => $dn_default, 'size' => 5, 'disabled' => 'disabled'), true, false);
+        echo $request['page']->configEntry('dn_attribute', '', array('type' => 'hidden', 'value' => $dn_default), false);
+    }
+    else {
+        echo $request['page']->configSelectEntry('dn_attribute', _('DN Attribute:'), 
+                                                 array("cn" => new ObjectClass_ObjectClassAttribute("cn", "cn"), 
+                                                       "uid" => new ObjectClass_ObjectClassAttribute("uid", "uid")), $dn_default);
+    }
+                
+    // where to create new accounts
+    $field = '<div class="felement ftext"><span style="white-space: nowrap;">';
+    $field .= $request['page']->configField('create_in', $create_in_opts, array());
+    if (isset($create_in_opts['disabled'])) {
+        echo $request['page']->configEntry('create_in', '', array('type' => 'hidden', 'value' => $cfg['create_in']), false);
+    }
+    else {
+        $field .= $request['page']->configChooser('create_in');
+    }
+    $field .= '</span></div>';
+    echo $request['page']->configRow($request['page']->configFieldLabel('create_in', _('Default new accounts container (with base):')), $field, (isset($create_in_opts['disabled']) ? false : true));
+    
+    // map mlepGroupMembership values to directory containers                
+    echo '<p class="shrink">'._('Map groups to containers:').'</p>';
+    // indicate how many mappings to deal with
+    $no_mappings = 0;
+    // handle group mappings separately
+    # “Board of Trustees#Parent Helper#LMS Access”
+    $groups_enabled_opts = array('value' => 0, 'type' => 'checkbox');
+    if (isset($cfg['groups_enabled']) && $cfg['groups_enabled'] == 'checked') {
+        $groups_enabled_opts['checked'] = 'checked';
+        $groups_enabled_opts['value'] = 1;
+    }
+    //echo '<div class="underline">&nbsp;</div>';
+    if (!empty($cfg['container_mappings'])) {
+        $container_mappings = explode(';', $cfg['container_mappings']);
+        //var_dump($mappings);
+        foreach ($container_mappings as $map) {
+            // break the mapping into source and targets
+            list($group, $target) = explode('|', $map);
+            // ignore broken mappings
+            if (empty($group)) {
+                continue;
+            }
+            $no_mappings += 1;
+            if (!isset($create_in_opts['disabled'])) {
+                $field = $request['page']->configField('container_mapping_'.$no_mappings.'_target', array('type' => 'text', 'value' => $target, 'size' => 50), array());
+                $field .= $request['page']->configChooser('container_mapping_'.$no_mappings.'_target');
+                echo $request['page']->configRow(
+                            $request['page']->configFieldLabel(
+                                                'container_mapping_'.$no_mappings, 
+                                                '<a href="" title="'._('Delete mapping').'" onclick="post_to_url(\'cmd.php\', {\'configuration\': \'delete\', \'delete\': \'container_mapping\', \'container_mapping\': \''.
+                                                $group.'\'}); return false;"><img src="images/udi/trash.png" alt="'._('Delete entire group').'"/></a> &nbsp;'.
+                                                $request['page']->configField(
+                                                                    'container_mapping_'.$no_mappings, 
+                                                                    array('type' => 'text', 'value' => $group, 'size' => 13), array())
+                                                ), 
+                            '<div class="felement_free ftext">'.$field.'</div>', 
+                            false);
+            }
+            else {
+                $field = $request['page']->configField('container_mapping_'.$no_mappings.'_target', array('type' => 'text', 'value' => $target, 'size' => 50, 'disabled' => 'disabled'), array());
+                echo $request['page']->configRow(
+                            $request['page']->configFieldLabel(
+                                                'container_mapping_'.$no_mappings, 
+                                                $request['page']->configField(
+                                                                    'container_mapping_'.$no_mappings, 
+                                                                    array('type' => 'text', 'value' => $group, 'size' => 13, 'disabled' => 'disabled'), array())
+                                                ), 
+                            '<div class="felement_free ftext">'.$field.'</div>', 
+                            false);
+                echo $request['page']->configEntry('container_mapping_'.$no_mappings, '', array('type' => 'hidden', 'value' => $group), false);
+                echo $request['page']->configEntry('container_mapping_'.$no_mappings.'_target', '', array('type' => 'hidden', 'value' => $target), false);
+            }
+        }
+    }
+    
+    // add a new mapping
+    if (!isset($create_in_opts['disabled'])) {
+        echo $request['page']->configRow(
+                                        '<div class="fitemtitle">'.
+                                        $request['page']->configMoreField('new_container_mapping', _('New Group Mapping'), array('type' => 'text', 'value' => '', 'size' => 35), false, true).
+                                        '</div>',
+                    '',
+                    false);
+    }
+    
+    // indicate how many group mappings to deal with
+    echo $request['page']->configField('no_of_container_mappings', array('type' => 'hidden', 'value' => $no_mappings), array());
+                
     echo '</fieldset>';
 
-    
+    /*
+     * Account updates configuration group
+     */
     // ignore account updates
     echo '<fieldset class="config-block"><legend>'._('Account updates').'</legend>';
     $ignore_updates_opts = array('value' => 0, 'type' => 'checkbox');
@@ -163,6 +253,9 @@ else {
     echo '</fieldset>';
     
     
+    /*
+     * Account deletes configuration group
+     */
     // ignore deletes
     echo '<fieldset class="config-block"><legend>'._('Account deletion').'</legend>';
     $ignore_deletes_opts = array('value' => 0, 'type' => 'checkbox');

@@ -19,7 +19,9 @@ class UdiConfig {
                     'ignore_deletes' => null,
                     'ignore_creates' => null,
                     'ignore_updates' => null,
-                    'move_on_delete' => null,
+                    'move_on_delete' => 'checked',
+                    'ignore_userids' => null,
+                    'ignore_passwds' => null,
                     'move_to' => '',
                     'filepath' => '',
                     'dir_match_on' => 'mlepsmspersonid',
@@ -27,10 +29,16 @@ class UdiConfig {
                     'groups_enabled' => null,
                     'mappings' => 'mlepSmsPersonId(mlepSmsPersonId);mlepStudentNSN(mlepStudentNSN);mlepUsername(mlepUsername,uid);mlepFirstAttending(mlepFirstAttending);mlepLastAttendance(mlepLastAttendance);mlepFirstName(mlepFirstName,givenName);mlepLastName(mlepLastName,sn);mlepRole(mlepRole);mlepAssociatedNSN(mlepAssociatedNSN);mlepEmail(mlepEmail,mail);mlepOrganisation(mlepOrganisation,o)',
                     'group_mappings' => '',
-                    'group_attr' => '',
+                    'container_mappings' => '',
+                    'group_attr' => 'memberUid',
                     'create_in' => '',
-                    'objectclasses' => 'top;mlepPerson;inetOrgPerson',
-                    );
+                    'dn_attribute' => 'cn',
+                    'objectclasses' => 'inetOrgPerson;mlepPerson',
+                    'userid_parameters' => '',
+                    'userid_algo' => 'userid_alg_01_passwd_algorithm',
+                    'passwd_parameters' => '',
+                    'passwd_algo' => 'passwd_alg_01_passwd_algorithm',
+    );
     
     private $server;
 
@@ -157,6 +165,27 @@ class UdiConfig {
             }
         }
         
+        // validate container mappings
+        $container_mappings = $this->getContainerMappings();
+        foreach ($container_mappings as $mapping) {
+            if (empty($mapping['target'])) {
+                continue;
+            }
+            if (!check_dn_exists($mapping['target'], _('Target container DN does not exist: ').$mapping['target'])) {
+                $valid = false;
+            }
+            $found = false;
+            foreach ($bases as $base) {
+                if (preg_match('/^.*?'.$base.'$/', $mapping['target'])) {
+                    $found = true;
+                    break;
+                }
+            }
+            if (!$found) {
+                $request['page']->warning(_('Target container DN must be within one of the search bases: ').$mapping['target'], _('configuration'));
+                $valid = false;
+            }
+        }
         return $valid;
     }
     
@@ -283,6 +312,37 @@ class UdiConfig {
         return $this->updateConfig();
     }
 
+    /**
+     * Get the container mapping config value
+     */
+    public function getContainerMappings() {
+        $cfg_mappings = array();
+        if (isset($this->config['container_mappings']) && !empty($this->config['container_mappings'])) {
+            $mappings = explode(';', $this->config['container_mappings']);
+            foreach ($mappings as $map) {
+                list($source, $target) = explode('|', $map);
+                if (empty($source)) {
+                    continue;
+                }
+                $cfg_mappings []= array('source' => $source, 'target' => $target);
+            }
+        }
+        return $cfg_mappings;
+    }
+    
+    /**
+     * Set the container mapping config value
+     */
+    public function updateContainerMappings($mappings) {
+        $maps = array();
+        foreach ($mappings as $map) {
+            $maps[]= $map['source'].'|'.$map['target'];
+        }
+        $map = implode(';', $maps);
+        $this->setConfig('container_mappings', $map);
+        return true;
+    }
+    
     /**
      * Update the Config
      */

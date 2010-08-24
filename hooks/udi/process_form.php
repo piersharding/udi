@@ -18,14 +18,14 @@ echo $request['page']->configEntry('enabled', _('Processing Enabled:'), $enabled
 // file to be processed
 echo '<fieldset class="config-block"><legend>'._('File control').'</legend>';
 if (isset($_SESSION['udi_import_file'])) {
-    echo $request['page']->configEntry('filesize', _('File size:'), array('type' => 'text', 'value' => count($_SESSION['udi_import_file']['contents']).'&nbsp;'._('rows'), 'size' => 10, 'disabled' => 'disabled'), true, false);
+    echo $request['page']->configEntry('filesize', _('Upload file size:'), array('type' => 'text', 'value' => count($_SESSION['udi_import_file']['contents']).'&nbsp;'._('rows'), 'size' => 10, 'disabled' => 'disabled'), true, false);
 }
 else {
     echo $request['page']->configEntry('filepath', _('File path:'), array('type' => 'text', 'value' => $cfg['filepath'], 'size' => 75, 'disabled' => 'disabled'), true, false);
 }
 
 // matching attributes - file to directory
-$socs = $app['server']->SchemaObjectClasses();
+$socs = $app['server']->SchemaObjectClasses('login');
 $mlepPerson = $socs['mlepperson'];
 $must = $mlepPerson->getMustAttrs();
 $may = $mlepPerson->getMayAttrs();
@@ -34,7 +34,7 @@ $imo_default = isset($cfg['import_match_on']) ? $cfg['import_match_on'] : 'mleps
 echo $request['page']->configEntry('import_match_on', _('Match from Import on:'), array('type' => 'text', 'value' => $imo_default, 'size' => 50, 'disabled' => 'disabled'), true, false);
 
 $dmo_default = isset($cfg['dir_match_on']) ? $cfg['dir_match_on'] : 'mlepsmspersonid';
-$dmo_attrs = $app['server']->SchemaAttributes();
+$dmo_attrs = $app['server']->SchemaAttributes('login');
 echo $request['page']->configEntry('dir_match_on', _('Match to Directory on:'), array('type' => 'text', 'value' => $dmo_default, 'size' => 50, 'disabled' => 'disabled'), true, false);
 
 // Allow for multiple search bases
@@ -74,6 +74,10 @@ if (isset($create_in_opts['disabled'])) {
 $field .= '</span></div>';
 echo $request['page']->configRow($request['page']->configFieldLabel('create_in', _('Create new accounts in (with base):')), $field, (isset($create_in_opts['disabled']) ? false : true));
 
+// DN attribute
+$dn_default = isset($cfg['dn_attribute']) ? $cfg['dn_attribute'] : 'cn';
+echo $request['page']->configEntry('dn_attribute', _('DN Attribute:'), array('type' => 'text', 'value' => $dn_default, 'size' => 5, 'disabled' => 'disabled'), true, false);
+
 $no_classes = 0;
 $class = '<div class="felement ftext"><table class="item-list-config">';
 if (isset($cfg['objectclasses'])) {
@@ -87,7 +91,6 @@ if (isset($cfg['objectclasses'])) {
     }
 }
 $class .= '</table></div>';
-$class .= $request['page']->configField('no_of_objectclasses', array('type' => 'hidden', 'value' => $no_classes), array());
 
 echo $request['page']->configRow(
             $request['page']->configFieldLabel(
@@ -96,6 +99,33 @@ echo $request['page']->configRow(
                                 ), 
             $class, 
             (isset($create_in_opts['disabled']) ? false : true));
+
+            
+            
+if (!empty($cfg['container_mappings'])) {
+    $container_mappings = explode(';', $cfg['container_mappings']);
+    $no_mappings = 0;
+    echo '<p class="shrink">'._('Map groups to containers:').'</p>';
+    foreach ($container_mappings as $map) {
+        // break the mapping into source and targets
+        list($group, $target) = explode('|', $map);
+        // ignore broken mappings
+        if (empty($group)) {
+            continue;
+        }
+        $no_mappings += 1;
+        $field = $request['page']->configField('container_mapping_'.$no_mappings.'_target', array('type' => 'text', 'value' => $target, 'size' => 50, 'disabled' => 'disabled'), array());
+        echo $request['page']->configRow(
+                    $request['page']->configFieldLabel(
+                                        'container_mapping_'.$no_mappings, 
+                                        $request['page']->configField(
+                                                            'container_mapping_'.$no_mappings, 
+                                                            array('type' => 'text', 'value' => $group, 'size' => 13, 'disabled' => 'disabled'), array())
+                                        ), 
+                    '<div class="felement_free ftext">'.$field.'</div>', 
+                    false);
+    }
+}
 echo '</fieldset>';
     
 // ignore account updates

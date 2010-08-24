@@ -17,7 +17,39 @@ class UdiRender extends PageRender {
 	private $pagelast;
 
 	public $messages = array();
+	
+	public function isError() {
+	    foreach ($this->messages as $msg) {
+	        if ($msg['type'] == 'error') {
+	            return true;
+	        }
+	    }
+        foreach ($_SESSION['sysmsg'] as $msg) {
+            if ($msg['type'] == 'error' && !preg_match('/DEBUG/', $msg['body'])) {
+                return true;
+            }
+        }
+	    return false;
+	}
 
+	/**
+	 * Generate the output formated messages
+	 */
+    public function outputMessagesConsole() {
+        $msgs = array();
+//        foreach ($this->messages as $msg) {
+//            $msgs []= $msg['type'].": ".$msg['message'];
+//        }
+        foreach ($_SESSION['sysmsg'] as $msg) {
+            if (!preg_match('/DEBUG/', $msg['body'])) {
+                $msg['body'] = preg_replace('/\<.*?\>/', ' ', $msg['body']);
+                $msg['body'] = preg_replace('/  /', ' ', $msg['body']);
+                $msgs []= $msg['type'].": ".trim($msg['body']);
+            }
+        }
+        return implode("\n", $msgs);
+    }
+	
 	/** CORE FUNCTIONS **/
 
 	/**
@@ -94,6 +126,7 @@ class UdiRender extends PageRender {
         $menus = array(
                 array('name' => 'admin', 'text' => _('Configuration'), 'title' => _('Configure the UDI'), 'image' => 'tools.png', 'imagetext' => _('Admin'),),
                 array('name' => 'mapping', 'text' => _('Mapping'), 'title' => _('Perform data mapping'), 'image' => 'add.png', 'imagetext' => _('Mapping'),), 
+                array('name' => 'userpass', 'text' => _('User & Pass'), 'title' => _('UserId & Passwd processing control'), 'image' => 'key.png', 'imagetext' => _('UserId & Passwd'),), 
                 array('name' => 'upload', 'text' => _('Upload'), 'title' => _('Upload a file'), 'image' => 'import.png', 'imagetext' => _('Upload'),), 
                 array('name' => 'process', 'text' => _('Processing'), 'title' => _('Process the UDI'), 'image' => 'timeout.png', 'imagetext' => _('Process'),),
                 array('name' => 'reporting', 'text' => _('Reporting'), 'title' => _('Reporting on the UDI'), 'image' => 'files-small.png', 'imagetext' => _('Reporting'),),
@@ -256,13 +289,36 @@ class UdiRender extends PageRender {
         return $select;
     }
 
+
+    public function configSelectBasic($name, $opts = array(), $default = 'none', $class='') {
+        if (!empty($class)) {
+            $class = " class='$class' ";
+        }
+        $select = '<select '.$class.' name="'.$name.'">';
+        foreach ($opts as $label => $opt) {
+            if (empty($label)) {
+                $label = 'none';
+                $opt = _(' - unselected - ');
+            }
+            $select .= sprintf('<option value="%s" %s>%s</option>', 
+                    $label,strtolower($label) == strtolower("".$default) ? 'selected ': '',$opt);
+        }   
+        $select .= '</select>';
+        return $select;
+    }
+    
     public function configSelectEntry($name, $text, $attrs = array(), $default='mlepSmsPersonId', $required=true) {
 
         return  $this->configRow($this->configFieldLabel($name, $text), '<div class="felement ftext">'.$this->configSelect($name, $attrs, $default).'</div>', $required);
     }
+    
+    public function configSelectEntryBasic($name, $text, $opts = array(), $default='none', $required=true) {
 
+        return  $this->configRow($this->configFieldLabel($name, $text), '<div class="felement ftext">'.$this->configSelectBasic($name, $opts, $default).'</div>', $required);
+    }
+    
     public function info($msg, $action='') {
-        $this->messages[]= "<div class='info'>".$msg.'</div>';
+        $this->messages[]= array('type' => 'info', 'message' => $msg);
         system_message(array(
                      'title'=>_('UDI '.$action),
                                 'body'=> $msg,
@@ -273,7 +329,7 @@ class UdiRender extends PageRender {
     }
 
     public function warning($msg, $action='') {
-        $this->messages[]= "<div class='warning'>".$msg.'</div>';
+        $this->messages[]= array('type' => 'warning', 'message' => $msg);
         system_message(array(
                      'title'=>_('UDI '.$action),
                                 'body'=> $msg,
@@ -284,7 +340,7 @@ class UdiRender extends PageRender {
     }
 
     public function error($msg, $action='') {
-        $this->messages[]= "<div class='error'>".$msg.'</div>';
+        $this->messages[]= array('type' => 'error', 'message' => $msg);
         system_message(array(
                      'title'=>_('UDI '.$action),
                                 'body'=> $msg,

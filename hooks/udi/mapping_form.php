@@ -23,12 +23,12 @@ $mandatory_fields = array(
                             'mlepGroupMembership',
                             );
 
-$socs = $app['server']->SchemaObjectClasses();
+$socs = $app['server']->SchemaObjectClasses('login');
 $mlepPerson = $socs['mlepperson'];
 $must = $mlepPerson->getMustAttrs();
 $may = $mlepPerson->getMayAttrs();
 $imo_attrs = array_merge($must, $may);
-$dmo_attrs = $app['server']->SchemaAttributes();
+$dmo_attrs = $app['server']->SchemaAttributes('login');
 $dmo_attrs = array_merge(array("none" => new ObjectClass_ObjectClassAttribute("", "")), $dmo_attrs);
 
 $no_mappings = 0;
@@ -119,7 +119,9 @@ echo $request['page']->configEntry('groups_enabled', _('Processing mlepGroupMemb
 $group_attrs = array('none' => new ObjectClass_ObjectClassAttribute("", ""), 
                      'member' => new ObjectClass_ObjectClassAttribute("member", "member"),
                      'memberuid' => new ObjectClass_ObjectClassAttribute("memberUid", "memberuid"),
-                    );
+                     'uniquemember' => new ObjectClass_ObjectClassAttribute("uniqueMember", "uniquemember"),
+                     'memberof' => new ObjectClass_ObjectClassAttribute("memberOf", "memberof"),
+);
 if ($groups_enabled_opts['value'] == 1) {
     echo $request['page']->configSelectEntry('group_attr', _('Group Membership Attribute:'), $group_attrs, $cfg['group_attr'], false);
 }
@@ -170,7 +172,7 @@ if (!empty($cfg['group_mappings'])) {
         '<span style="white-space: nowrap;"><a href="" title="'._('Delete entire group').'" onclick="post_to_url(\'cmd.php\', {\'delete\': \'group_mapping\', \'group_mapping\': \''.$group.'\'}); return false;"><img src="images/udi/trash.png" alt="'._('Delete entire group').'"/></a> &nbsp;'.
                                         $request['page']->configField(
                                                             'group_mapping_'.$no_mappings, 
-                                                            array('type' => 'text', 'value' => $group, 'size' => 10), array()).'</span>'
+                                                            array('type' => 'text', 'value' => $group, 'size' => 13), array()).'</span>'
                                         ), 
                     '<div class="felement_free ftext">'.$field.'</div>', 
                     //$field, 
