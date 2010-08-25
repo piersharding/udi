@@ -65,20 +65,33 @@ if (! $app['scriptOK']) {
 /**
  * All commands are disabled in read-only unless specified here
  */
-$app['readwrite_cmds'] = array(
-	'collapse','draw_tree_node','expand',
-	'compare_form','compare',
-	'download_binary_attr','view_jpeg_photo',
-	'entry_chooser',
-	'export_form','export',
-	'login_form','login','logout',
-	'monitor',
-	'password_checker',
-	'purge_cache',
-	'refresh','schema','query_engine','server_info','show_cache','template_engine',
-	'welcome'
-	);
+//$app['readwrite_cmds'] = array(
+//	'collapse','draw_tree_node','expand',
+//	'compare_form','compare',
+//	'download_binary_attr','view_jpeg_photo',
+//	'entry_chooser',
+//	'export_form','export',
+//	'login_form','login','logout',
+//	'monitor',
+//	'password_checker',
+//	'purge_cache',
+//	'refresh','schema','query_engine','server_info','show_cache','template_engine',
+//	'welcome'
+//	);
 
+	// modify the list of read-write commands as it should be tighter
+	// than the default
+$app['readwrite_cmds'] = array(
+    'collapse','draw_tree_node','expand',
+    'compare_form','compare',
+    'download_binary_attr','view_jpeg_photo',
+    'login_form','login','logout',
+    'monitor',
+    'purge_cache',
+    'refresh','query_engine','server_info','show_cache','template_engine',
+    'welcome'
+    );
+	
 /**
  * Timer stopwatch, used to instrument the application
  */
