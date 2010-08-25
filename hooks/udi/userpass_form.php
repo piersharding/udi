@@ -16,7 +16,7 @@ echo '<div class="udi_clear"></div>';
  * User Id and Password group
  */
 // Create In bucket for new accounts - must be one of the search bases
-echo '<fieldset class="config-block"><legend>'._('User Id & Passwords control').'</legend>';
+echo '<fieldset class="config-block"><legend>'._('User Id control').'</legend>';
 // UserId generation algorithms - list of hooks, and parameters to pass to hooks
 // User Ids       
 $ignore_userids_opts = array('value' => 0, 'type' => 'checkbox');
@@ -31,30 +31,31 @@ if (isset($cfg['ignore_userids']) && $cfg['ignore_userids'] == 'checked') {
 echo $request['page']->configEntry('ignore_userids', _('No userid processing:'), $ignore_userids_opts, true, false);    
             
 $result = udi_run_hook('userid_algorithm_label',array());
-$algols = array();
+$algols = array('' => '');
 if (!empty($result)) {
     foreach ($result as $algo) {
         $algols[$algo['name']]= $algo['title'];
     }
 }                
-$algo_default = isset($cfg['userid_algo']) ? $cfg['userid_algo'] : 'userid_alg_01';
 if (isset($userid_algo_opts['disabled'])) {
-    echo $request['page']->configEntry('userid_algo',  _('User Id algorithm:'), array('type' => 'text', 'value' => $algols[$algo_default], 'size' => 25, 'disabled' => 'disabled'), true, false);
-    echo $request['page']->configEntry('userid_algo', '', array('type' => 'hidden', 'value' => $algo_default), false);
+    echo $request['page']->configEntry('userid_algo',  _('User Id algorithm:'), array('type' => 'text', 'value' => $algols[$cfg['userid_algo']], 'size' => 25, 'disabled' => 'disabled'), true, false);
+    echo $request['page']->configEntry('userid_algo', '', array('type' => 'hidden', 'value' => $cfg['userid_algo']), false);
     echo $request['page']->configEntry('userid_parameters', '', array('type' => 'hidden', 'value' => $cfg['userid_parameters']), false);
 }
 else {
     // select algorythm
-    echo $request['page']->configSelectEntryBasic('userid_algo', _('User Id algorithm:'), $algols, $algo_default, false);
+    echo $request['page']->configSelectEntryBasic('userid_algo', _('User Id algorithm:'), $algols, $cfg['userid_algo'], false);
     
 }
 // parameters to pass to plugin
 echo $request['page']->configEntry('userid_parameters', _('User Id generation parameters:'), $userid_parameters_opts, true, false);
+echo '</fieldset>';
 
 // Passwords
+echo '<fieldset class="config-block"><legend>'._('Passwords control').'</legend>';
 $ignore_passwds_opts = array('value' => 0, 'type' => 'checkbox');
 $passwd_algo_opts = array('value' => 0, 'type' => 'checkbox');
-$passwd_parameters_opts = array('type' => 'text', 'value' => $cfg['userid_parameters'], 'size' => 50);
+$passwd_parameters_opts = array('type' => 'text', 'value' => $cfg['passwd_parameters'], 'size' => 50);
 if (isset($cfg['ignore_passwds']) && $cfg['ignore_passwds'] == 'checked') {
     $ignore_passwds_opts['checked'] = 'checked';
     $ignore_passwds_opts['value'] = 1;
@@ -63,24 +64,32 @@ if (isset($cfg['ignore_passwds']) && $cfg['ignore_passwds'] == 'checked') {
 }
 echo $request['page']->configEntry('ignore_passwds', _('No password processing:'), $ignore_passwds_opts, true, false);    
 $result = udi_run_hook('passwd_algorithm_label',array());
-$algols = array();
+$algols = array('' => '');
 if (!empty($result)) {
     foreach ($result as $algo) {
         $algols[$algo['name']]= $algo['title'];
     }
 }                
-$algo_default = isset($cfg['passwd_algo']) ? $cfg['passwd_algo'] : 'passwd_alg_01';
 if (isset($passwd_algo_opts['disabled'])) {
-    echo $request['page']->configEntry('passwd_algo', _('Password algorithm:'), array('type' => 'text', 'value' => $algols[$algo_default], 'size' => 25, 'disabled' => 'disabled'), true, false);
-    echo $request['page']->configEntry('passwd_algo', '', array('type' => 'hidden', 'value' => $algo_default), false);
+    echo $request['page']->configEntry('passwd_algo', _('Password algorithm:'), array('type' => 'text', 'value' => $algols[$cfg['passwd_algo']], 'size' => 25, 'disabled' => 'disabled'), true, false);
+    echo $request['page']->configEntry('passwd_algo', '', array('type' => 'hidden', 'value' => $cfg['passwd_algo']), false);
     echo $request['page']->configEntry('passwd_parameters', '', array('type' => 'hidden', 'value' => $cfg['passwd_parameters']), false);
 }
 else {
     // select algorythm
-    echo $request['page']->configSelectEntryBasic('passwd_algo', _('Password algorithm:'), $algols, $algo_default, false);
+    echo $request['page']->configSelectEntryBasic('passwd_algo', _('Password algorithm:'), $algols, $cfg['passwd_algo'], false);
 }
-// parameters to pass to plugin
 echo $request['page']->configEntry('passwd_parameters', _('Password generation parameters:'), $passwd_parameters_opts, true, false);
+// how to encrypt the passwd value
+$enc_methods = password_types();
+if (isset($passwd_algo_opts['disabled'])) {
+    echo $request['page']->configEntry('encrypt_passwd', _('Password ecryption:'), array('type' => 'text', 'value' => $cfg['encrypt_passwd'], 'size' => 5, 'disabled' => 'disabled'), true, false);
+    echo $request['page']->configEntry('encrypt_passwd', '', array('type' => 'hidden', 'value' => $cfg['encrypt_passwd']), false);
+}
+else {
+    // select algorythm
+    echo $request['page']->configSelectEntryBasic('encrypt_passwd', _('Password ecryption:'), $enc_methods, $cfg['encrypt_passwd'], false);
+}
 echo '</fieldset>';
 
 // page save button

@@ -25,7 +25,6 @@ switch ($action) {
         }
         
         // validate the file now
-//        $request['page']->info(_('File validation started'));
         if (isset($_SESSION['udi_import_file'])) {
             // validate the in memory file
             $processor = new Processor($app['server'], $_SESSION['udi_import_file']);
@@ -43,7 +42,6 @@ switch ($action) {
         }
         // validate file contents
         $processor->validate();
-        $request['page']->info(_('File validation finished'));
         break;
         
     case 'process':
@@ -53,7 +51,6 @@ switch ($action) {
         }
         
         // really process the file now
-        $request['page']->info(_('File processing started'));
         if (isset($_SESSION['udi_import_file'])) {
             // process the in memory file
             $processor = new Processor($app['server'], $_SESSION['udi_import_file']);

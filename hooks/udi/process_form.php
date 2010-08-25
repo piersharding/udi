@@ -171,9 +171,11 @@ else {
     $ignore_deletes_opts = array('value' => 0, 'type' => 'checkbox');
     $move_on_delete_opts = array('value' => 0, 'type' => 'checkbox');
     $move_to_opts = array('type' => 'text', 'value' => $cfg['move_to'], 'size' => 50);
-    if (isset($cfg['move_on_delete']) && $cfg['move_on_delete'] == 'checked') {
+    if (isset($cfg['ignore_deletes']) && $cfg['ignore_deletes'] == 'checked') {
         $ignore_deletes_opts['checked'] = 'checked';
         $ignore_deletes_opts['value'] = 1;
+    }
+    if (isset($cfg['move_on_delete']) && $cfg['move_on_delete'] == 'checked') {
         $move_on_delete_opts['checked'] = 'checked';
         $move_on_delete_opts['value'] = 1;
     }

@@ -31,7 +31,7 @@ if (!$_SESSION[APPCONFIG]) {
 function userid_alg_01_userid_algorithm_label() {
 	$args = func_get_args();
 
-	return array('name' => 'userid_alg_01_userid_algorithm', 'title' => _('Simple User Id Generator'));
+	return array('name' => 'userid_alg_01_userid_algorithm', 'title' => _('Passthrough User Id Generator'));
 }
 add_hook('userid_algorithm_label','userid_alg_01_userid_algorithm_label');
 
@@ -49,15 +49,17 @@ add_hook('userid_algorithm_label','userid_alg_01_userid_algorithm_label');
  *  - UDIConfig object for access to complete UDI configuration settings
  *  - user record from file - array keyed by csv column headings
  *  - return the $account array if you want it modfied else false
+ *  
+ *  YOU MUST MODIFY mlepUsername to SET the NEW User Id !!!!
+ *  
+ *  This callback just passes the existing record through
+ *  
  */
-function userid_alg_01_passwd_algorithm() {
+function userid_alg_01_userid_algorithm() {
     list($server, $udiconfig, $account) = func_get_args();
-    
-//    $account['mlepUsername'] = $account['mlepUsername'] . "wahoo";
-//    var_dump($account);
-    
+
     return $account;
 }
-add_hook('userid_algorithm','userid_alg_01_passwd_algorithm');
+add_hook('userid_algorithm','userid_alg_01_userid_algorithm');
 
 ?>

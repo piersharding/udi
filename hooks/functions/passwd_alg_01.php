@@ -30,7 +30,7 @@ if (!$_SESSION[APPCONFIG]) {
 function passwd_alg_01_passwd_algorithm_label() {
 	$args = func_get_args();
 
-	return array('name' => 'passwd_alg_01_userid_algorithm', 'title' => _('Simple password generator'));
+    return array('name' => 'passwd_alg_01_passwd_algorithm', 'title' => _('Set constant password'));
 }
 add_hook('passwd_algorithm_label','passwd_alg_01_passwd_algorithm_label');
 
@@ -41,13 +41,15 @@ add_hook('passwd_algorithm_label','passwd_alg_01_passwd_algorithm_label');
  *
  * Arguments that are passed are:
  *  - LDAP directory server object
+ *  - UDIConfig object for access to complete UDI configuration settings
  *  - user record from file - array keyed by csv column headings
  *  - configured password parameter value
  */
 function passwd_alg_01_passwd_algorithm() {
     $args = func_get_args();
-
-    return array('name' => 'passwd_alg_01', 'title' => _('Simple password generator'));
+    list($server, $udiconfig, $account, $parameter) = func_get_args();
+    
+    return $parameter;
 }
 add_hook('passwd_algorithm','passwd_alg_01_passwd_algorithm');
 

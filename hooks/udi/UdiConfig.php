@@ -34,10 +34,11 @@ class UdiConfig {
                     'create_in' => '',
                     'dn_attribute' => 'cn',
                     'objectclasses' => 'inetOrgPerson;mlepPerson',
+                    'userid_algo' => '',
                     'userid_parameters' => '',
-                    'userid_algo' => 'userid_alg_01_passwd_algorithm',
-                    'passwd_parameters' => '',
-                    'passwd_algo' => 'passwd_alg_01_passwd_algorithm',
+                    'passwd_parameters' => 'pass',
+                    'encrypt_passwd' => 'md5',
+                    'passwd_algo' => '',
     );
     
     private $server;
@@ -130,7 +131,7 @@ class UdiConfig {
         if (!empty($this->config['create_in'])) {
             if (check_dn_exists($this->config['create_in'], _('Create new accounts target DN does not exist: ').$this->config['create_in'])) {
                 if (!in_array($this->config['create_in'], $bases)) {
-                    $request['page']->warning(_('Create new accounts target DN must be one of the search bases: ').$this->config['create_in'], _('configuration'));
+                    $request['page']->error(_('Create new accounts target DN must be one of the search bases: ').$this->config['create_in'], _('configuration'));
                     $valid = false;
                 }
             }
@@ -182,7 +183,19 @@ class UdiConfig {
                 }
             }
             if (!$found) {
-                $request['page']->warning(_('Target container DN must be within one of the search bases: ').$mapping['target'], _('configuration'));
+                $request['page']->error(_('Target container DN must be within one of the search bases: ').$mapping['target'], _('configuration'));
+                $valid = false;
+            }
+        }
+        if ((!isset($this->config['ignore_userids']) || $this->config['ignore_userids'] != 'checked') && $this->config['userid_algo'] != 'none') {
+            if (!function_exists($this->config['userid_algo'])) {
+                $request['page']->error(_('User Id algorithm does not exist: ').$this->config['userid_algo']);
+                $valid = false;
+            }
+        }
+        if ((!isset($this->config['ignore_passwds']) || $this->config['ignore_passwds'] != 'checked') && $this->config['passwd_algo'] != 'none') {
+            if (!function_exists($this->config['passwd_algo'])) {
+                $request['page']->error(_('Password algorithm does not exist: ').$this->config['passwd_algo']);
                 $valid = false;
             }
         }

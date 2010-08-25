@@ -806,6 +806,30 @@ class Processor {
         // Hunt down existing uid/mlepUsernames to avoid duplicates
         $duplicates = array();
         foreach ($this->to_be_created as $account) {
+            
+            
+            // run userid hook
+            if (!isset($this->cfg['ignore_userids']) || !$this->cfg['ignore_userids']) {
+                $result = udi_run_hook('userid_algorithm',array($this->server, $this->udiconfig, $account), $this->cfg['userid_algo']);
+                if (is_array($result)) {
+                    $result = array_pop($result);
+                    if (is_array($result)) {
+                        $account = $result;
+                    }
+                }
+            }
+           
+            // run passwd hook
+            if (!isset($this->cfg['ignore_passwds']) || !$this->cfg['ignore_passwds']) {
+                $result = udi_run_hook('passwd_algorithm',array($this->server, $this->udiconfig, $account, $this->cfg['passwd_parameters']), $this->cfg['passwd_algo']);
+                if (is_array($result)) {
+                    $result = array_pop($result);
+                    if (!empty($result)) {
+                        $account['userPassword'] = $result;
+                    }
+                }
+            }
+            
             $uid = (isset($account['mlepUsername']) ? $account['mlepUsername'] : false);
             if (isset($duplicates[$uid])) {
                 $request['page']->error(_('User account is duplicate in import file: '), _('processing'));
@@ -840,9 +864,7 @@ class Processor {
             }
         }
         
-        $request['page']->info(_('Calculated: ').count($this->to_be_created)._(' creates'), _('processing'));
-        $request['page']->info(_('Calculated: ').count($this->to_be_updated)._(' updates'), _('processing'));
-        $request['page']->info(_('Calculated: ').count($this->to_be_deleted)._(' deletes'), _('processing'));
+        $request['page']->info(_('Calculated: ').count($this->to_be_created)._(' creates ').count($this->to_be_updated)._(' updates ').count($this->to_be_deleted)._(' deletes'), _('processing'));
         return true;
     }
 
@@ -971,15 +993,32 @@ class Processor {
             $template->setContainer($container);
             $template->accept();
             
-            // run hooks
-            $result = udi_run_hook('userid_algorithm',array($this->server, $this->udiconfig, $account), $this->cfg['userid_algo']);
-            if (is_array($result)) {
-                $result = array_pop($result);
+            // run userid hook
+            if (!isset($this->cfg['ignore_userids']) || !$this->cfg['ignore_userids']) {
+                $result = udi_run_hook('userid_algorithm',array($this->server, $this->udiconfig, $account), $this->cfg['userid_algo']);
                 if (is_array($result)) {
-                    $account = $result;
+                    $result = array_pop($result);
+                    if (is_array($result)) {
+                        $account = $result;
+                    }
                 }
             }
-//            var_dump($account);
+           
+            // run passwd hook
+            if (!isset($this->cfg['ignore_passwds']) || !$this->cfg['ignore_passwds']) {
+                $result = udi_run_hook('passwd_algorithm',array($this->server, $this->udiconfig, $account, $this->cfg['passwd_parameters']), $this->cfg['passwd_algo']);
+                if (is_array($result)) {
+                    $result = array_pop($result);
+                    if (!empty($result)) {
+                        $account['userPassword'] = $result;
+                    }
+                }
+            }
+            
+            // encrypt the passwords
+            if (isset($account['userPassword']) && $this->cfg['encrypt_passwd'] != 'none') {
+                $account['userPassword'] = password_hash($account['userPassword'], $this->cfg['encrypt_passwd']);
+            }
 
             // need to prevent doubling up of attribute values
             $total_fields = array();
@@ -1305,7 +1344,7 @@ class Processor {
                     $result = false;
                 }
                 else {
-                    list($discard, $old_dn) = explode('udi_deactivated:', $old_dn);
+                    list($discard, $old_dn) = explode('udi_deactivated:', $old_dn, 2);
                     $query = $this->server->query(array('base' => $old_dn), 'login');
                     if (!empty($query)) {
                         $existing_account = array_shift($query);
@@ -1355,7 +1394,7 @@ class Processor {
                     $result = false;
                 }
                 else {
-                    list($discard, $old_dn) = explode('udi_deactivated:', $old_dn);
+                    list($discard, $old_dn) = explode('udi_deactivated:', $old_dn, 2);
                     // now - move them back to old location, and delete the labelURI
                     $container = $this->server->getContainer($old_dn);
                     $labeleduri = preg_grep('/^udi_deactivated:/', $account['labeleduri'], PREG_GREP_INVERT);
