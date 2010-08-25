@@ -1021,9 +1021,9 @@ class Processor {
             if (!isset($total_fields['cn'])) {
                 $this->addAttribute($template, 'cn', array($cn));
             }
-            if (!isset($total_fields['uid'])) {
-                $this->addAttribute($template, 'uid', array($uid));
-            }
+//            if (!isset($total_fields['uid'])) {
+//                $this->addAttribute($template, 'uid', array($uid));
+//            }
             $template->setRDNAttributes($rdn);
             // set the CN
             $result = $this->server->add($dn, $template->getLDAPadd(), 'login');
@@ -1278,6 +1278,125 @@ class Processor {
 
     
     /**
+     * validate the user reactivation request
+     * 
+     * @return bool true on success
+     */
+    public function validateReactivation() {
+        global $request;
+        $result = true;
+
+        $children = $this->server->getContainerContents($this->cfg['move_to'], 'login', 0, '(objectClass=*)', LDAP_DEREF_NEVER);
+        foreach ($children as $child) {
+            $query = $this->server->query(array('base' => $child), 'login');
+            $account = array_shift($query);
+            // check that there isnt a duplicate there already
+            $deactive_dn = $account['dn'];
+            if (!isset($account['labeleduri'])) {
+                $request['page']->info(_('Deactivated account does not have old DN - cannot restore: ').$dactive_dn, _('processing'));
+                $result = false;
+            }
+            else {
+                $labeleduri = $account['labeleduri'];
+                $old_dn = preg_grep('/^udi_deactivated:/', $account['labeleduri']);
+                $old_dn = array_shift($old_dn);
+                if (empty($old_dn)) {
+                    $request['page']->info(_('Deactivated account does not have old DN on lableURI - cannot restore: ').$deactive_dn, _('processing'));
+                    $result = false;
+                }
+                else {
+                    list($discard, $old_dn) = explode('udi_deactivated:', $old_dn);
+                    $query = $this->server->query(array('base' => $old_dn), 'login');
+                    if (!empty($query)) {
+                        $existing_account = array_shift($query);
+                        $request['page']->info(_('Deactivated account ').$deactive_dn._(' cannot be restored over: ').$old_dn, _('processing'));
+                        $result = false;
+                    }
+                    // check that the target container exists
+                    $container = $this->server->getContainer($old_dn);
+                    $query = $this->server->query(array('base' => $container), 'login');
+                    if (empty($query)) {
+                        $request['page']->info(_('Deactivated account ').$deactive_dn._(' cannot be restored to non-existent container: ').$container, _('processing'));
+                        $result = false;
+                    }
+                }
+            }
+        }
+        
+        $request['page']->info(_('Calculated: ').count($children)._(' accounts to be resurected'), _('processing'));
+        return $result;
+    }
+    
+    /**
+     * reactivate the users in the deactivation container
+     * 
+     * @return bool true on success
+     */
+    public function reactivate() {
+        global $request;
+        $result = true;
+
+        $children = $this->server->getContainerContents($this->cfg['move_to'], 'login', 0, '(objectClass=*)', LDAP_DEREF_NEVER);
+        foreach ($children as $child) {
+            $query = $this->server->query(array('base' => $child), 'login');
+            $account = array_shift($query);
+            // check that there isnt a duplicate there already
+            $deactive_dn = $account['dn'];
+            if (!isset($account['labeleduri'])) {
+                $request['page']->info(_('Deactivated account does not have old DN - cannot restore: ').$dactive_dn, _('processing'));
+                $result = false;
+            }
+            else {
+                $labeleduri = $account['labeleduri'];
+                $old_dn = preg_grep('/^udi_deactivated:/', $account['labeleduri']);
+                $old_dn = array_shift($old_dn);
+                if (empty($old_dn)) {
+                    $request['page']->info(_('Deactivated account does not have old DN on lableURI - cannot restore: ').$deactive_dn, _('processing'));
+                    $result = false;
+                }
+                else {
+                    list($discard, $old_dn) = explode('udi_deactivated:', $old_dn);
+                    // now - move them back to old location, and delete the labelURI
+                    $container = $this->server->getContainer($old_dn);
+                    $labeleduri = preg_grep('/^udi_deactivated:/', $account['labeleduri'], PREG_GREP_INVERT);
+                    
+                    // do the move
+                    $template = new Template($this->server->getIndex(),null,null,'modrdn');
+                    $rdn = get_rdn($old_dn);
+                    $template->setDN($deactive_dn);
+                    $template->accept();
+                    $attrs = array();
+                    $attrs['newrdn'] = $rdn;
+                    $attrs['deleteoldrdn'] = '1';
+                    $attrs['newsuperior'] = $container;
+                    $template->modrdn = $attrs;
+                    $this->addTreeItem($deactive_dn);
+                    $result = $this->server->rename($deactive_dn, $template->modrdn['newrdn'], $template->modrdn['newsuperior'], $template->modrdn['deleteoldrdn'], 'login');
+                    if (!$result) {
+                        $request['page']->error(_('Could not resurect (rename): ').$deactive_dn, _('processing'));
+                        return $result;
+                    }
+                    
+                    // sort out the label
+                    $template = new Template($this->server->getIndex(),null,null,'modify');
+                    $rdn = get_rdn($old_dn);
+                    $template->setDN($old_dn);
+                    $template->accept();
+                    $this->modifyAttribute($template, 'labeleduri', $labeleduri);
+                    $result = $this->server->modify($old_dn, $template->getLDAPmodify(), 'login');
+                    if (!$result) {
+                        $request['page']->error(_('Could not modify: ').$old_dn, _('processing'));
+                        return $result;
+                    }
+                }
+            }
+        }
+        
+        $request['page']->info(_('Processed: ').count($children)._(' accounts resurected'), _('processing'));
+        return $result;
+    }
+    
+    /**
      * Process user delete records
      * 
      * @return bool true on success
@@ -1288,9 +1407,25 @@ class Processor {
         // process the deletes, which are really moves
         foreach ($this->to_be_deleted as $account) {
 
-            // start building up the creation template
-            $template = new Template($this->server->getIndex(),null,null,'modrdn');
             $dn = $account['dn'];
+            
+            // First flag accounts where they come from - accounts can be 
+            // resurected with this later
+            $template = new Template($this->server->getIndex(),null,null,'modify');
+            $rdn = get_rdn($dn);
+            $template->setDN($dn);
+            $template->accept();
+            $values = isset($account['labeleduri']) ? $account['labeleduri'] : array();
+            $values []= 'udi_deactivated:'.$dn;
+            $this->modifyAttribute($template, 'labeleduri', $values);
+            $result = $this->server->modify($dn, $template->getLDAPmodify(), 'login');
+            if (!$result) {
+                $request['page']->error(_('Could not modify: ').$dn, _('processing'));
+                return $result;
+            }
+            
+            // start building up the move template
+            $template = new Template($this->server->getIndex(),null,null,'modrdn');
             $rdn = get_rdn($dn);
             $template->setDN($dn);
             $template->accept();

@@ -2,10 +2,14 @@
 $cfg = $udiconfig->getConfig();
 $action = (get_request('cancel') ? 'cancel' : '').
           (get_request('process') ? 'process' : '').
-          (get_request('validate') ? 'validate' : '');
+          (get_request('validate') ? 'validate' : '').
+          (get_request('reactivate') ? 'reactivate' : '');
           
-# Set our timelimit in case we have a lot of importing to do
+// Set our timelimit in case we have a lot of importing to do
 @set_time_limit(0);
+
+// up the memory limit as this could be big
+ini_set('memory_limit', '512M');
 
 switch ($action) {
     case 'cancel':
@@ -70,6 +74,28 @@ switch ($action) {
             $processor->import();
         }
         $request['page']->info(_('File processing finished'));
+        break;
+        
+    case 'reactivate':
+       // validate config
+        if (!$udiconfig->validate()) {
+            break;
+        }
+        
+        // really process the file now
+        $request['page']->info(_('Reactivation processing started'));
+        // do validation, and then jump to a confirm/cancel screen
+        $processor = new Processor($app['server'], array('header' => array(), 'contents' => array()));
+        if ($processor->validateReactivation()) {
+            $confirm = get_request('confirm');
+            if ($confirm == 'yes') {
+                $processor->reactivate();
+                $request['page']->info(_('User reactivation completed'));
+            }
+            else if ($confirm == 'no') {
+                $request['page']->info(_('User reactivation cancelled'));
+            }
+        }
         break;
         
     default:
