@@ -1125,7 +1125,7 @@ class Processor {
         // get Ignore for update attributes
         $ignore_attrs = array();
         foreach ($this->udiconfig->getIgnoreAttrs() as $attr) {
-            $ignore_attrs[strtolower($attrs)] = $attr;
+            $ignore_attrs[strtolower($attr)] = $attr;
         }
 
         $field_mappings = array();
@@ -1233,6 +1233,8 @@ class Processor {
         return true;
     }
 
+
+    
     /**
      * Replace a users group membership 
      * 
@@ -1241,7 +1243,7 @@ class Processor {
      * 
      * @return bool true on success
      */
-    private function replaceGroupMembership($uid, $group_membership, $user_dn) {
+    private function removeGroupMembership($uid) {
         global $request;
         
         // must have a user id
@@ -1264,6 +1266,7 @@ class Processor {
         
         // hunt for existing group membership and remove
         $group_attr = $this->cfg['group_attr'];
+//        if (strtolower($group_attr) != 'memberof') {
         foreach ($this->total_groups as $group) {
             // check and delete from group
             $query = $this->server->query(array('base' => $group, 'filter' => "($group_attr=$uid)"), 'login');
@@ -1284,10 +1287,33 @@ class Processor {
                     return $request['page']->error(_('Could not remove user from group: ').$uid.'/'.$group, _('processing'));
                 }
             }
+//            }
         }
+        return true;
+    }
+    
+    /**
+     * Replace a users group membership 
+     * 
+     * @param String $uid userid relative to the configured user attribute 
+     * @param String $group_membership as per mlepGroupMembership export schema definition
+     * 
+     * @return bool true on success
+     */
+    private function replaceGroupMembership($uid, $group_membership, $user_dn) {
+        global $request;
+        
+        // must have a user id
+        if (!$uid) {
+            return false;
+        }
+        
+        // hunt for existing group membership and remove
+        $this->removeGroupMembership($uid);
 
         // then re add memberships
-        $memberof_groups = array();
+        $group_attr = $this->cfg['group_attr'];
+//        $memberof_groups = array();
         if ($group_membership) {
             $groups = explode('#', $group_membership);
             foreach ($groups as $group) {
@@ -1303,43 +1329,43 @@ class Processor {
 
                         // add back all the existing attribute values
                         $existing = array_shift($query);
-                        // check for memberOf, as this goes on the user - not the group container
-                        if (strtolower($group_attr) == 'memberof') {
-                            $memberof_groups []= $existing['dn'];
+//                        // check for memberOf, as this goes on the user - not the group container
+//                        if (strtolower($group_attr) == 'memberof') {
+//                            $memberof_groups []= $existing['dn'];
+//                        }
+//                        else {
+                        if (isset($existing[strtolower($group_attr)])) {
+                            $values = $existing[strtolower($group_attr)];
                         }
                         else {
-                            if (isset($existing[strtolower($group_attr)])) {
-                                $values = $existing[strtolower($group_attr)];
-                            }
-                            else {
-                                $values = array();
-                            }
-                            $values[] = $uid;
-                            $this->modifyAttribute($template, $group_attr, $values);
-                            # Perform the modification
-                            $this->addTreeItem($mapping);
-                            $result = $this->server->modify($mapping,$template->getLDAPmodify(), 'login');
-                            if (!$result) {
-                                $request['page']->error(_('Could not add user to group: ').$uid.'/'.$mapping, _('processing'));
-                            }
+                            $values = array();
                         }
+                        $values[] = $uid;
+                        $this->modifyAttribute($template, $group_attr, $values);
+                        # Perform the modification
+                        $this->addTreeItem($mapping);
+                        $result = $this->server->modify($mapping,$template->getLDAPmodify(), 'login');
+                        if (!$result) {
+                            $request['page']->error(_('Could not add user to group: ').$uid.'/'.$mapping, _('processing'));
+                        }
+//                        }
                     }
                 }
             }
-            // if this is controlled by memberOf - then update the user with the list of group DNs
-            if (strtolower($group_attr) == 'memberof') {
-                $template = new Template($this->server->getIndex(),null,null,'modify');
-                $rdn = get_rdn($user_dn);
-                $template->setDN($user_dn);
-                $template->accept();
-                $this->modifyAttribute($template, $group_attr, $memberof_groups);
-                # Perform the modification
-                $result = $this->server->modify($user_dn,$template->getLDAPmodify(), 'login');
-                if (!$result) {
-                    $request['page']->error(_('Could not update user groups: ').$user_dn.'/'.implode('|', $memberof_groups), _('processing'));
-                }
-                
-            }
+//            // if this is controlled by memberOf - then update the user with the list of group DNs
+//            if (strtolower($group_attr) == 'memberof') {
+//                $template = new Template($this->server->getIndex(),null,null,'modify');
+//                $rdn = get_rdn($user_dn);
+//                $template->setDN($user_dn);
+//                $template->accept();
+//                $this->modifyAttribute($template, $group_attr, $memberof_groups);
+//                # Perform the modification
+//                $result = $this->server->modify($user_dn,$template->getLDAPmodify(), 'login');
+//                if (!$result) {
+//                    $request['page']->error(_('Could not update user groups: ').$user_dn.'/'.implode('|', $memberof_groups), _('processing'));
+//                }
+//                
+//            }
         }
         return true;
     }
@@ -1463,6 +1489,68 @@ class Processor {
         $request['page']->info(_('Processed: ').count($children)._(' accounts resurected'), _('processing'));
         return $result;
     }
+
+    
+    
+    /**
+     * Completely delete the deactivated users
+     * 
+     * @return bool true on success
+     */
+    public function deleteDeactivated() {
+        global $request;
+        $result = true;
+
+        $children = $this->server->getContainerContents($this->cfg['move_to'], 'login', 0, '(objectClass=*)', LDAP_DEREF_NEVER);
+        foreach ($children as $child) {
+            $query = $this->server->query(array('base' => $child), 'login');
+            $account = array_shift($query);
+            // check that there isnt a duplicate there already
+            $deactive_dn = $account['dn'];
+            
+            // determine type of group membership - memberUid, member, uniqueMember, memberOf
+            $uid = '';
+            if (strtolower($this->cfg['group_attr']) == 'memberuid') {
+                $uid = (isset($account['mlepusername']) ? $account['mlepusername'] : false);
+            }
+            else {
+                // it must a member style DN group
+                if (!isset($account['labeleduri'])) {
+                    $request['page']->warning(_('Deactivated account does not have old DN - cannot remove from groups: ').$dactive_dn, _('processing'));
+                }
+                else {
+                    $labeleduri = $account['labeleduri'];
+                    $old_dn = preg_grep('/^udi_deactivated:/', $account['labeleduri']);
+                    $old_dn = array_shift($old_dn);
+                    if (empty($old_dn)) {
+                        $request['page']->warning(_('Deactivated account does not have old DN on labeledURI - cannot restore: ').$deactive_dn, _('processing'));
+                        $result = false;
+                    }
+                    else {
+                        list($discard, $old_dn) = explode('udi_deactivated:', $old_dn, 2);
+                        $uid = $old_dn; 
+                    }
+                }
+            }
+            
+            // hunt for existing group membership and remove
+            if (!empty($uid)) {
+                $this->removeGroupMembership($uid);
+            }
+            
+            // Delete the entry.
+            $result = $this->server->delete($deactive_dn);
+            if (!$result) {
+                $request['page']->error(_('Could not completely delete: ').$deactive_dn, _('processing'));
+                return $result;
+            }
+        }
+        
+        $request['page']->info(_('Processed: ').count($children)._(' accounts completely deleted'), _('processing'));
+        return $result;
+    }
+    
+    
     
     /**
      * Process user delete records

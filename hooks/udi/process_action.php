@@ -3,7 +3,8 @@ $cfg = $udiconfig->getConfig();
 $action = (get_request('cancel') ? 'cancel' : '').
           (get_request('process') ? 'process' : '').
           (get_request('validate') ? 'validate' : '').
-          (get_request('reactivate') ? 'reactivate' : '');
+          (get_request('reactivate') ? 'reactivate' : '').
+          (get_request('delete') ? 'delete' : '');
           
 // Set our timelimit in case we have a lot of importing to do
 @set_time_limit(0);
@@ -92,6 +93,26 @@ switch ($action) {
             else if ($confirm == 'no') {
                 $request['page']->info(_('User reactivation cancelled'));
             }
+        }
+        break;
+        
+    case 'delete':
+       // validate config
+        if (!$udiconfig->validate()) {
+            break;
+        }
+        
+        // really process the file now
+        $request['page']->info(_('Deletion processing started'));
+        // do validation, and then jump to a confirm/cancel screen
+        $processor = new Processor($app['server'], array('header' => array(), 'contents' => array()));
+        $confirm = get_request('confirm');
+        if ($confirm == 'yes') {
+            $processor->deleteDeactivated();
+            $request['page']->info(_('User deletion completed'));
+        }
+        else if ($confirm == 'no') {
+            $request['page']->info(_('User deletion cancelled'));
         }
         break;
         

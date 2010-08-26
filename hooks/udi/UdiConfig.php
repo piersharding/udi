@@ -19,11 +19,14 @@ class UdiConfig {
                     'ignore_deletes' => null,
                     'ignore_creates' => null,
                     'ignore_updates' => null,
+                    'enable_reporting' => null,
                     'move_on_delete' => 'checked',
                     'ignore_userids' => null,
                     'ignore_passwds' => null,
                     'move_to' => '',
                     'filepath' => '',
+                    'reportpath' => '',
+                    'reportemail' => '',
                     'dir_match_on' => 'mlepsmspersonid',
                     'import_match_on' => 'mlepsmspersonid',
                     'groups_enabled' => null,
@@ -65,7 +68,6 @@ class UdiConfig {
         $this->configdn = $this->configdnname.','.$this->base;
         $this->configbackupdn = $this->configbackupdnname.','.$this->base;
     }
-	
 
 	/**
 	 * Get the base DN
@@ -133,6 +135,33 @@ class UdiConfig {
             $request['page']->warning(_('Source import file does not exist: ').$this->config['filepath'], _('configuration'));
         }
     
+        // validate reporting file path
+        if (isset($this->config['enable_reporting']) && $this->config['enable_reporting'] == 'checked') {
+            // validate reporting email address
+            if (!preg_match('#^[-!\#$%&\'*+\\/0-9=?A-Z^_`a-z{|}~]+'.
+                 '(\.[-!\#$%&\'*+\\/0-9=?A-Z^_`a-z{|}~]+)*'.
+                  '@'.
+                  '[-!\#$%&\'*+\\/0-9=?A-Z^_`a-z{|}~]+\.'.
+                  '[-!\#$%&\'*+\\./0-9=?A-Z^_`a-z{|}~]+$#',
+                  $this->config['reportemail'])) {
+                $request['page']->error(_('Reporting email address is invalid: ').$this->config['reportemail'], _('configuration'));
+                $valid = false;
+            }
+            
+            // create missing directory
+            if (!file_exists($this->config['reportpath'])) {
+                if (!mkdir($this->config['reportpath'], 0755)) {
+                    $request['page']->error(_('Reporting file path does not exist, and could not be created: ').$this->config['reportpath'], _('configuration'));
+                    $valid = false;
+                }
+            }
+            // check permissions
+            if (!is_writable($this->config['reportpath'])) {
+                $request['page']->error(_('Reporting file path cannot be written to: ').$this->config['reportpath'], _('configuration'));
+                $valid = false;
+            }
+        }
+        
         // get the search bases
         $bases = explode(';', $this->config['search_bases']);
         foreach ($bases as $base) {
@@ -232,7 +261,7 @@ class UdiConfig {
     }
 
     /**
-     * Set a config value
+     * Set a config checkbox value
      */
     public function setConfigCheckBox($field, $value=false) {
 

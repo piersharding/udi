@@ -17,10 +17,6 @@
  * @subpackage Functions
  */
 
-// basic check that user is logged in
-if (!$_SESSION[APPCONFIG]) {
-    return false;
-}
 /**
  * The passwd_algorithm function is called from within the userpass_form to determine the name
  * of a registered password algorithm
@@ -32,8 +28,9 @@ function passwd_alg_02_passwd_algorithm_label() {
 
     return array('name' => 'passwd_alg_02_passwd_algorithm', 
                  'title' => _('Randomly generate password'),
-                  'description' => 'generate passwords based on a specified length and optional disallowed characters set.<br/>  
-                  The parameter string is used to pass options - example: length=6,exclusions=01oOl
+                  'description' => 'generate passwords based on a specified length and optional exclusion characters set.<br/>  
+                  The parameter string is used to pass options - example: length=6,exclusions=01oOl<br/>
+                  The base set of characters are a-zA-Z0-9.
                   '
     );
 }
@@ -80,19 +77,12 @@ function passwd_alg_02_passwd_algorithm() {
     }
     
     // This variable contains the list of allowable characters for the
-    // password. Note that the number 0 and the letter 'O' have been
-    // removed to avoid confusion between the two. The same is true
-    // of 'I', 1, and l.
-  
-    // alternative password generator
-    //    return substr(md5(rand().rand()), 0, $length);
-    
-    $allowable_characters = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    // password.
+    $allowable_characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     // apply the exclusions
     if (!empty($exclusions)) {
         $allowable_characters = preg_replace('/['.preg_quote($exclusions).']+?/', '', $allowable_characters);
     }
-    
     // Zero-based count of characters in the allowable list:
     $len = strlen($allowable_characters) - 1;
     // Declare the password as a blank string.

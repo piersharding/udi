@@ -1024,10 +1024,16 @@ div.center {
     width:100%;
 }
 div.udiform {width:80%;float:left;margin:0 auto;padding:0px;display:block;}
+div.udiform_full {width:100%;float:left;margin:0 auto;padding:0px;display:block;}
+div.udiform_small {width:65%;float:left;margin:0 auto;padding:0px;display:block;}
 div.item-list {margin-left:10px;width:100%;display:block;}
 div.help {width:20%;text-align:auto;float:right;}
+div.help_big {width:35%;text-align:auto;float:right;}
+div.help_hide {display:none;}
 div.tools-right {text-align:auto;float:right;padding-right:50px;}
 div.udi_clear {clear:both;}
+
+span.tiny {font-size: 10px; word-wrap: break-word;}
 
 input.udi-buttonx { border: 1px solid #BBB;
 					border-bottom-left-radius: 3px 3px; 

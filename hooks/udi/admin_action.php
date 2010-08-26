@@ -96,13 +96,15 @@ case 'restore':
 default:
     // get the config values posted
     $update = true;
+    
     foreach (array('filepath', 'udi_version', 'enabled', 'ignore_deletes', 
-                   'ignore_creates', 'ignore_updates', 'move_on_delete', 
+                   'ignore_creates', 'ignore_updates', 'move_on_delete',  
+                   'enable_reporting', 'reportpath', 'reportemail',
                    'move_to', 'dir_match_on', 'import_match_on', 'dn_attribute') as $config) {
         $cfg[$config] = get_request($config);
         // enabled is a checkbox
         if ($config == 'enabled' || $config == 'ignore_deletes' || $config == 'move_on_delete' || 
-            $config == 'ignore_creates' || $config == 'ignore_updates') {
+            $config == 'ignore_creates' || $config == 'ignore_updates' || $config == 'enable_reporting') {
             $udiconfig->setConfigCheckBox($config, $cfg[$config]);
         }
         else {
@@ -189,7 +191,6 @@ default:
         $attrs[]= $attr;
     }
     $udiconfig->setConfig('ignore_attrs', implode(';', $attrs));
-    
     
     // finally update all the config
     $cfg = $udiconfig->updateContainerMappings($cfg_container_mappings);

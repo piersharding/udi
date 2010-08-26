@@ -17,11 +17,6 @@
  * @subpackage Functions
  */
 
-// basic check that user is logged in
-if (!$_SESSION[APPCONFIG]) {
-    return false;
-}
-
 /**
  * The userid_algorithm function is called from within the admin_form to determine the name
  * of a registered User Id algorithm

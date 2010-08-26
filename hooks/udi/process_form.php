@@ -3,16 +3,26 @@ $cfg = $request['udiconfig'];
 $action = (get_request('cancel') ? 'cancel' : '').
           (get_request('process') ? 'process' : '').
           (get_request('validate') ? 'validate' : '').
-          (get_request('reactivate') ? 'reactivate' : '');
-$confirm = get_request('confirm');
+          (get_request('reactivate') ? 'reactivate' : '').
+          (get_request('delete') ? 'delete' : '');
+          $confirm = get_request('confirm');
 if ($action == 'reactivate' && empty($confirm)) {
-    // output the confirmation page
+    // output the reactivation confirmation page
     echo $request['page']->confirmationPage(_('Distinguished Name'), 
                                             _('Restore users from '), 
                                             $cfg['move_to'], 
                                             _('Are you sure you want to restore the deactivated users?'), 
                                             _('Restore'), 
-                                            array('cmd' => 'udi', 'udi_nav' => $udi_nav, 'reactivate' => 'reactivate'));
+                                            array('server_id' => $app['server']->getIndex(), 'cmd' => 'udi', 'udi_nav' => $udi_nav, 'reactivate' => 'reactivate'));
+}
+else if ($action == 'delete' && empty($confirm)) {
+    // output the deletion confirmation page
+    echo $request['page']->confirmationPage(_('Distinguished Name'), 
+                                            _('Delete users completely from '), 
+                                            $cfg['move_to'], 
+                                            _('Are you sure you want to completely delete the deactivated users?'), 
+                                            _('Delete'), 
+                                            array('server_id' => $app['server']->getIndex(), 'cmd' => 'udi', 'udi_nav' => $udi_nav, 'delete' => 'delete'));
 }
 else {
     echo '<div class="center">';
@@ -26,6 +36,8 @@ else {
         $children = $app['server']->getContainerContents($cfg['move_to'], 'login', 0, '(objectClass=*)', LDAP_DEREF_NEVER);
         if (count($children) > 0) {
             echo '<a href="" title="'._('Restore users').'" onclick="post_to_url(\'cmd.php\', {\'reactivate\': \'reactivate\'}); return false;"><img src="images/udi/import-big.png" alt="'._('Restore users').'"/> &nbsp; '._('Restore users').'</a>';
+            echo '&nbsp; ';
+            echo '<a href="" title="'._('Completely delete users').'" onclick="post_to_url(\'cmd.php\', {\'delete\': \'delete\'}); return false;"><img src="images/udi/trash-big.png" alt="'._('Completely delete users').'"/> &nbsp; '._('Completely delete users').'</a>';
         }
     }
     echo '</div>';

@@ -17,11 +17,6 @@
  * @subpackage Functions
  */
 
-// basic check that user is logged in
-if (!$_SESSION[APPCONFIG]) {
-    return false;
-}
-
 /**
  * The userid_algorithm function is called from within the admin_form to determine the name
  * of a registered User Id algorithm
@@ -34,11 +29,11 @@ function userid_alg_03_userid_algorithm_label() {
 	return array('name' => 'userid_alg_03_userid_algorithm', 'title' => _('Compose from CSV columns'),
 	             'description' => 'generates the User Id based on an edit mask created from
   the CSV column headings similar to sprintf. eg:
-  STU%[YearGroup]%[mlepFirstName] %[mlepLastName] would create an User Id of stu10daisyduck.<br/>
+  <span class=\'tiny\'>STU%[YearGroup]%[mlepFirstName]%[mlepLastName]</span> would create an User Id of stu10daisyduck.<br/>
  There is a special value %[Initials] that substitutes in the intials of the users first name.  
  %[UniqueNo] substitutes an auto-generated unique number.
  <br/>
- All substitutions can be given an optional length specfier which will truncate accordingly eg: %[Initials].%[mlepLastName:3]. %[UniqueNo:5]
+ All substitutions can be given an optional length specfier which will truncate accordingly eg: <span class=\'tiny\'>%[Initials].%[mlepLastName:3].%[UniqueNo:5]</span>
   would give d.duc.00001.');
 }
 add_hook('userid_algorithm_label','userid_alg_03_userid_algorithm_label');

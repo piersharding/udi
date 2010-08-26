@@ -7,20 +7,16 @@ $confirm = get_request('confirm');
             
 $result = udi_run_hook('userid_algorithm_label',array());
 $userid_algols = array('' => '');
-$userid_help = array();
 if (!empty($result)) {
     foreach ($result as $algo) {
         $userid_algols[$algo['name']]= htmlspecialchars($algo['title']);
-        $userid_help[]= htmlspecialchars($algo['title']).': '.$algo['description'];
     }
 }                
 $result = udi_run_hook('passwd_algorithm_label',array());
 $passwd_algols = array('' => '');
-$passwd_help = array();
 if (!empty($result)) {
     foreach ($result as $algo) {
         $passwd_algols[$algo['name']]= htmlspecialchars($algo['title']);
-        $passwd_help[]= htmlspecialchars($algo['title']).': '.$algo['description'];
     }
 }                
 

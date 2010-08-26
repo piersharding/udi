@@ -17,10 +17,6 @@
  * @subpackage Functions
  */
 
-// basic check that user is logged in
-if (!$_SESSION[APPCONFIG]) {
-    return false;
-}
 /**
  * The passwd_algorithm function is called from within the userpass_form to determine the name
  * of a registered password algorithm

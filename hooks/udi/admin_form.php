@@ -12,7 +12,7 @@ if ($configuration_action == 'restore' && empty($confirm)) {
                                             $udiconfig->getConfigBackupDN(), 
                                             _('Are you sure you want to restore the configuration backup?'), 
                                             _('Restore'), 
-                                            array('cmd' => 'udi', 'udi_nav' => $udi_nav, 'configuration' => 'restore'));
+                                            array('server_id' => $app['server']->getIndex(), 'cmd' => 'udi', 'udi_nav' => $udi_nav, 'configuration' => 'restore'));
 }
 else if ($configuration_action == 'backup' && empty($confirm)) {
     // output the confirmation page
@@ -21,14 +21,16 @@ else if ($configuration_action == 'backup' && empty($confirm)) {
                                             $udiconfig->getConfigDN(), 
                                             _('Are you sure you want to backup the configuration?'), 
                                             _('Backup'), 
-                                            array('cmd' => 'udi', 'udi_nav' => $udi_nav, 'configuration' => 'backup'));
+                                            array('server_id' => $app['server']->getIndex(), 'cmd' => 'udi', 'udi_nav' => $udi_nav, 'configuration' => 'backup'));
 }
 else {
     echo '<div class="center">';
-    echo '<div class="help">';
+//    echo '<div id="help" class="help_hide">';
+    echo '<div id="help" class="help">';
     include 'admin.help.php';
     echo '</div>';
-    echo '<div class="udiform">';
+//    echo '<div id="udiform" class="udiform_full">';
+    echo '<div id="udiform" class="udiform">';
     echo '<span style="white-space: nowrap;">';
     echo '<div class="tools-right">';
     echo '<a href="" title="'._('Backup Configuration').'" onclick="post_to_url(\'cmd.php\', {\'configuration\': \'backup\'}); return false;"><img src="images/udi/export.png" alt="'._('Backup Configuration').'"/> &nbsp; '._('Backup Configuration').'</a>';
@@ -38,6 +40,8 @@ else {
         echo ' &nbsp; ';
         echo '<a href="" title="'._('Restore Configuration').'" onclick="post_to_url(\'cmd.php\', {\'configuration\': \'restore\'}); return false;"><img src="images/udi/import-big.png" alt="'._('Restore Configuration').'"/> &nbsp; '._('Restore Configuration').'</a>';
     }
+//    echo ' &nbsp; ';
+//    echo '<a href="" title="'._('Configuration help').'" onclick="h = document.getElementById(\'help\'); f = document.getElementById(\'udiform\'); if (h.className == \'help_hide\') {f.className = \'udiform\'; h.className = \'help\';} else {h.className = \'help_hide\'; f.className = \'udiform_full\';}; return false;"><img src="images/udi/help-small.png" alt="'._('Configuration help').'"/> &nbsp;'._('help').'</a>';
     echo '</div>';
     echo '</span>';
     echo '<div class="udi_clear"></div>';
@@ -94,6 +98,37 @@ else {
     $field .= '<tr><td>'.$request['page']->configMoreField('new_base', _('Search Base'), array('type' => 'text', 'value' => '', 'size' => 50), true).'</td></tr>';
     $field .= '</table>';
     echo $request['page']->configRow($request['page']->configFieldLabel('search_bases', _('Search bases for users:')), $field, true);
+    echo '</fieldset>';
+
+    /*
+     * Reporting control configuration group
+     */
+    // file path for the UDI import
+    echo '<fieldset class="config-block"><legend>'._('Reporting control').'</legend>';
+    // enable reporting
+    $enable_reporting_opts = array('value' => 0, 'type' => 'checkbox');
+    
+    $reportpath_opts = array('type' => 'text', 'value' => $cfg['reportpath'], 'size' => 75);
+    $reportemail_opts = array('type' => 'text', 'value' => $cfg['reportemail'], 'size' => 60);
+    if (isset($cfg['enable_reporting']) && $cfg['enable_reporting'] == 'checked') {
+        $enable_reporting_opts['checked'] = 'checked';
+        $enable_reporting_opts['value'] = 1;
+    }
+    else {
+        $reportpath_opts['disabled'] = 'disabled';
+        $reportemail_opts['disabled'] = 'disabled';
+    }
+    echo $request['page']->configEntry('enable_reporting', _('Enable reporting:'), $enable_reporting_opts, true, false);    
+    if (isset($reportpath_opts['disabled'])) {
+        echo $request['page']->configEntry('reportemail', _('Reporting notification email:'), $reportemail_opts, true, false);
+        echo $request['page']->configEntry('reportemail', '', array('type' => 'hidden', 'value' => $cfg['reportemail']), false);
+        echo $request['page']->configEntry('reportpath', _('Report storage file path:'), $reportpath_opts, true, false);
+        echo $request['page']->configEntry('reportpath', '', array('type' => 'hidden', 'value' => $cfg['reportpath']), false);
+    }
+    else {
+        echo $request['page']->configEntry('reportemail', _('Reporting notification email:'), $reportemail_opts);
+        echo $request['page']->configEntry('reportpath', _('Report storage file path:'), $reportpath_opts);
+    }
     echo '</fieldset>';
     
     /*

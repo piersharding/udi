@@ -120,7 +120,7 @@ $group_attrs = array('none' => new ObjectClass_ObjectClassAttribute("", ""),
                      'member' => new ObjectClass_ObjectClassAttribute("member", "member"),
                      'memberuid' => new ObjectClass_ObjectClassAttribute("memberUid", "memberuid"),
                      'uniquemember' => new ObjectClass_ObjectClassAttribute("uniqueMember", "uniquemember"),
-                     'memberof' => new ObjectClass_ObjectClassAttribute("memberOf", "memberof"),
+//                     'memberof' => new ObjectClass_ObjectClassAttribute("memberOf", "memberof"),
 );
 if ($groups_enabled_opts['value'] == 1) {
     echo $request['page']->configSelectEntry('group_attr', _('Group Membership Attribute:'), $group_attrs, $cfg['group_attr'], false);

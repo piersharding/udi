@@ -1,6 +1,22 @@
 <a href="cmd.php?cmd=udi&amp;udi_nav=admin&amp;server_id=<?php echo $app['server']->getIndex();?>"
  title="Configure the UDI UserId & Passwds" onclick="return ajDISPLAY('BODY','cmd=udi&amp;udi_nav=userpass&amp;server_id=1&amp;','UserId & Passwd');"><h3>Help: User Ids & Passwords</h3></a>
  
+ <?php 
+ $result = udi_run_hook('userid_algorithm_label',array());
+$userid_help = array();
+if (!empty($result)) {
+    foreach ($result as $algo) {
+        $userid_help[]= htmlspecialchars($algo['title']).': '.$algo['description'];
+    }
+}                
+$result = udi_run_hook('passwd_algorithm_label',array());
+$passwd_help = array();
+if (!empty($result)) {
+    foreach ($result as $algo) {
+        $passwd_help[]= htmlspecialchars($algo['title']).': '.$algo['description'];
+    }
+}                
+ ?>
 <p>
 </p>
 <p>  
