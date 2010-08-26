@@ -182,6 +182,14 @@ if (isset($_SESSION[APPCONFIG]))
 define('CSSDIR',sprintf('css/%s',$app['theme']));
 define('IMGDIR',sprintf('images/%s',$app['theme']));
 
+# If we are here, $_SESSION is set - so enabled DEBUGing if it has been configured.
+if (isset($_SESSION[APPCONFIG]) && 
+    ($_SESSION[APPCONFIG]->getValue('debug','syslog') || $_SESSION[APPCONFIG]->getValue('debug','file'))
+	&& $_SESSION[APPCONFIG]->getValue('debug','level'))
+	define('DEBUG_ENABLED',1);
+else
+	define('DEBUG_ENABLED',0);
+
 # Initialise the hooks
 if (file_exists(LIBDIR.'hooks.php'))
 	require_once LIBDIR.'hooks.php';
@@ -215,13 +223,6 @@ if (ini_get('safe_mode') && ! get_request('cmd','GET'))
 # Set our timezone, if it is specified in config.php
 if ($_SESSION[APPCONFIG]->getValue('appearance','timezone'))
 	date_default_timezone_set($_SESSION[APPCONFIG]->getValue('appearance','timezone'));
-
-# If we are here, $_SESSION is set - so enabled DEBUGing if it has been configured.
-if (($_SESSION[APPCONFIG]->getValue('debug','syslog') || $_SESSION[APPCONFIG]->getValue('debug','file'))
-	&& $_SESSION[APPCONFIG]->getValue('debug','level'))
-	define('DEBUG_ENABLED',1);
-else
-	define('DEBUG_ENABLED',0);
 
 if (DEBUG_ENABLED)
 	debug_log('Application (%s) initialised and starting with (%s).',1,0,__FILE__,__LINE__,__METHOD__,
