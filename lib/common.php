@@ -85,10 +85,13 @@ $app['readwrite_cmds'] = array(
     'collapse','draw_tree_node','expand',
     'compare_form','compare',
     'download_binary_attr','view_jpeg_photo',
+    'entry_chooser',
+//  'export_form','export',
     'login_form','login','logout',
     'monitor',
+    'password_checker',
     'purge_cache',
-    'refresh','query_engine','server_info','show_cache','template_engine',
+    'refresh','query_engine','server_info','show_cache','template_engine', // schema
     'welcome'
     );
 	
@@ -191,7 +194,7 @@ else
 	define('DEBUG_ENABLED',0);
 
 # Initialise the hooks
-if (file_exists(LIBDIR.'hooks.php'))
+if (isset($_SESSION[APPCONFIG]) && $_SESSION[APPCONFIG] && file_exists(LIBDIR.'hooks.php'))
 	require_once LIBDIR.'hooks.php';
 
 # If we get here, and $_SESSION[APPCONFIG] is not set, then redirect the user to the index.
