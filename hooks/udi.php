@@ -14,6 +14,14 @@ require_once HOOKSDIR.'udi/UdiConfig.php';
 require_once HOOKSDIR.'udi/UdiRender.php';
 require_once HOOKSDIR.'udi/udi_functions.php';
 
+// must be logged in
+if ($app['server']->isReadOnly()) {
+    system_message(array(
+    'title'=>_('Not logged in'),
+    'body'=> 'You must be logged in to perform this function',
+    'type'=>'error'),
+    'index.php');
+}
 
 // setup the page renderer
 $request['page'] = new UdiRender($app['server']->getIndex(),get_request('template','REQUEST',false,'none'));

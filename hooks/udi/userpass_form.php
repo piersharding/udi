@@ -4,6 +4,25 @@ $socs = $app['server']->SchemaObjectClasses('login');
 
 $configuration_action = get_request('configuration');
 $confirm = get_request('confirm');
+            
+$result = udi_run_hook('userid_algorithm_label',array());
+$userid_algols = array('' => '');
+$userid_help = array();
+if (!empty($result)) {
+    foreach ($result as $algo) {
+        $userid_algols[$algo['name']]= htmlspecialchars($algo['title']);
+        $userid_help[]= htmlspecialchars($algo['title']).': '.$algo['description'];
+    }
+}                
+$result = udi_run_hook('passwd_algorithm_label',array());
+$passwd_algols = array('' => '');
+$passwd_help = array();
+if (!empty($result)) {
+    foreach ($result as $algo) {
+        $passwd_algols[$algo['name']]= htmlspecialchars($algo['title']);
+        $passwd_help[]= htmlspecialchars($algo['title']).': '.$algo['description'];
+    }
+}                
 
 echo '<div class="center">';
 echo '<div class="help">';
@@ -29,22 +48,14 @@ if (isset($cfg['ignore_userids']) && $cfg['ignore_userids'] == 'checked') {
     $userid_parameters_opts['disabled'] = 'disabled';
 }
 echo $request['page']->configEntry('ignore_userids', _('No userid processing:'), $ignore_userids_opts, true, false);    
-            
-$result = udi_run_hook('userid_algorithm_label',array());
-$algols = array('' => '');
-if (!empty($result)) {
-    foreach ($result as $algo) {
-        $algols[$algo['name']]= $algo['title'];
-    }
-}                
 if (isset($userid_algo_opts['disabled'])) {
-    echo $request['page']->configEntry('userid_algo',  _('User Id algorithm:'), array('type' => 'text', 'value' => $algols[$cfg['userid_algo']], 'size' => 25, 'disabled' => 'disabled'), true, false);
+    echo $request['page']->configEntry('userid_algo',  _('User Id algorithm:'), array('type' => 'text', 'value' => $userid_algols[$cfg['userid_algo']], 'size' => 25, 'disabled' => 'disabled'), true, false);
     echo $request['page']->configEntry('userid_algo', '', array('type' => 'hidden', 'value' => $cfg['userid_algo']), false);
     echo $request['page']->configEntry('userid_parameters', '', array('type' => 'hidden', 'value' => $cfg['userid_parameters']), false);
 }
 else {
     // select algorythm
-    echo $request['page']->configSelectEntryBasic('userid_algo', _('User Id algorithm:'), $algols, $cfg['userid_algo'], false);
+    echo $request['page']->configSelectEntryBasic('userid_algo', _('User Id algorithm:'), $userid_algols, $cfg['userid_algo'], false);
     
 }
 // parameters to pass to plugin
@@ -63,21 +74,14 @@ if (isset($cfg['ignore_passwds']) && $cfg['ignore_passwds'] == 'checked') {
     $passwd_parameters_opts['disabled'] = 'disabled';
 }
 echo $request['page']->configEntry('ignore_passwds', _('No password processing:'), $ignore_passwds_opts, true, false);    
-$result = udi_run_hook('passwd_algorithm_label',array());
-$algols = array('' => '');
-if (!empty($result)) {
-    foreach ($result as $algo) {
-        $algols[$algo['name']]= $algo['title'];
-    }
-}                
 if (isset($passwd_algo_opts['disabled'])) {
-    echo $request['page']->configEntry('passwd_algo', _('Password algorithm:'), array('type' => 'text', 'value' => $algols[$cfg['passwd_algo']], 'size' => 25, 'disabled' => 'disabled'), true, false);
+    echo $request['page']->configEntry('passwd_algo', _('Password algorithm:'), array('type' => 'text', 'value' => $passwd_algols[$cfg['passwd_algo']], 'size' => 25, 'disabled' => 'disabled'), true, false);
     echo $request['page']->configEntry('passwd_algo', '', array('type' => 'hidden', 'value' => $cfg['passwd_algo']), false);
     echo $request['page']->configEntry('passwd_parameters', '', array('type' => 'hidden', 'value' => $cfg['passwd_parameters']), false);
 }
 else {
     // select algorythm
-    echo $request['page']->configSelectEntryBasic('passwd_algo', _('Password algorithm:'), $algols, $cfg['passwd_algo'], false);
+    echo $request['page']->configSelectEntryBasic('passwd_algo', _('Password algorithm:'), $passwd_algols, $cfg['passwd_algo'], false);
 }
 echo $request['page']->configEntry('passwd_parameters', _('Password generation parameters:'), $passwd_parameters_opts, true, false);
 // how to encrypt the passwd value

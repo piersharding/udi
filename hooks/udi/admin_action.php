@@ -54,6 +54,20 @@ case 'delete':
                 }
             }
             break;
+            
+        case 'ignore_attrs':
+            $attr_delete = (int)get_request('ignore_attrs');
+            if ($attr_delete > 0 && isset($cfg['ignore_attrs'])) {
+                $attrs = $udiconfig->getIgnoreAttrs();
+                if (count($attrs) >= $attr_delete) {
+                    $attr = $attrs[$attr_delete - 1];
+                    array_splice($attrs, $attr_delete - 1, 1);
+                    $udiconfig->updateIgnoreAttrs($attrs);
+                    $request['page']->info(_('Ignore update attribute deleted: ').$attr);
+                    break;
+                }
+            }
+            break;
     }
     break;
 
@@ -158,6 +172,24 @@ default:
     if (!empty($source)) {
         $cfg_container_mappings []= array('source' => $source, 'target' => '');
     }
+    
+    // get the ignore attributes
+    $attrs = array();
+    $no_attrs = (int)get_request('no_of_ignore_attrs');
+    if ($no_attrs > 0 && $no_attrs <= 20) {
+        foreach (range(1, $no_attrs) as $i) {
+            $attr = get_request('ignore_attrs_'.$i);
+            if (!empty($attr)) {
+                $attrs[]= $attr;
+            }
+        }
+    }
+    $attr = get_request('new_ignore_attrs');
+    if (!empty($attr) && $attr != 'none') {
+        $attrs[]= $attr;
+    }
+    $udiconfig->setConfig('ignore_attrs', implode(';', $attrs));
+    
     
     // finally update all the config
     $cfg = $udiconfig->updateContainerMappings($cfg_container_mappings);

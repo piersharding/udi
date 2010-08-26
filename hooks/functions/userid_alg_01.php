@@ -31,10 +31,10 @@ if (!$_SESSION[APPCONFIG]) {
 function userid_alg_01_userid_algorithm_label() {
 	$args = func_get_args();
 
-	return array('name' => 'userid_alg_01_userid_algorithm', 'title' => _('Passthrough User Id Generator'));
+	return array('name' => 'userid_alg_01_userid_algorithm', 'title' => _('Passthrough User Id Generator'),
+	             'description' => 'is an example template for a user written plugin - it effectively passes back the same value of mlepUsername.');
 }
 add_hook('userid_algorithm_label','userid_alg_01_userid_algorithm_label');
-
 
 
 /**

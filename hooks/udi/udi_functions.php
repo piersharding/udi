@@ -772,14 +772,14 @@ class Processor {
                 if (isset($field_mappings[$header])) {
                     foreach ($field_mappings[$header] as $target) {
                         $value = trim($user[$header]);
-                        if ($total_attrs[strtolower($target)] && empty($value)) {
+                        if ($total_attrs[strtolower($target)] && empty($value) && strtolower($target) != 'mlepusername') {
                             return $request['page']->error(_('Mandatory value: ').$header._(' (maps to: ').$target.')'._(' is empty in row: ').$row_cnt, _('processing'));
                         }
                     }
                 }
                 else {
                     $value = trim($user[$header]);
-                    if ($total_attrs[strtolower($header)] && empty($value)) {
+                    if ($total_attrs[strtolower($header)] && empty($value) && strtolower($header) != 'mlepusername') {
                         return $request['page']->error(_('Mandatory value: ').$header._(' (maps to: ').$header.')'._(' is empty in row: ').$row_cnt, _('processing'));
                     }
                 }
@@ -805,8 +805,9 @@ class Processor {
         
         // Hunt down existing uid/mlepUsernames to avoid duplicates
         $duplicates = array();
+        $row_cnt = 0;
         foreach ($this->to_be_created as $account) {
-            
+            $row_cnt++;
             
             // run userid hook
             if (!isset($this->cfg['ignore_userids']) || !$this->cfg['ignore_userids']) {
@@ -817,6 +818,10 @@ class Processor {
                         $account = $result;
                     }
                 }
+            }
+            // User Id must exist now
+            if (empty($account['mlepUsername'])) {
+                return $request['page']->error(_('Mandatory value: mlepUsername ')._(' is empty in row: ').$row_cnt, _('processing'));
             }
            
             // run passwd hook
@@ -1116,6 +1121,12 @@ class Processor {
         
         // inject object classes
         $objectclass = $this->udiconfig->getObjectClasses();        
+        
+        // get Ignore for update attributes
+        $ignore_attrs = array();
+        foreach ($this->udiconfig->getIgnoreAttrs() as $attr) {
+            $ignore_attrs[strtolower($attrs)] = $attr;
+        }
 
         $field_mappings = array();
         foreach ($cfg_mappings as $mapping) {
@@ -1138,7 +1149,18 @@ class Processor {
             $rdn = get_rdn($dn);
             $template->setDN($dn);
             $template->accept();
-
+            
+            // run userid hook
+            if (!isset($this->cfg['ignore_userids']) || !$this->cfg['ignore_userids']) {
+                $result = udi_run_hook('userid_algorithm',array($this->server, $this->udiconfig, $account), $this->cfg['userid_algo']);
+                if (is_array($result)) {
+                    $result = array_pop($result);
+                    if (is_array($result)) {
+                        $account = $result;
+                    }
+                }
+            }
+            
             // check object classes
             if (count($existing_account['objectclass']) < $user_total_classes) {
                 // update user object classes
@@ -1167,14 +1189,21 @@ class Processor {
                 // map attributes here
                 if (isset($field_mappings[$attr])) {
                     foreach ($field_mappings[$attr] as $target) {
+                        // check ignore attrs
+                        if (isset($ignore_attrs[strtolower($target)])) {
+                            continue;
+                        }
                         if (isset($existing_account[strtolower($attr)]) || !empty($value)) {
                             $this->modifyAttribute($template, $target, $value);
                         }
                     }
                 }
                 else {
-                    if (isset($existing_account[strtolower($attr)]) || !empty($value)) {
-                        $this->modifyAttribute($template, $attr, $value);
+                    // check ignore attrs
+                    if (!isset($ignore_attrs[strtolower($target)])) {
+                        if (isset($existing_account[strtolower($attr)]) || !empty($value)) {
+                            $this->modifyAttribute($template, $attr, $value);
+                        }
                     }
                 }
             }

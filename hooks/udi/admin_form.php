@@ -250,6 +250,42 @@ else {
         $ignore_updates_opts['value'] = 1;
     }
     echo $request['page']->configEntry('ignore_updates', _('Ignore account updates:'), $ignore_updates_opts, true, false);    
+
+    
+    // ignore fields for update
+    $no_attrs = 0;
+    $attributes = array_merge(array("none" => new ObjectClass_ObjectClassAttribute("", "")), $dmo_attrs);
+    $attr = '<div class="felement ftext"><table class="item-list-config">';
+    if (isset($cfg['ignore_attrs'])) {
+        $attrs = $udiconfig->getIgnoreAttrs();
+        foreach ($attrs as $attribute) {
+            $no_attrs += 1;
+            $attr .= '<tr><td>';
+            if (isset($ignore_updates_opts['checked'])) {
+                $attr .= $request['page']->configField('ignore_attrs_'.$no_attrs, array('type' => 'text', 'value' => $attribute, 'size' => 20, 'disabled' => 'disabled'), array());
+                $attr .= $request['page']->configEntry('ignore_attrs_'.$no_attrs, '', array('type' => 'hidden', 'value' => $attribute), false);
+            }
+            else {
+                $attr .= '<span style="white-space: nowrap;">'.$request['page']->configSelect('ignore_attrs_'.$no_attrs, $attributes, strtolower($attribute)).
+                            '&nbsp;<a href="" title="'._('Delete attribute').'" onclick="post_to_url(\'cmd.php\', {\'configuration\': \'delete\', \'delete\': \'ignore_attrs\', \'ignore_attrs\': \''.$no_attrs.'\'}); return false;"><img src="images/udi/trash.png" alt="'._('Delete attribute').'"/></a> &nbsp;'.
+                            '</span>';
+            }
+            $attr .= '</td></tr>';
+        }
+    }
+    if (!isset($ignore_updates_opts['checked'])) {
+        $attr .= '<tr><td>'.$request['page']->configMoreSelect('new_ignore_attrs', _('New attribute'), $attributes, array()).'</td></tr>';
+    }
+    $attr .= '</table></div>';
+    $attr .= $request['page']->configField('no_of_ignore_attrs', array('type' => 'hidden', 'value' => $no_attrs), array());
+
+    echo $request['page']->configRow(
+                $request['page']->configFieldLabel(
+                                    'ignore_attrs',
+                                    _('Ignore attributes for account update:') 
+                                    ), 
+                $attr, 
+                (isset($ignore_updates_opts['checked']) ? false : true));
     echo '</fieldset>';
     
     

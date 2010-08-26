@@ -34,11 +34,13 @@ class UdiConfig {
                     'create_in' => '',
                     'dn_attribute' => 'cn',
                     'objectclasses' => 'inetOrgPerson;mlepPerson',
+                    'ignore_attrs' => 'mlepUsername;uid',
                     'userid_algo' => '',
                     'userid_parameters' => '',
                     'passwd_parameters' => 'pass',
                     'encrypt_passwd' => 'md5',
                     'passwd_algo' => '',
+                    'next_seq_no' => 0,
     );
     
     private $server;
@@ -99,6 +101,18 @@ class UdiConfig {
         $this->unpackConfig($query);
         return $this->config;
     }
+    
+
+    /**
+     * Get the next sequential number
+     */
+    public function nextNumber() {
+        $seq = $this->config['next_seq_no'] + 1;
+        $this->setConfig('next_seq_no', $seq);
+        $this->updateConfig();
+        return $seq;
+    }
+    
     
     /**
      * Validate the Config
@@ -245,6 +259,19 @@ class UdiConfig {
 
 
     /**
+     * Get the ignore attrs config value
+     */
+    public function getIgnoreAttrs() {
+        $cfg_ignore_attrs = array();
+        $this->getConfig();
+        if (isset($this->config['ignore_attrs'])) {
+            $cfg_ignore_attrs = explode(';', $this->config['ignore_attrs']);
+        }
+        return $cfg_ignore_attrs;
+    }
+    
+
+    /**
      * Set the objectclasses config value
      */
     public function updateObjectClasses($objectclasses) {
@@ -252,8 +279,18 @@ class UdiConfig {
         $this->setConfig('objectclasses', $objectclasses);
         return $this->updateConfig();
     }
-    
+   
 
+    /**
+     * Set the ignore_attrs config value
+     */
+    public function updateIgnoreAttrs($attrs) {
+        $attrs = implode(';', $attrs);
+        $this->setConfig('ignore_attrs', $attrs);
+        return $this->updateConfig();
+    }
+    
+    
     /**
      * Get the mapping config value
      */
