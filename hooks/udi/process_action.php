@@ -69,6 +69,7 @@ switch ($action) {
             $processor = new Processor($app['server'], array('header' => $header, 'contents' => $rows));
         }
         if ($processor->validate()) {
+            $processor->purge();
             $processor->import();
         }
         $request['page']->info(_('File processing finished'));
@@ -83,10 +84,11 @@ switch ($action) {
         // really process the file now
         $request['page']->info(_('Reactivation processing started'));
         // do validation, and then jump to a confirm/cancel screen
-        $processor = new Processor($app['server'], array('header' => array(), 'contents' => array()));
+        $processor = new Processor($app['server']);
         if ($processor->validateReactivation()) {
             $confirm = get_request('confirm');
             if ($confirm == 'yes') {
+                $processor->purge();
                 $processor->reactivate();
                 $request['page']->info(_('User reactivation completed'));
             }
@@ -105,9 +107,10 @@ switch ($action) {
         // really process the file now
         $request['page']->info(_('Deletion processing started'));
         // do validation, and then jump to a confirm/cancel screen
-        $processor = new Processor($app['server'], array('header' => array(), 'contents' => array()));
+        $processor = new Processor($app['server']);
         $confirm = get_request('confirm');
         if ($confirm == 'yes') {
+            $processor->purge();
             $processor->deleteDeactivated();
             $request['page']->info(_('User deletion completed'));
         }

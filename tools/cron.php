@@ -43,8 +43,8 @@ if (count($args) <= 1) {
     exit(1);
 }
 
-$short_opts = 's:v';
-$long_opts = array('server=', 'validate');
+$short_opts = 's:f:vprdly';
+$long_opts = array('server=', 'file=', 'validate', 'process', 'reactivate', 'delete', 'list', 'yes');
 // still parse/check rest of options
 // override the values with the command line opts now - take precedence over stdin values
 // parse the command line options
@@ -66,25 +66,95 @@ if (sizeof($opts) > 0) {
         $values[trim($o[0], '- ')] = $o[1];
     }
 }
-//var_dump($values);
 
 // map the arguments supplied to variables
 $server_name = '';
+$filename = false;
 $validate = false;
+$process = false;
+$reactivate = false;
+$delete = false;
+$list = false;
+$yes = false;
 foreach ($values as $param => $value) {
     switch ($param) {
         case 's':
         case 'server':
             $server_name = $value;
             break;
+            
+        case 'f':
+        case 'file':
+            $filename = $value;
+            break;
+            
+        case 'l':
+        case 'list':
+            $list = true;
+            break;
+            
         case 'v':
         case 'validate':
             $validate = true;
             break;
+            
+        case 'p':
+        case 'process':
+            $process = true;
+            break;
+            
+        case 'r':
+        case 'reactivate':
+            $reactivate = true;
+            break;
+            
+        case 'd':
+        case 'delete':
+            $delete = true;
+            break;
+            
+        case 'y':
+        case 'yes':
+            $yes = true;
+            break;
+            
         default:
             break;
     }
 }
+$choice = false;
+foreach (array($list, $process, $reactivate, $delete) as $switch) {
+    if ($choice && $switch) {
+        // can only choose one at a time
+        console_write(_('argument error: can only run one of list/process/reactivate/delete at a time'));
+        console_write(help_text());
+        exit(1);
+    }
+    $switch && $choice = $switch;
+}
+
+if (!$choice) {
+    // you must choose to do something
+    console_write(_('argument error: you must chose one of list/process/reactivate/delete at a time'));
+    console_write(help_text());
+    exit(1);
+}
+
+
+// check that they really really want to
+if (($delete || $reactivate) && !$yes) {
+    $msg = $delete ? "deletion" : "reactivation";
+    echo "Are you sure you really want to run the $msg (y/N):?";
+    $fh = fopen('php://stdin', 'r');
+    $input = trim(fgets($fh, 1024));
+    fclose($fh);
+    if (strtolower($input) != 'y') {
+        console_write(_('answer error: execution aborted at user request'));
+        console_write(help_text());
+        exit(1);
+    }
+}
+
 # The index we will store our config in $_SESSION
 define('APPCONFIG','plaConfig');
 
@@ -229,32 +299,83 @@ if (!$udiconfig->validate()) {
     console_write($request['page']->outputMessagesConsole());
     exit(1);
 }
-
-// really process the file now
-$request['page']->info(_('File processing started'));
-// process the file specified in the config
-// validate the file specified in the config
-$import = new ImportCSV($app['server']->getIndex(), $cfg['filepath']);
-$import->accept(',');
-$header = $import->getCSVHeader();
-$rows = array();
-while ($entry = $import->readEntry()) {
-    $rows []= $entry;
+// check for list first
+if ($list) {
+    // list users according to the mlepPerson schema
+    $processor = new Processor($app['server']);
+    $accounts = $processor->listAccounts();
+    $fh = fopen('php://stdout', 'w');
+    foreach ($accounts as $account) {
+        fputcsv($fh, $account);
+    }
+    fclose($fh);
+    exit(0);
 }
-
-// bail on errors
-if ($request['page']->isError()) {
-    console_write($request['page']->outputMessagesConsole());
-    exit(1);
-}
-
-$processor = new Processor($app['server'], array('header' => $header, 'contents' => $rows));
-if ($processor->validate()) {
-    if (!$validate) {
-        $processor->import();
+// check for reactivate next
+else if ($reactivate) {
+    // really process the file now
+    $request['page']->info(_('Reactivation processing started'));
+    // do validation, and then jump to a confirm/cancel screen
+    $processor = new Processor($app['server']);
+    if ($processor->validateReactivation()) {
+        $processor->reactivate();
+        $request['page']->info(_('User reactivation completed'));
     }
 }
-$request['page']->info(_('File processing finished'));
+// check for delete next
+else if ($delete) {
+    // really process the file now
+    $request['page']->info(_('Deletion processing started'));
+    // do validation, and then jump to a confirm/cancel screen
+    $processor = new Processor($app['server']);
+    $processor->deleteDeactivated();
+    $request['page']->info(_('User deletion completed'));
+}
+// must be process
+else {
+    // really process the file now
+    $request['page']->info(_('File processing started'));
+    if (!$filename) {
+        $filename = $cfg['filepath'];
+    }
+    
+    cron_process($filename);
+    // validate the file path - must exist
+    if (preg_match('/^http/', $filename)) {
+        $hdrs = get_headers($filename);
+        if (!preg_match('/^HTTP.*? 200 .*?OK/', $hdrs[0])) {
+            $request['page']->error(_('Source import URL does not exist: ').$filename, _('process'));
+            console_write($request['page']->outputMessagesConsole());
+            exit(1);
+        }
+    } 
+    else if (!file_exists($filename)) {
+        $request['page']->error(_('Source import file does not exist: ').$filename, _('process'));
+        console_write($request['page']->outputMessagesConsole());
+        exit(1);
+    }
+    $import = new ImportCSV($app['server']->getIndex(), $filename);
+    $import->accept(',');
+    $header = $import->getCSVHeader();
+    $rows = array();
+    while ($entry = $import->readEntry()) {
+        $rows []= $entry;
+    }
+    
+    // bail on errors
+    if ($request['page']->isError()) {
+        console_write($request['page']->outputMessagesConsole());
+        exit(1);
+    }
+    
+    $processor = new Processor($app['server'], array('header' => $header, 'contents' => $rows));
+    if ($processor->validate()) {
+        if (!$validate) {
+            $processor->import();
+        }
+    }
+    $request['page']->info(_('File processing finished'));
+}
 
 // output messages
 console_write($request['page']->outputMessagesConsole());
@@ -264,6 +385,13 @@ if ($request['page']->isError()) {
 
 exit(0);
 /******************************************************************************/
+
+
+function cron_process ($filename) {
+    
+}
+
+
 
 /**
  *  Write out console message
@@ -286,8 +414,17 @@ function help_text() {
     "Usage: cron [arguments]
     <arguments>: these are:
        --help  - this help text
-       -s 1 or --server='The Server Name' - the LDAP directory connection to use
+       -s or --server='The Server Name' - the LDAP directory connection to use
                         This is the name as entered in the config.php file
+       -l --list generate a CSV file of the current set of user accounts
+                 as per the UDI configuration
+       -p --process process the input file for the UDI create/update/deactivate
+       -f --file='/file/name' overide the configured file name to be processed
+       -v --validate run the validation phase only for the process run (only for -p/--process)
+       -r --reactivate reactivate deactivated accounts
+       -d --delete permanently delete deactivated accounts
+       -y --yes automatically confirm reactivation or permanent deletion
+       
 
     This is the back ground processor for the User Directory Interface (UDI)
     service.  It relies on the configuration o the UDI to be setup correctly

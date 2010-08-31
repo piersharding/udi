@@ -36,7 +36,7 @@ add_hook('userid_algorithm_label','userid_alg_01_userid_algorithm_label');
 
 
 /**
- * The useridd_algorithm function is called from within the udi_import Processor class
+ * The account_create_before function is called from within the udi_import Processor class
  * to allow the custom generation of User Id
  * It is expected that the result of this call will update mlepUsername on the 
  * import file structure, which will then be available to the mapping process for
@@ -58,6 +58,6 @@ function userid_alg_01_userid_algorithm() {
 
     return $account;
 }
-add_hook('userid_algorithm','userid_alg_01_userid_algorithm');
+add_hook('account_create_before','userid_alg_01_userid_algorithm');
 
 ?>

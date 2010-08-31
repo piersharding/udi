@@ -30,7 +30,7 @@ class UdiConfig {
                     'dir_match_on' => 'mlepsmspersonid',
                     'import_match_on' => 'mlepsmspersonid',
                     'groups_enabled' => null,
-                    'mappings' => 'mlepSmsPersonId(mlepSmsPersonId);mlepStudentNSN(mlepStudentNSN);mlepUsername(mlepUsername,uid);mlepFirstAttending(mlepFirstAttending);mlepLastAttendance(mlepLastAttendance);mlepFirstName(mlepFirstName,givenName);mlepLastName(mlepLastName,sn);mlepRole(mlepRole);mlepAssociatedNSN(mlepAssociatedNSN);mlepEmail(mlepEmail,mail);mlepOrganisation(mlepOrganisation,o)',
+                    'mappings' => 'mlepSmsPersonId(mlepSmsPersonId);mlepStudentNSN(mlepStudentNSN);mlepUsername(mlepUsername,uid);mlepFirstAttending(mlepFirstAttending);mlepLastAttendance(mlepLastAttendance);mlepFirstName(mlepFirstName,givenName);mlepLastName(mlepLastName,sn);mlepRole(mlepRole);mlepAssociatedNSN(mlepAssociatedNSN);mlepEmail(mlepEmail,mail);mlepOrganisation(mlepOrganisation)',
                     'group_mappings' => '',
                     'container_mappings' => '',
                     'group_attr' => 'memberUid',
@@ -431,7 +431,7 @@ class UdiConfig {
         foreach ($this->config as $k => $v) {
             $attrs['description'][]= "$k=$v";
         }
-        $result = $this->server->modify($this->configdn, $attrs);
+        $result = $this->server->modify($this->configdn, $attrs, 'login');
         return $this->getConfig(true);
     }
 

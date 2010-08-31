@@ -601,7 +601,7 @@ class Processor {
      * @param object $server LDAP directory
      * @param array $data CSV file contents
      */
-    public function __construct($server, $data) {
+    public function __construct($server, $data=array()) {
         $this->server = $server;
         $this->data = $data;
         $this->udiconfig = new UdiConfig($this->server);
@@ -654,14 +654,18 @@ class Processor {
 
         // first, find a list of all the existing user accounts
         $accounts = array();
+        
         $bases = explode(';', $this->cfg['search_bases']);
+        // also check the deactivated base
+        $bases []= $this->cfg['move_to'];
         
         // target identifier - this is the attribute in the directory to match accounts on
         $id = strtolower($this->cfg['dir_match_on']);
         
         // run through all the search bases
         foreach ($bases as $base) {
-            $query = $this->server->query(array('base' => $base, 'filter' => "($id=*)"), 'login');
+            // ensure that accounts inspected have the mlepPerson object class
+            $query = $this->server->query(array('base' => $base, 'filter' => "(&(objectclass=mlepperson)($id=*))"), 'login');
             if (empty($query)) {
                 // base does not exist
                 $request['page']->warning(_('No user accounts found in search base: ').$base, _('processing'));
@@ -687,11 +691,10 @@ class Processor {
 
        // get mapping configuration - map input file fields to LDAP attributes
         $cfg_mappings = $this->udiconfig->getMappings();
-        $mappings = array();
-        foreach ($cfg_mappings as $mapping) {
-            $mappings[$mapping['source']] = $mapping['targets'];
-        }        
         $field_mappings = array();
+        foreach ($cfg_mappings as $mapping) {
+            $field_mappings[$mapping['source']] = $mapping['targets'];
+        }
         $total_fields = array();
         
         // check for duplication of fields in header line
@@ -701,7 +704,7 @@ class Processor {
                 continue;
             }
             // dont worry about the ones covered by mappings
-            if (isset($mappings[$header])) {
+            if (isset($field_mappings[$header])) {
                 continue;
             }
             if (isset($total_fields[strtolower($header)])) {
@@ -811,7 +814,7 @@ class Processor {
             
             // run userid hook
             if (!isset($this->cfg['ignore_userids']) || !$this->cfg['ignore_userids']) {
-                $result = udi_run_hook('userid_algorithm',array($this->server, $this->udiconfig, $account), $this->cfg['userid_algo']);
+                $result = udi_run_hook('account_create_before',array($this->server, $this->udiconfig, $account), $this->cfg['userid_algo']);
                 if (is_array($result)) {
                     $result = array_pop($result);
                     if (is_array($result)) {
@@ -819,6 +822,7 @@ class Processor {
                     }
                 }
             }
+
             // User Id must exist now
             if (empty($account['mlepUsername'])) {
                 return $request['page']->error(_('Mandatory value: mlepUsername ')._(' is empty in row: ').$row_cnt, _('processing'));
@@ -874,6 +878,69 @@ class Processor {
     }
 
 
+    /**
+     * Generate a list of the existing accounts as per the mlepPerson schema
+     *
+     * @return array list of accounts
+     */
+    public function listAccounts() {
+        global $request;
+        
+        // is the UDI enabled
+        if ($this->cfg['enabled'] != 'checked') {
+            $request['page']->error(_('Processing is not enabled - check configuration'), _('processing'));
+            return false;
+        }
+
+        // first, find a list of all the existing user accounts
+        $accounts = array();
+        $bases = explode(';', $this->cfg['search_bases']);
+        
+        // target identifier - this is the attribute in the directory to match accounts on
+        $id = strtolower($this->cfg['dir_match_on']);
+
+        $total_attrs = array();
+        $classes = $this->udiconfig->getObjectClasses();
+        $socs = $this->server->SchemaObjectClasses('login');
+        $skip = array('objectclass', 'userpassword');
+        foreach ($classes as $class) {
+            foreach ($socs[strtolower($class)]->getMustAttrs(true) as $attr) {
+                if (!in_array($attr->getName(), $skip)) {
+                    $total_attrs[$attr->getName()] = $attr->getName();
+                }
+            }
+            foreach ($socs[strtolower($class)]->getMayAttrs(true) as $attr) {
+                if (!in_array($attr->getName(), $skip)) {
+                    $total_attrs[$attr->getName()] = $attr->getName();
+                }
+            }
+        }
+
+        // add header record
+        $account = array();
+        foreach ($total_attrs as $attr) {
+            $account[]= $attr;
+        }
+        $accounts[]= $account;
+        
+        // run through all the search bases
+        foreach ($bases as $base) {
+            // ensure that accounts inspected have the mlepPerson object class
+            $query = $this->server->query(array('base' => $base, 'filter' => "(&(objectclass=mlepperson)($id=*))"), 'login');
+            if (!empty($query)) {
+                // run through each discovered account
+                foreach ($query as $user) {
+                    $account = array();
+                    foreach ($total_attrs as $attr) {
+                        $account[] = ((isset($user[$attr]) && isset($user[$attr][0])) ? $user[$attr][0] : ''); 
+                    }
+                    $accounts[]= $account;
+                }
+            }
+        }
+        return $accounts;
+    }
+
     
     /**
      * Process the entire file according to the config
@@ -887,21 +954,23 @@ class Processor {
             $request['page']->error(_('Processing is not enabled - check configuration'), _('processing'));
             return false;
         }
-        
-        if ($this->cfg['ignore_creates'] != 'checked') {
-            $result = $this->processCreates();
+
+        // must do deletes first - as there might be rename issues
+        if ($result && $this->cfg['ignore_deletes'] != 'checked') {
+            $result = $this->processDeletes();
         }
 
         if ($result && $this->cfg['ignore_updates'] != 'checked') {
             $result = $this->processUpdates();
         }
-
-        if ($result && $this->cfg['ignore_deletes'] != 'checked') {
-            $result = $this->processDeletes();
-        }
         
+        if ($this->cfg['ignore_creates'] != 'checked') {
+            $result = $this->processCreates();
+        }
+
         return $result;
     }
+    
     
     /**
      * Process user create records
@@ -1000,7 +1069,7 @@ class Processor {
             
             // run userid hook
             if (!isset($this->cfg['ignore_userids']) || !$this->cfg['ignore_userids']) {
-                $result = udi_run_hook('userid_algorithm',array($this->server, $this->udiconfig, $account), $this->cfg['userid_algo']);
+                $result = udi_run_hook('account_create_before',array($this->server, $this->udiconfig, $account), $this->cfg['userid_algo']);
                 if (is_array($result)) {
                     $result = array_pop($result);
                     if (is_array($result)) {
@@ -1021,13 +1090,21 @@ class Processor {
             }
             
             // encrypt the passwords
+            $account['raw_passwd'] = $account['userPassword'];
             if (isset($account['userPassword']) && $this->cfg['encrypt_passwd'] != 'none') {
                 $account['userPassword'] = password_hash($account['userPassword'], $this->cfg['encrypt_passwd']);
             }
 
             // need to prevent doubling up of attribute values
             $total_fields = array();
+            $uid = false;
+            $mlepusername = false;
             foreach ($account as $attr => $value) {
+                // skip the stashed raw password value
+                if (strtolower($attr) == 'raw_passwd') {
+                    continue;
+                }
+                
                 // skip the mlepgroupmembership
                 if (strtolower($attr) == 'mlepgroupmembership') {
                     continue;
@@ -1040,6 +1117,14 @@ class Processor {
                 // split the multi-value attributes
                 if (strtolower($attr) == 'mlepassociatednsn') {
                     $value = empty($value) ? array() : explode('#', $value);
+                }
+                
+                // store UserId candidates
+                if (strtolower($attr) == 'mlepusername') {
+                    $mlepusername = $value;
+                }
+                else if(strtolower($attr) == 'uid') {
+                    $uid = $value;
                 }
                 
                 // map attributes here
@@ -1078,15 +1163,16 @@ class Processor {
             else {
                 // need to set the group membership
                 // need to find all existing groups, and then delete those memberships first
-                $uid = '';
                 if (strtolower($this->cfg['group_attr']) == 'memberuid') {
-                    $uid = (isset($account['mlepUsername']) ? $account['mlepUsername'] : false);
+                    if (empty($uid)) {
+                        $uid = $mlepusername;
+                    }
                 }
                 else {
                     // it must a member style DN group
                     $uid = $dn; 
                 }
-                if (!$this->replaceGroupMembership($uid, $group_membership, $dn)) {
+                if (!$this->replaceGroupMembership(false, $uid, $group_membership, $dn)) {
                     return false;
                 }
             }
@@ -1142,6 +1228,13 @@ class Processor {
             $query = $this->server->query(array('base' => $dn), 'login');
             $existing_account = array_shift($query);
             $user_total_classes = array_unique(array_merge($existing_account['objectclass'], $objectclass));
+            $old_uid = false;
+            if (isset($existing_account['uid']) && !empty($existing_account['uid'][0])) {
+                $old_uid = $existing_account['uid'][0];
+            }
+            else if (isset($existing_account['mlepusername']) && !empty($existing_account['mlepusername'][0])) {
+                $old_uid = $existing_account['mlepusername'][0];
+            }
             
             // start building up the modification template
             $template = new Template($this->server->getIndex(),null,null,'modify');
@@ -1168,6 +1261,9 @@ class Processor {
             }
             
             $group_membership = false;
+            $uid = false;
+            $mlepusername = false;
+//            var_dump($account);
             foreach ($account as $attr => $value) {
                 // ignore the dn
                 if ($attr == 'dn') {
@@ -1178,7 +1274,14 @@ class Processor {
                     $group_membership = $value;
                     continue;
                 }
-                                
+                // store UserId candidates
+                if (strtolower($attr) == 'mlepusername') {
+                    $mlepusername = $value;
+                }
+                else if(strtolower($attr) == 'uid') {
+                    $uid = $value;
+                }
+                
                 $value = trim($value);
                 
                 // split the multi-value attributes
@@ -1200,7 +1303,7 @@ class Processor {
                 }
                 else {
                     // check ignore attrs
-                    if (!isset($ignore_attrs[strtolower($target)])) {
+                    if (!isset($ignore_attrs[strtolower($attr)])) {
                         if (isset($existing_account[strtolower($attr)]) || !empty($value)) {
                             $this->modifyAttribute($template, $attr, $value);
                         }
@@ -1217,22 +1320,32 @@ class Processor {
             else {
                 // need to set the group membership
                 // need to find all existing groups, and then delete those memberships first
-                $uid = '';
+                $new_uid = false;
                 if (strtolower($this->cfg['group_attr']) == 'memberuid') {
-                    $uid = (isset($account['mlepUsername']) ? $account['mlepUsername'] : false);
+                    if ($uid) {
+                        $new_uid = $uid;
+                    }
+                    else if ($mlepusername) {
+                        $new_uid = $mlepusername;
+                    }
+                    // need to cover the cases of where a userid is generated
+                    // so it is never passed, and therefore should never be updated
+                    if (empty($new_uid)) {
+                        $new_uid = $old_uid;
+                    }
                 }
                 else {
-                    // it must a member style DN group
-                    $uid = $dn; 
+                    // it must a member style DN group - CN can't change so old == new
+                    $new_uid = $dn; 
+                    $old_uid = $new_uid;
                 }
-                if (!$this->replaceGroupMembership($uid, $group_membership, $dn)) {
+                if (!$this->replaceGroupMembership($old_uid, $new_uid, $group_membership, $dn)) {
                     return false;
                 }
             }
         }
         return true;
     }
-
 
     
     /**
@@ -1252,23 +1365,14 @@ class Processor {
         }
         
         // cache the groups to deal with
-        if (!$this->total_groups) {
-            $cfg_group_mappings = $this->udiconfig->getGroupMappings();
-            $this->total_groups = array();
-            $this->group_mappings = array();
-            foreach ($cfg_group_mappings as $mapping) {
-                $this->group_mappings[$mapping['source']] = $mapping['targets'];
-                foreach ($mapping['targets'] as $target) {
-                    $this->total_groups[$target] = $target;
-                }
-            }
-        }
+        $this->cacheGroups();
         
         // hunt for existing group membership and remove
         $group_attr = $this->cfg['group_attr'];
 //        if (strtolower($group_attr) != 'memberof') {
         foreach ($this->total_groups as $group) {
             // check and delete from group
+            
             $query = $this->server->query(array('base' => $group, 'filter' => "($group_attr=$uid)"), 'login');
             if (!empty($query)) {
                 // user exists in group
@@ -1292,6 +1396,68 @@ class Processor {
         return true;
     }
     
+   
+    /**
+     * Ensure that the caches are purged 
+     * 
+     * @return bool true on success
+     */
+    public function purge() {
+        $tree = get_cached_item($this->server->getIndex(),'tree');
+        del_cached_item($this->server->getIndex(),'tree');
+    
+        if ($tree)
+            $openDNs = $tree->listOpenItems();
+        else
+            $openDNs = array();
+    
+        $tree = Tree::getInstance($this->server->getIndex());
+    
+        foreach ($openDNs as $value) {
+            $entry = $tree->getEntry($value);
+            if (! $entry) {
+                $tree->addEntry($value);
+                $entry = $tree->getEntry($value);
+            }
+    
+            $tree->readChildren($value,true);
+            $entry->open();
+        }
+    
+        set_cached_item($this->server->getIndex(),'tree','null',$tree);
+        
+//        $purge_session_keys = array('app_initialized','backtrace','cache');
+//        foreach ($purge_session_keys as $key) {
+//            if (isset($_SESSION[$key])) {
+//                unset($_SESSION[$key]);
+//            }
+//        }
+        return true;
+    }
+    
+   
+    /**
+     * Ensure that the group membership data is cached 
+     * 
+     * @return bool true on success
+     */
+    private function cacheGroups() {
+        // cache the groups to deal with
+        if (!$this->total_groups) {
+            $cfg_group_mappings = $this->udiconfig->getGroupMappings();
+            $this->total_groups = array();
+            $this->group_mappings = array();
+            foreach ($cfg_group_mappings as $mapping) {
+                $this->group_mappings[$mapping['source']] = $mapping['targets'];
+                foreach ($mapping['targets'] as $target) {
+                    $this->total_groups[$target] = $target;
+                }
+            }
+        }
+        return true;
+    }
+    
+    
     /**
      * Replace a users group membership 
      * 
@@ -1300,16 +1466,22 @@ class Processor {
      * 
      * @return bool true on success
      */
-    private function replaceGroupMembership($uid, $group_membership, $user_dn) {
+    private function replaceGroupMembership($old_uid, $new_uid, $group_membership, $user_dn) {
         global $request;
-        
+
+//        echo "old: $old_uid  new: $new_uid groups: $group_membership dn: $user_dn\n";
+
         // must have a user id
-        if (!$uid) {
-            return false;
+        if (!$new_uid) {
+            return $request['page']->error(_('No uid passed, so cannot alter membership: ').$user_dn, _('processing'));
         }
+            
+        // cache the groups to deal with
+        $this->cacheGroups();
+                
         
         // hunt for existing group membership and remove
-        $this->removeGroupMembership($uid);
+        $this->removeGroupMembership($old_uid);
 
         // then re add memberships
         $group_attr = $this->cfg['group_attr'];
@@ -1340,13 +1512,16 @@ class Processor {
                         else {
                             $values = array();
                         }
-                        $values[] = $uid;
-                        $this->modifyAttribute($template, $group_attr, $values);
-                        # Perform the modification
-                        $this->addTreeItem($mapping);
-                        $result = $this->server->modify($mapping,$template->getLDAPmodify(), 'login');
-                        if (!$result) {
-                            $request['page']->error(_('Could not add user to group: ').$uid.'/'.$mapping, _('processing'));
+                        // don't attempt to add them if they are allready there
+                        if (!in_array($new_uid, $values)) {
+                            $values[] = $new_uid;
+                            $this->modifyAttribute($template, $group_attr, $values);
+                            # Perform the modification
+                            $this->addTreeItem($mapping);
+                            $result = $this->server->modify($mapping,$template->getLDAPmodify(), 'login');
+                            if (!$result) {
+                                return $request['page']->error(_('Could not add user to group: ').$new_uid.'/'.$mapping, _('processing'));
+                            }
                         }
 //                        }
                     }
@@ -1489,7 +1664,6 @@ class Processor {
         $request['page']->info(_('Processed: ').count($children)._(' accounts resurected'), _('processing'));
         return $result;
     }
-
     
     
     /**
@@ -1511,7 +1685,10 @@ class Processor {
             // determine type of group membership - memberUid, member, uniqueMember, memberOf
             $uid = '';
             if (strtolower($this->cfg['group_attr']) == 'memberuid') {
-                $uid = (isset($account['mlepusername']) ? $account['mlepusername'] : false);
+                 $uid = (isset($account['uid']) ? $account['uid'][0] : false);
+                 if (empty($uid)) {
+                    $uid = (isset($account['mlepusername']) ? $account['mlepusername'][0] : false);
+                 }
             }
             else {
                 // it must a member style DN group
@@ -1539,7 +1716,7 @@ class Processor {
             }
             
             // Delete the entry.
-            $result = $this->server->delete($deactive_dn);
+            $result = $this->server->delete($deactive_dn, 'login');
             if (!$result) {
                 $request['page']->error(_('Could not completely delete: ').$deactive_dn, _('processing'));
                 return $result;
