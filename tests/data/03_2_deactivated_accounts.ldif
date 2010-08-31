@@ -1,0 +1,53 @@
+dn: cn=Dumpty Humpty,ou=Deactivated Accounts,dc=example,dc=com
+mlepUsername: dumpty
+userPassword:: e01ENX01MmxDVm9QcjUvSFFUQ3NRMkhmMzlRPT0=
+uid: dumpty
+description: Dumpty
+mail: dumpty@hogwarts.school.nz
+givenName: Dumpty
+l: Kerikeri
+mlepEmail: dumpty@hogwarts.school.nz
+mlepFirstAttending: 2010-02-08
+mlepFirstName: Dumpty
+mlepLastAttendance: 2010-12-18
+mlepLastName: Humpty
+mlepOrganisation: hogwarts.school.nz
+mlepRole: Student
+mlepSmsPersonId: SMS09
+mlepStudentNSN: 9876543218
+o: School
+objectClass: inetOrgPerson
+objectClass: mlepPerson
+objectClass: top
+sn: Humpty
+labeledURI: udi_deactivated:cn=Dumpty Humpty,ou=Students,ou=New People,dc=exam
+ ple,dc=com
+cn: Dumpty Humpty
+
+dn: cn=Sid Sloth,ou=Deactivated Accounts,dc=example,dc=com
+mlepUsername: sid
+userPassword:: e01ENX1NWjkrVGJvWVpnUnE3OW94YjhyM2hnPT0=
+uid: sid
+description: Sidney baby
+mail: sid@hogwarts.school.nz
+givenName: Sid
+l: Kerikeri
+mlepAssociatedNSN: SMS02
+mlepEmail: sid@hogwarts.school.nz
+mlepFirstAttending: 2010-02-08
+mlepFirstName: Sid
+mlepLastAttendance: 2010-12-18
+mlepLastName: Sloth
+mlepOrganisation: hogwarts.school.nz
+mlepRole: Teacher
+mlepSmsPersonId: SMS10
+mlepStudentNSN: 9876543219
+o: School
+objectClass: inetOrgPerson
+objectClass: mlepPerson
+objectClass: top
+sn: Sloth
+labeledURI: udi_deactivated:cn=Sid Sloth,ou=Staff,ou=New People,dc=example,dc=
+ com
+cn: Sid Sloth
+

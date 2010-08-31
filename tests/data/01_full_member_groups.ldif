@@ -1,0 +1,51 @@
+dn: cn=Board of trustees member,ou=Services,dc=example,dc=com
+member: cn=Bogus,ou=Staff,ou=New People,dc=example,dc=com
+member: cn=Daisy Elorous Duck,ou=Parents,ou=New People,dc=example,dc=com
+
+dn: cn=LMS Access member,ou=Services,dc=example,dc=com
+member: cn=Bogus,ou=Staff,ou=New People,dc=example,dc=com
+member: cn=Daffy Duck,ou=Students,ou=New People,dc=example,dc=com
+member: cn=Peter Rabbit,ou=Students,ou=New People,dc=example,dc=com
+member: cn=Gemima Puddle-Duck,ou=Students,ou=New People,dc=example,dc=com
+member: cn=Curly Somebody,ou=Students,ou=New People,dc=example,dc=com
+member: cn=Humpty Dumpty,ou=Students,ou=New People,dc=example,dc=com
+member: cn=Dumpty Humpty,ou=Students,ou=New People,dc=example,dc=com
+
+dn: cn=Parents member,ou=Services,dc=example,dc=com
+member: cn=Bogus,ou=Staff,ou=New People,dc=example,dc=com
+member: cn=Daisy Elorous Duck,ou=Parents,ou=New People,dc=example,dc=com
+
+dn: cn=Staff member,ou=Services,dc=example,dc=com
+member: cn=Bogus,ou=Staff,ou=New People,dc=example,dc=com
+member: cn=Piers Harding,ou=Staff,ou=New People,dc=example,dc=com
+member: cn=Mo Somebody-Else,ou=Staff,ou=New People,dc=example,dc=com
+member: cn=Sid Sloth,ou=Staff,ou=New People,dc=example,dc=com
+
+dn: cn=Students member,ou=Services,dc=example,dc=com
+member: cn=Bogus,ou=Staff,ou=New People,dc=example,dc=com
+member: cn=Daffy Duck,ou=Students,ou=New People,dc=example,dc=com
+member: cn=Peter Rabbit,ou=Students,ou=New People,dc=example,dc=com
+member: cn=Gemima Puddle-Duck,ou=Students,ou=New People,dc=example,dc=com
+member: cn=Curly Somebody,ou=Students,ou=New People,dc=example,dc=com
+member: cn=Humpty Dumpty,ou=Students,ou=New People,dc=example,dc=com
+member: cn=Dumpty Humpty,ou=Students,ou=New People,dc=example,dc=com
+
+dn: cn=Teachers member,ou=Services,dc=example,dc=com
+member: cn=Bogus,ou=Staff,ou=New People,dc=example,dc=com
+member: cn=Sid Sloth,ou=Staff,ou=New People,dc=example,dc=com
+
+dn: cn=TestGroupMember,ou=Services,dc=example,dc=com
+member: cn=Bogus,ou=Staff,ou=New People,dc=example,dc=com
+
+dn: cn=Internet Access member,ou=Services,dc=example,dc=com
+member: cn=Bogus,ou=Staff,ou=New People,dc=example,dc=com
+member: cn=Piers Harding,ou=Staff,ou=New People,dc=example,dc=com
+member: cn=Daffy Duck,ou=Students,ou=New People,dc=example,dc=com
+member: cn=Peter Rabbit,ou=Students,ou=New People,dc=example,dc=com
+member: cn=Gemima Puddle-Duck,ou=Students,ou=New People,dc=example,dc=com
+member: cn=Curly Somebody,ou=Students,ou=New People,dc=example,dc=com
+member: cn=Mo Somebody-Else,ou=Staff,ou=New People,dc=example,dc=com
+member: cn=Humpty Dumpty,ou=Students,ou=New People,dc=example,dc=com
+member: cn=Dumpty Humpty,ou=Students,ou=New People,dc=example,dc=com
+member: cn=Sid Sloth,ou=Staff,ou=New People,dc=example,dc=com
+

@@ -1,0 +1,92 @@
+dn: cn=ASambaGroup,ou=Services,dc=example,dc=com
+cn: ASambaGroup
+gidNumber: 1003
+objectClass: posixGroup
+objectClass: top
+
+dn: cn=BlahBlahGroup,ou=Services,dc=example,dc=com
+cn: BlahBlahGroup
+gidNumber: 1001
+objectClass: posixGroup
+
+dn: cn=Board of trustees posix,ou=Services,dc=example,dc=com
+cn: Board of trustees posix
+gidNumber: 1011
+objectClass: posixGroup
+objectClass: top
+memberUid: de.duc
+
+dn: cn=FullGroup,ou=Services,dc=example,dc=com
+cn: FullGroup
+gidNumber: 1002
+objectClass: posixGroup
+objectClass: top
+
+dn: cn=ldapadmins,ou=Services,dc=example,dc=com
+cn: ldapadmins
+gidNumber: 1005
+objectClass: posixGroup
+objectClass: top
+
+dn: cn=LMS Access posix,ou=Services,dc=example,dc=com
+cn: LMS Access posix
+gidNumber: 1008
+objectClass: posixGroup
+objectClass: top
+memberUid: daffy
+memberUid: prabbit
+memberUid: gemima
+memberUid: curly
+memberUid: humpty
+memberUid: dumpty
+
+dn: cn=Parents posix,ou=Services,dc=example,dc=com
+cn: Parents posix
+gidNumber: 1009
+objectClass: posixGroup
+objectClass: top
+memberUid: de.duc.00053
+
+dn: cn=Staff posix,ou=Services,dc=example,dc=com
+cn: Staff posix
+gidNumber: 1006
+objectClass: posixGroup
+objectClass: top
+memberUid: piers
+memberUid: mo
+memberUid: sid
+
+dn: cn=Students posix,ou=Services,dc=example,dc=com
+cn: Students posix
+gidNumber: 1007
+objectClass: posixGroup
+objectClass: top
+memberUid: daffy
+memberUid: prabbit
+memberUid: gemima
+memberUid: curly
+memberUid: humpty
+memberUid: dumpty
+
+dn: cn=Teachers posix,ou=Services,dc=example,dc=com
+cn: Teachers posix
+gidNumber: 1010
+objectClass: posixGroup
+objectClass: top
+memberUid: sid
+
+dn: cn=Internet Access posix,ou=Services,dc=example,dc=com
+cn: Internet Access posix
+gidNumber: 1012
+objectClass: posixGroup
+objectClass: top
+memberUid: piers
+memberUid: daffy
+memberUid: prabbit
+memberUid: gemima
+memberUid: curly
+memberUid: mo
+memberUid: humpty
+memberUid: dumpty
+memberUid: sid
+

@@ -1,0 +1,244 @@
+dn: cn=Piers Harding,ou=Staff,ou=New People,dc=example,dc=com
+cn: Piers Harding
+description: Piers
+mail: piers@hogwarts.school.nz
+givenName: Piers
+l: Kerikeri
+mlepEmail: piers@hogwarts.school.nz
+mlepFirstAttending: 2010-02-08
+mlepFirstName: Piers
+mlepLastAttendance: 2010-12-18
+mlepLastName: Harding
+mlepOrganisation: hogwarts.school.nz
+mlepRole: Administrator
+mlepSmsPersonId: SMS01
+mlepStudentNSN: 9876543210
+mlepUsername: piers
+o: School
+objectClass: inetOrgPerson
+objectClass: mlepPerson
+objectClass: top
+userPassword:: e01ENX1ra2gyUFllWWx5c1B2cTJJS2w2eDRBPT0=
+sn: Harding
+uid: piers
+
+dn: cn=Daffy Duck,ou=Students,ou=New People,dc=example,dc=com
+cn: Daffy Duck
+description: Daffy
+mail: daffy@hogwarts.school.nz
+givenName: Daffy
+l: Kerikeri
+mlepEmail: daffy@hogwarts.school.nz
+mlepFirstAttending: 2010-02-08
+mlepFirstName: Daffy
+mlepLastAttendance: 2010-12-18
+mlepLastName: Duck
+mlepOrganisation: hogwarts.school.nz
+mlepRole: Student
+mlepSmsPersonId: SMS02
+mlepStudentNSN: 9876543211
+mlepUsername: daffy
+o: School
+objectClass: inetOrgPerson
+objectClass: mlepPerson
+objectClass: top
+userPassword:: e01ENX1qeFBHaW9PaCt1WjBxQjJpUUh2akRnPT0=
+sn: Duck
+uid: daffy
+
+dn: cn=Daisy Elorous Duck,ou=Parents,ou=New People,dc=example,dc=com
+cn: Daisy Elorous Duck
+description: Daisy
+mail: daisy@example.com
+givenName: Daisy
+l: Kerikeri
+mlepAssociatedNSN: 0000000013
+mlepAssociatedNSN: 0000000026
+mlepAssociatedNSN: 9876543211
+mlepEmail: daisy@example.com
+mlepFirstAttending: 2010-02-08
+mlepFirstName: Daisy Elorous
+mlepLastAttendance: 2010-12-18
+mlepLastName: Duck
+mlepOrganisation: hogwarts.school.nz
+mlepRole: Parent
+mlepSmsPersonId: SMS03
+mlepStudentNSN: 9876543212
+mlepUsername: de.duc
+o: School
+objectClass: inetOrgPerson
+objectClass: mlepPerson
+objectClass: top
+userPassword:: e01ENX1kS216SEdsaEVRZUxjYUdCcEw4azZ3PT0=
+sn: Duck
+uid: de.duc
+
+dn: cn=Peter Rabbit,ou=Students,ou=New People,dc=example,dc=com
+cn: Peter Rabbit
+description: Peter
+mail: prabbit@hogwarts.school.nz
+givenName: Peter
+l: Kerikeri
+mlepEmail: prabbit@hogwarts.school.nz
+mlepFirstAttending: 2010-02-08
+mlepFirstName: Peter
+mlepLastAttendance: 2010-12-18
+mlepLastName: Rabbit
+mlepOrganisation: hogwarts.school.nz
+mlepRole: Student
+mlepSmsPersonId: SMS04
+mlepStudentNSN: 9876543213
+mlepUsername: prabbit
+o: School
+objectClass: inetOrgPerson
+objectClass: mlepPerson
+objectClass: top
+userPassword:: e01ENX15NFA4TUNid1JWN3JKSlZrQXpwelpBPT0=
+sn: Rabbit
+uid: prabbit
+
+dn: cn=Gemima Puddle-Duck,ou=Students,ou=New People,dc=example,dc=com
+cn: Gemima Puddle-Duck
+description: Gemima
+mail: gemima@hogwarts.school.nz
+givenName: Gemima
+l: Kerikeri
+mlepEmail: gemima@hogwarts.school.nz
+mlepFirstAttending: 2010-02-08
+mlepFirstName: Gemima
+mlepLastAttendance: 2010-12-18
+mlepLastName: Puddle-Duck
+mlepOrganisation: hogwarts.school.nz
+mlepRole: Student
+mlepSmsPersonId: SMS05
+mlepStudentNSN: 9876543214
+mlepUsername: gemima
+o: School
+objectClass: inetOrgPerson
+objectClass: mlepPerson
+objectClass: top
+userPassword:: e01ENX1BQ1NVR2lra1RJTE9HcW02cWdPcGtBPT0=
+sn: Puddle-Duck
+uid: gemima
+
+dn: cn=Curly Somebody,ou=Students,ou=New People,dc=example,dc=com
+cn: Curly Somebody
+description: Curly
+mail: curly@hogwarts.school.nz
+givenName: Curly
+l: Kerikeri
+mlepEmail: curly@hogwarts.school.nz
+mlepFirstAttending: 2010-02-08
+mlepFirstName: Curly
+mlepLastAttendance: 2010-12-18
+mlepLastName: Somebody
+mlepOrganisation: hogwarts.school.nz
+mlepRole: Student
+mlepSmsPersonId: SMS06
+mlepStudentNSN: 9876543215
+mlepUsername: curly
+o: School
+objectClass: inetOrgPerson
+objectClass: mlepPerson
+objectClass: top
+userPassword:: e01ENX00Ukh0dUtpdE1ueWYvbHlIZkIyM2h3PT0=
+sn: Somebody
+uid: curly
+
+dn: cn=Mo Somebody-Else,ou=Staff,ou=New People,dc=example,dc=com
+cn: Mo Somebody-Else
+description: Mo
+mail: mo@hogwarts.school.nz
+givenName: Mo
+l: Kerikeri
+mlepEmail: mo@hogwarts.school.nz
+mlepFirstAttending: 2010-02-08
+mlepFirstName: Mo
+mlepLastAttendance: 2010-12-18
+mlepLastName: Somebody-Else
+mlepOrganisation: hogwarts.school.nz
+mlepRole: Staff
+mlepSmsPersonId: SMS07
+mlepStudentNSN: 9876543216
+mlepUsername: mo
+o: School
+objectClass: inetOrgPerson
+objectClass: mlepPerson
+objectClass: top
+userPassword:: e01ENX1TZGRYR0h6cFJONS9YNUsxTXZQOTBnPT0=
+sn: Somebody-Else
+uid: mo
+
+dn: cn=Humpty Dumpty,ou=Students,ou=New People,dc=example,dc=com
+cn: Humpty Dumpty
+description: Humpty
+mail: humpty@hogwarts.school.nz
+givenName: Humpty
+l: Kerikeri
+mlepEmail: humpty@hogwarts.school.nz
+mlepFirstAttending: 2010-02-08
+mlepFirstName: Humpty
+mlepLastAttendance: 2010-12-18
+mlepLastName: Dumpty
+mlepOrganisation: hogwarts.school.nz
+mlepRole: Student
+mlepSmsPersonId: SMS08
+mlepStudentNSN: 9876543217
+mlepUsername: humpty
+o: School
+objectClass: inetOrgPerson
+objectClass: mlepPerson
+objectClass: top
+userPassword:: e01ENX1DQll5UXJUaVpzY2R5dExZMzcwNVd3PT0=
+sn: Dumpty
+uid: humpty
+
+dn: cn=Dumpty Humpty,ou=Students,ou=New People,dc=example,dc=com
+cn: Dumpty Humpty
+description: Dumpty
+mail: dumpty@hogwarts.school.nz
+givenName: Dumpty
+l: Kerikeri
+mlepEmail: dumpty@hogwarts.school.nz
+mlepFirstAttending: 2010-02-08
+mlepFirstName: Dumpty
+mlepLastAttendance: 2010-12-18
+mlepLastName: Humpty
+mlepOrganisation: hogwarts.school.nz
+mlepRole: Student
+mlepSmsPersonId: SMS09
+mlepStudentNSN: 9876543218
+mlepUsername: dumpty
+o: School
+objectClass: inetOrgPerson
+objectClass: mlepPerson
+objectClass: top
+userPassword:: e01ENX1lalpHTUh2WHE1bWxPM2ZTRUN1c0hBPT0=
+sn: Humpty
+uid: dumpty
+
+dn: cn=Sid Sloth,ou=Staff,ou=New People,dc=example,dc=com
+cn: Sid Sloth
+description: Sidney baby
+mail: sid@hogwarts.school.nz
+givenName: Sid
+l: Kerikeri
+mlepAssociatedNSN: SMS02
+mlepEmail: sid@hogwarts.school.nz
+mlepFirstAttending: 2010-02-08
+mlepFirstName: Sid
+mlepLastAttendance: 2010-12-18
+mlepLastName: Sloth
+mlepOrganisation: hogwarts.school.nz
+mlepRole: Teacher
+mlepSmsPersonId: SMS10
+mlepStudentNSN: 9876543219
+mlepUsername: sid
+o: School
+objectClass: inetOrgPerson
+objectClass: mlepPerson
+objectClass: top
+userPassword:: e01ENX0xNnYrOTgrU05wOHJTMExrMEp5OCtBPT0=
+sn: Sloth
+uid: sid
+

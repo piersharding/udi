@@ -1,0 +1,13 @@
+dn: dc=example,dc=com
+objectClass: dcObject
+objectclass: organization
+o: example.com
+dc: example
+description: My LDAP Root
+
+dn: cn=admin,dc=example,dc=com
+objectClass: simpleSecurityObject
+objectClass: organizationalRole
+cn: admin
+userPassword: {MD5}DRB9CfW75Ayt495ccenptw==
+description: LDAP administrator
