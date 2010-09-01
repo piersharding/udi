@@ -170,15 +170,16 @@ class UdiRender extends PageRender {
         $table .= '</td><td class="far-right"><a href="" onclick="udi_report_toggle(\''.'udi-report-'.$header['id'].'\'); return false;"><img src="'.IMGDIR.'/help.png" alt="Toggle"/></a></td></tr>';
         $cnt = 0;
         $errors = false;
-        $table_lines = array();
-        $table_description = false;
+        $data_tables = array();
         foreach ($report['messages'] as $message) {
             if (!in_array($message['type'], array('error', 'warning', 'info', 'debug'))) {
                 $table_data = false;
                 eval('$table_data = ' . $message['message'] . ';');
                 if ($table_data) {
-                    $table_description = $message['type'];
-                    $table_lines []= $table_data;
+                    if (!isset($data_tables[$message['type']])) {
+                        $data_tables[$message['type']] = array();
+                    }
+                    $data_tables[$message['type']] []= $table_data;
                 }
                 continue;
             }
@@ -192,27 +193,29 @@ class UdiRender extends PageRender {
         }
         
         // add the table data to the report
-        if (!empty($table_lines)) {
-            $first = $table_lines[0];
-            $table_data = '<table><tr>';
-            // add the header line
-            foreach ($first as $field => $value) {
-                $table_data .= '<td>'.$field.'</td>';
-            }
-            $table_data .= '</tr>';
-            // add the rows
-            foreach ($table_lines as $row) {
-                $table_data .= '<tr>';
-                foreach ($row as $field => $value) {
-                    $table_data .= '<td>'.$value.'</td>';
+        if (!empty($data_tables)) {
+            foreach ($data_tables as $table_description => $table_lines) {  
+                $first = $table_lines[0];
+                $table_data = '<table class="udi-report-tabledata"><tr class="udi-report-tabledata-header">';
+                // add the header line
+                foreach ($first as $field => $value) {
+                    $table_data .= '<td>'.$field.'</td>';
                 }
                 $table_data .= '</tr>';
+                // add the rows
+                foreach ($table_lines as $row) {
+                    $table_data .= '<tr>';
+                    foreach ($first as $field => $discard) {
+                        $table_data .= '<td>'.$row[$field].'</td>';
+                    }
+                    $table_data .= '</tr>';
+                }
+                $table_data .= '</table>';
+                $cnt++;
+                $class = 'udi-report-info';
+                $id = 'udi-report-'.$header['id'].'-'.$cnt;
+                $table .= '<tr id="'.$id.'" style="display: none;" class="udi-report-message '.$class.'"><td class="udi-report-left">'.$table_description.'</td><td colspan="2">'.$table_data.'</td></tr>';
             }
-            $table_data .= '</table>';
-            $cnt++;
-            $class = 'udi-report-info';
-            $id = 'udi-report-'.$header['id'].'-'.$cnt;
-            $table .= '<tr id="'.$id.'" style="display: none;" class="udi-report-message '.$class.'"><td class="udi-report-left">'.$table_description.'</td><td colspan="2">'.$table_data.'</td></tr>';
         }
         
         if ($footer) {
@@ -449,6 +452,10 @@ class UdiRender extends PageRender {
         if ($this->udiconfig) {
             if (!$this->logfile) {
                 $cfg = $this->udiconfig->getConfig();
+                // dont bother if reporting is disabled
+                if (!isset($cfg['enable_reporting']) || $cfg['enable_reporting'] != 'checked') {
+                    return;
+                }
                 $file = 'processor_'.date("Y-m-d-H:i:s", strtotime("+0 days")).'.txt';
                 $this->logfile = $cfg['reportpath'].'/'.$file;
             }

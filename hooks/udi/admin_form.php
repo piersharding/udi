@@ -88,6 +88,9 @@ else {
     if (isset($cfg['search_bases'])) {
         $bases = explode(';', $cfg['search_bases']);
         foreach ($bases as $base) {
+            if (empty($base)) {
+                continue;
+            }
             $no_bases += 1;
             $field .= '<tr><td><span style="white-space: nowrap;">'.$request['page']->configField('search_base_'.$no_bases, array('type' => 'text', 'value' => $base, 'size' => 50), array());
             $field .= '&nbsp;<a href="" title="'._('Delete search base').'" onclick="post_to_url(\'cmd.php\', {\'configuration\': \'delete\', \'delete\': \'base\', \'base\':\''.$no_bases.'\'}); return false;"><img src="images/udi/trash.png" alt="'._('Delete search base').'"/></a> &nbsp;';

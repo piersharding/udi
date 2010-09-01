@@ -1011,7 +1011,7 @@ div.underline {
 	margin-top: 1px;
 	margin-bottom: 10px;
 	color: #FFFFFF;
-	border-bottom: 1px solid #000000;
+	border-bottom: 1px solid #AAC;
 	padding: 0px;
 	font-weight: normal;
     width: 80%;
@@ -1074,6 +1074,7 @@ fieldset.config-block {
 	margin-top: 8px;
     margin-bottom: 8px;
     margin-right: 50px;
+    border: 1px solid #AAC;
 }
 
 table.udi-report {
@@ -1081,14 +1082,31 @@ table.udi-report {
 	cell-padding: 0px;
 	cell-spacing: 0px;
 	border-spacing: 0px;
+    padding: 10px;
+	border: 1px solid #AAC;
 }
+
+
+table.udi-report-tabledata {
+    width: 100%;
+    cell-padding: 2px;
+    cell-spacing: 0px;
+    border-spacing: 0px;
+    padding: 3px;
+    border: 1px solid #d0c8c1;
+}
+
+tr.udi-report-tabledata-header {
+    background: #efe9e3;  
+}
+
 
 div.udi-report {
     margin-top: 10px;
     margin-bottom: 10px;
     margin-right: 10%;
     padding: 10px;
-    border: 1px solid;
+    /* border: 1px solid; */
 }
 
 td.udi-report-left {
@@ -1118,11 +1136,11 @@ td.far-right {
 
 
 tr.udi-report-header {
-    background: #93C2F1;  
+    background: #a2cffd;  
 }
 
 .udi-report-complete {
-    background: #a9da92;	
+    background: #c1f9a5;	
 }
 
 
@@ -1131,7 +1149,7 @@ tr.udi-report-message {
 }
 
 tr.udi-report-error {
-    background: #f9a7a7;	
+    background: #ffd6d6;	
 }
 
 .udi-report-warning {

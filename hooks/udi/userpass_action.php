@@ -21,7 +21,7 @@ default:
     }
 
     // commit the config changes
-    if ($udiconfig->validate()) {
+    if ($udiconfig->validate(true)) {
         $cfg = $udiconfig->updateConfig();
         $request['page']->info(_('User Id and Passwd Configuration saved - <a href="cmd.php?cmd=purge_cache">please purge the cache</a>'));
     }

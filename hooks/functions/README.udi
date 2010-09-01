@@ -1,0 +1,11 @@
+UDI callback hooks that you can register functions for
+======================================================
+
+account_create_before - User Id generation - this callback enables the modification of the user attributes before user creation
+passwd_algorithm - Password generation - this callback enables the generation of passwords only prior to user creation
+account_create_after - access to perform follow on functions after users are created
+account_update_before - access to modify the user record before an account is updated
+account_update_after - access to perform follow on functions after users are updated
+account_reactivate_after - after a user account has been reactivated
+account_delete_after - after a user account has been completely deleted
+account_deactivate_after - after a user account has been deactivated ie. shifted to the deactivation container

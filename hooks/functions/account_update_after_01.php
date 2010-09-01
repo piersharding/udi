@@ -1,6 +1,6 @@
 <?php
 /**
- * An example of an account create callback
+ * An example of an account update callback
  *
  * Functions should return true on success and false on failure.
  * If a function returns false it will trigger the rollback to be executed.
@@ -18,8 +18,8 @@
  */
 
 /**
- * The account_create_after function is called from within the udi_import Processor class
- * to allow access to each account after it has been created
+ * The account_update_after function is called from within the udi_import Processor class
+ * to allow access to each account after it has been updated
  *
  * Arguments that are passed are:
  *  - LDAP directory server object
@@ -31,13 +31,13 @@
  *  
  */
 
-function account_create_after_01() {
-    global $request, $account_create_after_logging;
+function account_update_after_01() {
+    global $request, $account_update_after_logging;
     list($server, $udiconfig, $account) = func_get_args();
 
-    $request['page']->log_to_file('Users Created', preg_replace('/\n/', '', var_export($account, true)));
+    $request['page']->log_to_file('Users Updated', preg_replace('/\n/', '', var_export($account, true)));
     return false;
 }
-add_hook('account_create_after','account_create_after_01');
+add_hook('account_update_after','account_update_after_01');
 
 ?>

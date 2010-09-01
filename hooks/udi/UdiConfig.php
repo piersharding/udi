@@ -16,7 +16,7 @@ class UdiConfig {
 
     public static $DEFAULTS = array(
                     'enabled' => null,
-                    'ignore_deletes' => null,
+                    'ignore_deletes' => 'checked',
                     'ignore_creates' => null,
                     'ignore_updates' => null,
                     'enable_reporting' => null,
@@ -38,12 +38,14 @@ class UdiConfig {
                     'dn_attribute' => 'cn',
                     'objectclasses' => 'inetOrgPerson;mlepPerson',
                     'ignore_attrs' => 'mlepUsername;uid',
-                    'userid_algo' => '',
-                    'userid_parameters' => '',
-                    'passwd_parameters' => 'pass',
+                    'userid_algo' => 'userid_alg_03_userid_algorithm',
+                    'userid_parameters' => '%[mlepUsername]',
                     'encrypt_passwd' => 'md5',
-                    'passwd_algo' => '',
+                    'passwd_algo' => 'passwd_alg_01_passwd_algorithm',
+                    'passwd_parameters' => 'pass',
+                    'search_bases' => '',
                     'next_seq_no' => 0,
+                    'udi_version' => '1.2.0.5',
     );
     
     private $server;
@@ -119,24 +121,30 @@ class UdiConfig {
     /**
      * Validate the Config
      */
-    public function validate() {
+    public function validate($all=false) {
         global $request;
         
         $valid = true;
         
-        // validate the file path - must exist
-        if (preg_match('/^http/', $this->config['filepath'])) {
-            $hdrs = get_headers($this->config['filepath']);
-            if (!preg_match('/^HTTP.*? 200 .*?OK/', $hdrs[0])) {
-                $request['page']->warning(_('Source import URL does not exist: ').$this->config['filepath'], _('configuration'));
+        // prepoulate defaults
+        foreach (self::$DEFAULTS as $var => $default) {
+            if (!isset($this->config[$var])) {
+                $this->config[$var] = $default;
             }
-        } 
-        else if (!file_exists($this->config['filepath'])) {
-            $request['page']->warning(_('Source import file does not exist: ').$this->config['filepath'], _('configuration'));
         }
-    
-        // validate reporting file path
+                
         if (isset($this->config['enable_reporting']) && $this->config['enable_reporting'] == 'checked') {
+            // validate the file path - must exist
+            if (preg_match('/^http/', $this->config['filepath'])) {
+                $hdrs = get_headers($this->config['filepath']);
+                if (!preg_match('/^HTTP.*? 200 .*?OK/', $hdrs[0])) {
+                    $request['page']->warning(_('Source import URL does not exist: ').$this->config['filepath'], _('configuration'));
+                }
+            } 
+            else if (!file_exists($this->config['filepath'])) {
+                $request['page']->warning(_('Source import file does not exist: ').$this->config['filepath'], _('configuration'));
+            }
+    
             // validate reporting email address
             if (!preg_match('#^[-!\#$%&\'*+\\/0-9=?A-Z^_`a-z{|}~]+'.
                  '(\.[-!\#$%&\'*+\\/0-9=?A-Z^_`a-z{|}~]+)*'.
@@ -184,20 +192,22 @@ class UdiConfig {
         }
         
         // validate the target DN for moving deletes
-        if (isset($this->config['move_on_delete']) && $this->config['move_on_delete'] !== null) {
-            if (isset($this->config['move_to']) && check_dn_exists($this->config['move_to'], _('Target delete DN does not exist: ').$this->config['move_to'])) {
-                // check that deletes are not going to the new bucket or one of the search bases
-                if ($this->config['move_to'] == $this->config['create_in']) {
-                    $request['page']->error(_('Target delete DN must be different from the create new accounts target: ').$this->config['create_in'], _('configuration'));
+        if (!isset($this->config['ignore_deletes']) || $this->config['ignore_deletes'] != 'checked') {
+            if (isset($this->config['move_on_delete']) && $this->config['move_on_delete'] !== null) {
+                if (isset($this->config['move_to']) && check_dn_exists($this->config['move_to'], _('Target delete DN does not exist: ').$this->config['move_to'])) {
+                    // check that deletes are not going to the new bucket or one of the search bases
+                    if ($this->config['move_to'] == $this->config['create_in']) {
+                        $request['page']->error(_('Target delete DN must be different from the create new accounts target: ').$this->config['create_in'], _('configuration'));
+                        $valid = false;
+                    }
+                    else if (in_array($this->config['move_to'], $bases)){
+                        $request['page']->error(_('Target delete DN must not be one of the search bases: ').$this->config['move_to'], _('configuration'));
+                        $valid = false;   
+                    }
+                }
+                else {
                     $valid = false;
                 }
-                else if (in_array($this->config['move_to'], $bases)){
-                    $request['page']->error(_('Target delete DN must not be one of the search bases: ').$this->config['move_to'], _('configuration'));
-                    $valid = false;   
-                }
-            }
-            else {
-                $valid = false;
             }
         }
         
@@ -230,16 +240,19 @@ class UdiConfig {
                 $valid = false;
             }
         }
-        if ((!isset($this->config['ignore_userids']) || $this->config['ignore_userids'] != 'checked') && $this->config['userid_algo'] != 'none') {
-            if (!function_exists($this->config['userid_algo'])) {
-                $request['page']->error(_('User Id algorithm does not exist: ').$this->config['userid_algo']);
-                $valid = false;
+        
+        if ($all) {
+            if ((!isset($this->config['ignore_userids']) || $this->config['ignore_userids'] != 'checked') && $this->config['userid_algo'] != 'none') {
+                if (!function_exists($this->config['userid_algo'])) {
+                    $request['page']->error(_('User Id algorithm does not exist: ').$this->config['userid_algo']);
+                    $valid = false;
+                }
             }
-        }
-        if ((!isset($this->config['ignore_passwds']) || $this->config['ignore_passwds'] != 'checked') && $this->config['passwd_algo'] != 'none') {
-            if (!function_exists($this->config['passwd_algo'])) {
-                $request['page']->error(_('Password algorithm does not exist: ').$this->config['passwd_algo']);
-                $valid = false;
+            if ((!isset($this->config['ignore_passwds']) || $this->config['ignore_passwds'] != 'checked') && $this->config['passwd_algo'] != 'none') {
+                if (!function_exists($this->config['passwd_algo'])) {
+                    $request['page']->error(_('Password algorithm does not exist: ').$this->config['passwd_algo']);
+                    $valid = false;
+                }
             }
         }
         return $valid;
@@ -430,6 +443,10 @@ class UdiConfig {
         $attrs = array('description' => array());
         foreach ($this->config as $k => $v) {
             $attrs['description'][]= "$k=$v";
+        }
+        // check that the config exists
+        if (!$this->createConfigDn($this->configdn)) {
+            return false;
         }
         $result = $this->server->modify($this->configdn, $attrs, 'login');
         return $this->getConfig(true);

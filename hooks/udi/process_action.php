@@ -21,7 +21,7 @@ switch ($action) {
     
     case 'validate':
         // validate config
-        if (!$udiconfig->validate()) {
+        if (!$udiconfig->validate(true)) {
             break;
         }
         
@@ -42,7 +42,7 @@ switch ($action) {
             $processor = new Processor($app['server'], array('header' => $header, 'contents' => $rows));
         }
         // validate file contents
-        $processor->validate();
+        $processor->validate(true);
         break;
         
     case 'process':
@@ -51,7 +51,7 @@ switch ($action) {
         $request['page']->log_header($action);
         
        // validate config
-        if (!$udiconfig->validate()) {
+        if (!$udiconfig->validate(true)) {
             $request['page']->log_system_messages();
             break;
         }
@@ -73,7 +73,7 @@ switch ($action) {
             }
             $processor = new Processor($app['server'], array('header' => $header, 'contents' => $rows));
         }
-        if ($processor->validate()) {
+        if ($processor->validate(true)) {
             $processor->purge();
             $processor->import();
         }
@@ -88,7 +88,7 @@ switch ($action) {
         $request['page']->log_header($action);
         
         // validate config
-        if (!$udiconfig->validate()) {
+        if (!$udiconfig->validate(true)) {
             $request['page']->log_system_messages();
             break;
         }
@@ -118,7 +118,7 @@ switch ($action) {
         $request['page']->log_header($action);
         
         // validate config
-        if (!$udiconfig->validate()) {
+        if (!$udiconfig->validate(true)) {
             $request['page']->log_system_messages();
             break;
         }

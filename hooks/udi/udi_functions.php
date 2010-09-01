@@ -20,11 +20,19 @@
 function check_dn_exists($dn, $msg, $area = 'configuration') {
     //$query['filter'] = '(&(objectClass=*))';
     global $app, $udiconfig, $request;
+    // check DN exists
     $query = $app['server']->query(array('base' => $dn, 'attrs' => array('dn')), 'login');
     if (empty($query)) {
         // base does not exist
         $request['page']->error($msg, $area);
         return false;
+    }
+    
+    // now check that this DN is within the scope of the server base DN
+    $query = array_keys($query);
+    $dn = array_shift($query);
+    if (!preg_match('/'.$udiconfig->getBaseDN().'$/', $dn)) {
+        return $request['page']->error(_('DN does not exist inside server connection Base DN: ').$dn, 'configuration');
     }
     return true;
 }
@@ -170,8 +178,13 @@ function read_reports ($type) {
     global $request;
     $expire_time = 45 * 24 * 60 * 60; // 45 days * hours * mins * secs
     
-    $file_pattern = $request['udiconfig']['reportpath'].'/'.$type.'_*.txt';
     $reports = array();
+    // bail if reporting is not active
+    if (!isset($request['udiconfig']['enable_reporting']) || $request['udiconfig']['enable_reporting'] != 'checked') {
+        return $reports;        
+    }
+    
+    $file_pattern = $request['udiconfig']['reportpath'].'/'.$type.'_*.txt';
     foreach (glob($file_pattern) as $file) {
         // delete old files
         $ctime = filectime($file);
@@ -1231,7 +1244,7 @@ class Processor {
                     return false;
                 }
             }
-            // now access for reporting
+            // now access for reporting, or user created callbacks
             if (isset($account['raw_passwd'])) {
                 $account['userPassword'] = $account['raw_passwd'];
                 unset($account['raw_passwd']);
@@ -1306,7 +1319,7 @@ class Processor {
             
             // run userid hook
             if (!isset($this->cfg['ignore_userids']) || !$this->cfg['ignore_userids']) {
-                $result = udi_run_hook('userid_algorithm',array($this->server, $this->udiconfig, $account), $this->cfg['userid_algo']);
+                $result = udi_run_hook('account_update_before',array($this->server, $this->udiconfig, $account), $this->cfg['userid_algo']);
                 if (is_array($result)) {
                     $result = array_pop($result);
                     if (is_array($result)) {
@@ -1404,6 +1417,8 @@ class Processor {
                     return false;
                 }
             }
+            // now access for reporting, or user created callbacks
+            udi_run_hook('account_update_after', array($this->server, $this->udiconfig, $account));
         }
         return true;
     }
@@ -1718,6 +1733,8 @@ class Processor {
                         $request['page']->error(_('Could not modify: ').$old_dn, _('processing'));
                         return $result;
                     }
+                    // now access for reporting, or user created callbacks
+                    udi_run_hook('account_reactivate_after', array($this->server, $this->udiconfig, $account));
                 }
             }
         }
@@ -1782,6 +1799,9 @@ class Processor {
                 $request['page']->error(_('Could not completely delete: ').$deactive_dn, _('processing'));
                 return $result;
             }
+            // now access for reporting, or user created callbacks
+            udi_run_hook('account_delete_after', array($this->server, $this->udiconfig, $account));
+            
         }
         
         $request['page']->info(_('Processed: ').count($children)._(' accounts completely deleted'), _('processing'));
@@ -1859,6 +1879,8 @@ class Processor {
                 $request['page']->error(_('Could not delete (rename): ').$dn, _('processing'));
                 return $result;
             }
+            // now access for reporting, or user created callbacks
+            udi_run_hook('account_deactivate_after', array($this->server, $this->udiconfig, $account));
         }
         
         return true;

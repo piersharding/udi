@@ -304,7 +304,7 @@ $request['page']->setConfig($udiconfig);
 $request['page']->log_header($action, true);
 
 // validate config
-if (!$udiconfig->validate()) {
+if (!$udiconfig->validate(true)) {
     console_write(_('Configuration validation failed'));
     console_write($request['page']->outputMessagesConsole());
     $request['page']->log_system_messages();
@@ -387,7 +387,7 @@ else {
     }
     
     $processor = new Processor($app['server'], array('header' => $header, 'contents' => $rows));
-    if ($processor->validate()) {
+    if ($processor->validate(true)) {
         if (!$validate) {
             $processor->import();
         }
