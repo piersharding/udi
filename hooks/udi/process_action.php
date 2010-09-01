@@ -46,8 +46,13 @@ switch ($action) {
         break;
         
     case 'process':
+       // stash the config so that logging can work
+        $request['page']->setConfig($udiconfig);
+        $request['page']->log_header($action);
+        
        // validate config
         if (!$udiconfig->validate()) {
+            $request['page']->log_system_messages();
             break;
         }
         
@@ -72,12 +77,19 @@ switch ($action) {
             $processor->purge();
             $processor->import();
         }
+        $request['page']->log_system_messages();
         $request['page']->info(_('File processing finished'));
+        $request['page']->log_footer();
         break;
         
     case 'reactivate':
-       // validate config
+       // stash the config so that logging can work
+        $request['page']->setConfig($udiconfig);
+        $request['page']->log_header($action);
+        
+        // validate config
         if (!$udiconfig->validate()) {
+            $request['page']->log_system_messages();
             break;
         }
         
@@ -90,17 +102,24 @@ switch ($action) {
             if ($confirm == 'yes') {
                 $processor->purge();
                 $processor->reactivate();
+                $request['page']->log_system_messages();
                 $request['page']->info(_('User reactivation completed'));
             }
             else if ($confirm == 'no') {
                 $request['page']->info(_('User reactivation cancelled'));
             }
         }
+        $request['page']->log_footer();
         break;
         
     case 'delete':
-       // validate config
+       // stash the config so that logging can work
+        $request['page']->setConfig($udiconfig);
+        $request['page']->log_header($action);
+        
+        // validate config
         if (!$udiconfig->validate()) {
+            $request['page']->log_system_messages();
             break;
         }
         
@@ -112,11 +131,13 @@ switch ($action) {
         if ($confirm == 'yes') {
             $processor->purge();
             $processor->deleteDeactivated();
+            $request['page']->log_system_messages();
             $request['page']->info(_('User deletion completed'));
         }
         else if ($confirm == 'no') {
             $request['page']->info(_('User deletion cancelled'));
         }
+        $request['page']->log_footer();
         break;
         
     default:

@@ -1032,6 +1032,8 @@ div.help_big {width:35%;text-align:auto;float:right;}
 div.help_hide {display:none;}
 div.tools-right {text-align:auto;float:right;padding-right:50px;}
 div.udi_clear {clear:both;}
+div.left {float:left;}
+div.right {float:right}
 
 span.tiny {font-size: 10px; word-wrap: break-word;}
 
@@ -1072,4 +1074,70 @@ fieldset.config-block {
 	margin-top: 8px;
     margin-bottom: 8px;
     margin-right: 50px;
+}
+
+table.udi-report {
+	width: 100%;
+	cell-padding: 0px;
+	cell-spacing: 0px;
+	border-spacing: 0px;
+}
+
+div.udi-report {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    margin-right: 10%;
+    padding: 10px;
+    border: 1px solid;
+}
+
+td.udi-report-left {
+    width: 10%;	
+    white-space: nowrap;
+    vertical-align: top;
+    padding-right: 10px;
+}
+
+
+td.udi-report-header-left {
+	padding-top: 3px;
+    vertical-align: top;
+    width: 10%;   
+    white-space: nowrap;
+    padding-right: 10px;
+}
+
+
+td.udi-report-middle {
+    width: 80%;   
+}
+
+td.far-right {
+	text-align: right;
+}
+
+
+tr.udi-report-header {
+    background: #93C2F1;  
+}
+
+.udi-report-complete {
+    background: #a9da92;	
+}
+
+
+tr.udi-report-message {
+	/* display: none; */
+}
+
+tr.udi-report-error {
+    background: #f9a7a7;	
+}
+
+.udi-report-warning {
+    background: #fff194;	
+}
+
+tr.udi-report-info {
+    background: #ffffff;	
 }

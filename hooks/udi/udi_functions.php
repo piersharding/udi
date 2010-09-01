@@ -166,6 +166,57 @@ function udi_run_hook($hook_name,$args,$instance=false) {
 }
 
 
+function read_reports ($type) {
+    global $request;
+    $expire_time = 45 * 24 * 60 * 60; // 45 days * hours * mins * secs
+    
+    $file_pattern = $request['udiconfig']['reportpath'].'/'.$type.'_*.txt';
+    $reports = array();
+    foreach (glob($file_pattern) as $file) {
+        // delete old files
+        $ctime = filectime($file);
+        $age = time() - $ctime;
+        if ($age > ($expire_time)){
+            unlink($file);
+            continue;
+        }
+        
+        $data = preg_grep('/\w/', explode("\n", file_get_contents($file)));
+        if (count($data) > 0) {
+            $header = array_shift($data);
+            list($label, $header) = explode("\t", $header, 2);
+            eval('$header = ' . $header . ';');
+            $footer = false;
+            if (count($data) > 0 && substr($data[count($data)-1], 0, 4) == "end\t") {
+                $footer = array_pop($data);
+                list($label, $footer) = explode("\t", $footer, 2);
+                eval('$footer = ' . $footer . ';');
+            } 
+            // if footer then finished successfully
+            $start = (int)$header['time'];
+            $header['time'] = date("d/m/Y H:i:s", $start);
+            $header['id'] = $start;
+            $report = array('file' => $file, 'header' => $header, 'footer' => $footer, 'messages' => array());
+            foreach ($data as $line) {
+                list($type, $msg) = explode("\t", $line, 2);
+                if ($type == 'warn') {
+                    $type = 'warning';
+                }
+                $report['messages'] []= array('type' => $type, 'message' => $msg);
+            }
+            $reports[$start]= $report;
+        }
+    }
+    // sort into date order - $header['time']
+    krsort($reports, SORT_NUMERIC);
+    return $reports;
+}
+
+
+function read_process_reports() {
+    $reports = read_reports('processor');
+    return $reports;
+}
 
 
 /**
@@ -583,6 +634,7 @@ class Processor {
 
     // Current config
     private $cfg;
+    public $udiconfig;
 
     // arrays of the different record types
     private $to_be_deleted;
@@ -656,8 +708,8 @@ class Processor {
         $accounts = array();
         
         $bases = explode(';', $this->cfg['search_bases']);
-        // also check the deactivated base
-        $bases []= $this->cfg['move_to'];
+//        // also check the deactivated base
+//        $bases []= $this->cfg['move_to'];
         
         // target identifier - this is the attribute in the directory to match accounts on
         $id = strtolower($this->cfg['dir_match_on']);
@@ -949,7 +1001,10 @@ class Processor {
      */
     public function import() {
         
+        global $request;
+        
         $result = true;
+        
         if ($this->cfg['enabled'] != 'checked') {
             $request['page']->error(_('Processing is not enabled - check configuration'), _('processing'));
             return false;
@@ -1176,6 +1231,12 @@ class Processor {
                     return false;
                 }
             }
+            // now access for reporting
+            if (isset($account['raw_passwd'])) {
+                $account['userPassword'] = $account['raw_passwd'];
+                unset($account['raw_passwd']);
+            }
+            udi_run_hook('account_create_after', array($this->server, $this->udiconfig, $account));
         }
         return true;
     }

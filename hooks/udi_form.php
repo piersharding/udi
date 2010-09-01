@@ -77,6 +77,54 @@ if (get_request('udi_decoration', 'REQUEST') != 'none') {
         document.body.appendChild(form);
         form.submit();
     }
+    
+    function safeGetElement(doc, el) {
+        return doc.ids ? doc.ids[el] : doc.getElementById ? doc.getElementById(el) : doc.all[el];
+    }
+    
+    function GetelementsByPrefix(inPrefix,inRoot){ 
+        var elem_array = new Array; 
+        if(inRoot && typeof inRoot.firstChild!= "undefined"){ 
+            var elem = inRoot.firstChild; 
+            while (elem!= null){ 
+                if(typeof elem.firstChild!= "undefined"){ 
+                    elem_array = elem_array.concat(GetelementsByPrefix(inPrefix,elem)); 
+                } 
+                if(typeof elem.id!= "undefined"){ 
+                    var reg = new RegExp ( "^"+inPrefix+".*" ); 
+                    if(elem.id.match(reg)){ 
+                        elem_array.push(elem); 
+                    } 
+                } 
+                elem = elem.nextSibling; 
+            } 
+        } 
+        return elem_array; 
+    }
+    
+    function Displayelements(in_elem_array){ 
+        if(in_elem_array.length){ 
+            for(var c=0; c<in_elem_array.length; c++){ 
+                alert(in_elem_array[c].id); 
+            } 
+        } 
+    } 
+    
+    function udi_report_toggle(idprefix) {
+        inRoot = document.getElementById(idprefix);
+        els = GetelementsByPrefix(idprefix, inRoot);
+        if(els.length){ 
+            for(var c=0; c<els.length; c++){ 
+                if (els[c].style.display == "none") {
+                    els[c].style.display = "table-row";
+                }
+                else {
+                    els[c].style.display = "none";
+                } 
+            } 
+        } 
+        return false;
+    }
     </script>
     ';
     

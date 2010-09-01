@@ -15,8 +15,16 @@
 class UdiRender extends PageRender {
 	# Page number
 	private $pagelast;
+	
+	private $udiconfig = false;
+	
+	private $logfile = false;
 
 	public $messages = array();
+	
+	public function setConfig($config) {
+	    $this->udiconfig = $config;
+	}
 	
 	public function isError() {
 	    foreach ($this->messages as $msg) {
@@ -37,9 +45,6 @@ class UdiRender extends PageRender {
 	 */
     public function outputMessagesConsole() {
         $msgs = array();
-//        foreach ($this->messages as $msg) {
-//            $msgs []= $msg['type'].": ".$msg['message'];
-//        }
         foreach ($_SESSION['sysmsg'] as $msg) {
             if (!preg_match('/DEBUG/', $msg['body'])) {
                 $msg['body'] = preg_replace('/\<.*?\>/', ' ', $msg['body']);
@@ -49,7 +54,20 @@ class UdiRender extends PageRender {
         }
         return implode("\n", $msgs);
     }
-	
+
+    
+    /**
+     * Log the system messages to report file
+     */
+    public function log_system_messages() {
+        foreach ($_SESSION['sysmsg'] as $msg) {
+            if (!preg_match('/DEBUG/', $msg['body'])) {
+                $this->log_to_file($msg['type'], $msg['body']);
+            }
+        }
+    }
+    
+    
 	/** CORE FUNCTIONS **/
 
 	/**
@@ -68,12 +86,12 @@ class UdiRender extends PageRender {
 
 		$treeitem = $tree->getEntry($this->dn);
 
-		# If we have a DN, and no template_id, see if the tree has one from last time
+		// If we have a DN, and no template_id, see if the tree has one from last time
 		if ($this->dn && is_null($this->template_id) && $treeitem && $treeitem->getTemplate())
 			$this->template_id = $treeitem->getTemplate();
 
-		# Check that we have a valid template, or present a selection
-		# @todo change this so that the modification templates rendered are the ones for the objectclass of the dn.
+		// Check that we have a valid template, or present a selection
+		// @todo change this so that the modification templates rendered are the ones for the objectclass of the dn.
 		if (! $this->template_id)
 			$this->template_id = $this->getTemplateChoice();
 
@@ -93,7 +111,7 @@ class UdiRender extends PageRender {
 			$this->layout['action'] = '<td class="icon"><img src="%s/%s" alt="%s" /></td><td><a href="cmd.php?%s" title="%s">%s</a></td>';
 			$this->layout['actionajax'] = '<td class="icon"><img src="%s/%s" alt="%s" /></td><td><a href="cmd.php?%s" title="%s" onclick="return ajDISPLAY(\'BODY\',\'%s\',\'%s\');">%s</a></td>';
 			
-			# If we dont want to render this template automatically, we'll return here.
+			// If we dont want to render this template automatically, we'll return here.
 			if ($norender)
 				return;
 		}
@@ -103,7 +121,8 @@ class UdiRender extends PageRender {
 	private function getMenuItem($item, $selected) {
 
 		$href = sprintf('cmd=udi&udi_nav=%s&%s',$item['name'], $this->url_base);
-        $layout = '<li  class="ui-state-default ui-corner-top %s"><a href="cmd.php?%s" title="%s" onclick="return ajDISPLAY(\'BODY\',\'%s\',\'%s\');"><img src="%s/%s" alt="%s" /> %s</a></li>';
+		$after_function = isset($item['onload']) ? $item['onload'].';' : '';
+        $layout = '<li  class="ui-state-default ui-corner-top %s"><a href="cmd.php?%s" title="%s" onclick="var res = ajDISPLAY(\'BODY\',\'%s\',\'%s\'); '.$after_function.' return res;"><img src="%s/%s" alt="%s" /> %s</a></li>';
         $classes = '';
         
         if ($selected) {
@@ -129,7 +148,7 @@ class UdiRender extends PageRender {
                 array('name' => 'userpass', 'text' => _('User & Pass'), 'title' => _('UserId & Passwd processing control'), 'image' => 'key.png', 'imagetext' => _('UserId & Passwd'),), 
                 array('name' => 'upload', 'text' => _('Upload'), 'title' => _('Upload a file'), 'image' => 'import.png', 'imagetext' => _('Upload'),), 
                 array('name' => 'process', 'text' => _('Processing'), 'title' => _('Process the UDI'), 'image' => 'timeout.png', 'imagetext' => _('Process'),),
-                array('name' => 'reporting', 'text' => _('Reporting'), 'title' => _('Reporting on the UDI'), 'image' => 'files-small.png', 'imagetext' => _('Reporting'),),
+                array('name' => 'reporting', 'text' => _('Reporting'), 'title' => _('Reporting on the UDI'), 'image' => 'files-small.png', 'imagetext' => _('Reporting'), ), 
                 array('name' => 'help', 'text' => _('Help'), 'title' => _('UDI Help'), 'image' => 'help-small.png', 'imagetext' => _('Help'),),
                 );
         
@@ -138,6 +157,80 @@ class UdiRender extends PageRender {
         }
         $menu .= "</ul></div>";
         return $menu;
+    }
+    
+    public function reportSummary($report) {
+        $header = $report['header'];
+        $footer = $report['footer'];
+        $messages = $report['messages'];
+        $table = '<div id="udi-report-'.$header['id'].'" class="udi-report"><table class="udi-report"><tr class="udi-report-header"><td class="udi-report-header-left">'._('Action: ').$header['action'].'</td><td class="udi-report-middle">';
+        $table .= _('Who: ').$header['user'].' &nbsp; '.
+                  _('Mode: ').$header['mode'].' &nbsp; '.
+                  _('Started: ').$header['time']; //.' &nbsp; '.$report['file'];
+        $table .= '</td><td class="far-right"><a href="" onclick="udi_report_toggle(\''.'udi-report-'.$header['id'].'\'); return false;"><img src="'.IMGDIR.'/help.png" alt="Toggle"/></a></td></tr>';
+        $cnt = 0;
+        $errors = false;
+        $table_lines = array();
+        $table_description = false;
+        foreach ($report['messages'] as $message) {
+            if (!in_array($message['type'], array('error', 'warning', 'info', 'debug'))) {
+                $table_data = false;
+                eval('$table_data = ' . $message['message'] . ';');
+                if ($table_data) {
+                    $table_description = $message['type'];
+                    $table_lines []= $table_data;
+                }
+                continue;
+            }
+            $cnt++;
+            if ($message['type'] == 'error') {
+                $errors = true;
+            }
+            $class = 'udi-report-'.$message['type'];
+            $id = 'udi-report-'.$header['id'].'-'.$cnt;
+            $table .= '<tr id="'.$id.'" style="display: none;" class="udi-report-message '.$class.'"><td class="udi-report-left">'.$message['type'].'</td><td colspan="2">'.$message['message'].'</td></tr>';
+        }
+        
+        // add the table data to the report
+        if (!empty($table_lines)) {
+            $first = $table_lines[0];
+            $table_data = '<table><tr>';
+            // add the header line
+            foreach ($first as $field => $value) {
+                $table_data .= '<td>'.$field.'</td>';
+            }
+            $table_data .= '</tr>';
+            // add the rows
+            foreach ($table_lines as $row) {
+                $table_data .= '<tr>';
+                foreach ($row as $field => $value) {
+                    $table_data .= '<td>'.$value.'</td>';
+                }
+                $table_data .= '</tr>';
+            }
+            $table_data .= '</table>';
+            $cnt++;
+            $class = 'udi-report-info';
+            $id = 'udi-report-'.$header['id'].'-'.$cnt;
+            $table .= '<tr id="'.$id.'" style="display: none;" class="udi-report-message '.$class.'"><td class="udi-report-left">'.$table_description.'</td><td colspan="2">'.$table_data.'</td></tr>';
+        }
+        
+        if ($footer) {
+            if ($errors) {
+                $table .= '<tr class="udi-report-footer udi-report-error">';
+            }
+            else {
+                $table .= '<tr class="udi-report-footer udi-report-complete">';
+            }
+            $table .= '<td class="udi-report-left">'._('Action: ').$header['action'].'</td>'.       
+                      '<td colspan="2">'._('Finished: ').$footer['time'].'</td>';
+            $table .= '</tr>';
+        }
+        else {
+            $table .= '<tr class="udi-report-footer udi-report-error"><td colspan="3" class="udi-report-error">'._('processing step failed to complete (is it still running?)').'</td></tr>';
+        }
+        $table .= '</table></div>';
+        return $table;
     }
 
     public function configRow($label, $field, $required=true) {
@@ -215,7 +308,6 @@ class UdiRender extends PageRender {
 
     public function configMoreField($name, $text, $attrs = array(), $chooser=false, $link_text=false) {
         $add_name = $name.'_ADD';
-        //$field = '<div class="felement ftext">';
         $desc = $link_text ? '&nbsp;'.$text : '';
         $field = '
         <a href="" title="'._('Add '.$text).'" onclick="if (getDiv(\''.$add_name.'\').style.display == \'block\'){getDiv(\''.$add_name.'\').style.display = \'none\';}else{getDiv(\''.$add_name.'\').style.display = \'block\';};return false;"><img src="images/udi/add.png" alt="'._('Add '.$text).'"/>'.$desc.'</a></div>
@@ -227,7 +319,6 @@ class UdiRender extends PageRender {
             $field .= $this->configChooser($name);
         }
         $field .= '</span></td></tr></tbody></table></div></fieldset></td></tr></tbody></table>';
-        //$field .= '</div>';
         return $field;
     }
 
@@ -319,6 +410,7 @@ class UdiRender extends PageRender {
     
     public function info($msg, $action='') {
         $this->messages[]= array('type' => 'info', 'message' => $msg);
+        $this->log_to_file('info', $msg);
         system_message(array(
                      'title'=>_('UDI '.$action),
                                 'body'=> $msg,
@@ -330,6 +422,7 @@ class UdiRender extends PageRender {
 
     public function warning($msg, $action='') {
         $this->messages[]= array('type' => 'warning', 'message' => $msg);
+        $this->log_to_file('warning', $msg);
         system_message(array(
                      'title'=>_('UDI '.$action),
                                 'body'=> $msg,
@@ -341,6 +434,7 @@ class UdiRender extends PageRender {
 
     public function error($msg, $action='') {
         $this->messages[]= array('type' => 'error', 'message' => $msg);
+        $this->log_to_file('error', $msg);
         system_message(array(
                      'title'=>_('UDI '.$action),
                                 'body'=> $msg,
@@ -350,7 +444,45 @@ class UdiRender extends PageRender {
                     get_request('server_id','REQUEST'))));
         return false;
     }
-
+    
+    public function log_to_file($type, $msg) {
+        if ($this->udiconfig) {
+            if (!$this->logfile) {
+                $cfg = $this->udiconfig->getConfig();
+                $file = 'processor_'.date("Y-m-d-H:i:s", strtotime("+0 days")).'.txt';
+                $this->logfile = $cfg['reportpath'].'/'.$file;
+            }
+            $fh = fopen($this->logfile, 'a');
+            fwrite($fh, $type."\t".$msg."\n");
+            fflush($fh);
+            fclose($fh);
+        }
+    }
+    
+    public function log_header($action, $cron=false) {
+        global $app;
+        $mode = $cron ? 'cron' : 'web';
+        if (!$app['server']->getLogin('user') && $cron) {
+            $user = 'cron';
+        }
+        else {
+            $user = $app['server']->getLogin('user');
+        }
+        $msg = var_export(array('action' => $action, 
+                                            'time' => time(), 
+                                            'user' => $user,
+                                            'mode' => $mode), true);
+        $msg = preg_replace('/\n/', '', $msg);
+        $this->log_to_file('start', $msg);
+    }
+    
+    public function log_footer() {
+        global $app;
+        $msg = var_export(array('time' => date("d/m/Y H:i:s", strtotime('+0 days'))), true);
+        $msg = preg_replace('/\n/', '', $msg);
+        $this->log_to_file('end', $msg);
+    }
+    
     public function outputMessages() {
         $msgs = '';
         foreach ($this->messages as $msg) {

@@ -76,6 +76,7 @@ $reactivate = false;
 $delete = false;
 $list = false;
 $yes = false;
+$action = '';
 foreach ($values as $param => $value) {
     switch ($param) {
         case 's':
@@ -91,6 +92,7 @@ foreach ($values as $param => $value) {
         case 'l':
         case 'list':
             $list = true;
+            $action = 'list';
             break;
             
         case 'v':
@@ -101,16 +103,19 @@ foreach ($values as $param => $value) {
         case 'p':
         case 'process':
             $process = true;
+            $action = 'process';
             break;
             
         case 'r':
         case 'reactivate':
             $reactivate = true;
+            $action = 'reactivate';
             break;
             
         case 'd':
         case 'delete':
             $delete = true;
+            $action = 'delete';
             break;
             
         case 'y':
@@ -270,6 +275,7 @@ if (false === $server_id) {
 $_REQUEST['server_id'] = $server_id;
 
 global $app, $udiconfig, $request;
+
 // now fire common
 require_once '../lib/common.php';
 
@@ -293,10 +299,15 @@ $udiconfigdn = $udiconfig->getBaseDN();
 
 $cfg = $udiconfig->getConfig();
 
+// stash the config so that logging can work
+$request['page']->setConfig($udiconfig);
+$request['page']->log_header($action, true);
+
 // validate config
 if (!$udiconfig->validate()) {
     console_write(_('Configuration validation failed'));
     console_write($request['page']->outputMessagesConsole());
+    $request['page']->log_system_messages();
     exit(1);
 }
 // check for list first
@@ -309,6 +320,8 @@ if ($list) {
         fputcsv($fh, $account);
     }
     fclose($fh);
+    $request['page']->log_system_messages();
+    $request['page']->log_footer();
     exit(0);
 }
 // check for reactivate next
@@ -321,6 +334,7 @@ else if ($reactivate) {
         $processor->reactivate();
         $request['page']->info(_('User reactivation completed'));
     }
+    $request['page']->log_system_messages();
 }
 // check for delete next
 else if ($delete) {
@@ -329,6 +343,7 @@ else if ($delete) {
     // do validation, and then jump to a confirm/cancel screen
     $processor = new Processor($app['server']);
     $processor->deleteDeactivated();
+    $request['page']->log_system_messages();
     $request['page']->info(_('User deletion completed'));
 }
 // must be process
@@ -346,12 +361,14 @@ else {
         if (!preg_match('/^HTTP.*? 200 .*?OK/', $hdrs[0])) {
             $request['page']->error(_('Source import URL does not exist: ').$filename, _('process'));
             console_write($request['page']->outputMessagesConsole());
+            $request['page']->log_system_messages();
             exit(1);
         }
     } 
     else if (!file_exists($filename)) {
         $request['page']->error(_('Source import file does not exist: ').$filename, _('process'));
         console_write($request['page']->outputMessagesConsole());
+        $request['page']->log_system_messages();
         exit(1);
     }
     $import = new ImportCSV($app['server']->getIndex(), $filename);
@@ -365,6 +382,7 @@ else {
     // bail on errors
     if ($request['page']->isError()) {
         console_write($request['page']->outputMessagesConsole());
+        $request['page']->log_system_messages();
         exit(1);
     }
     
@@ -374,6 +392,7 @@ else {
             $processor->import();
         }
     }
+    $request['page']->log_system_messages();
     $request['page']->info(_('File processing finished'));
 }
 
@@ -382,6 +401,7 @@ console_write($request['page']->outputMessagesConsole());
 if ($request['page']->isError()) {
     exit(1);
 }
+$request['page']->log_footer();
 
 exit(0);
 /******************************************************************************/
