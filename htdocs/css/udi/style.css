@@ -1101,6 +1101,12 @@ tr.udi-report-tabledata-header {
 }
 
 
+td.udi-report-tabledata {
+    vertical-align: top;
+    text-align: left;
+}
+
+
 div.udi-report {
     margin-top: 10px;
     margin-bottom: 10px;

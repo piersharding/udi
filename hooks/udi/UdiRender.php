@@ -171,6 +171,7 @@ class UdiRender extends PageRender {
         $cnt = 0;
         $errors = false;
         $data_tables = array();
+        $collapse = '<a href="" onclick="udi_report_toggle(\''.'udi-report-'.$header['id'].'\'); return false;"><img src="'.IMGDIR.'/collapse.png" alt="Toggle"/></a> &nbsp; ';
         foreach ($report['messages'] as $message) {
             if (!in_array($message['type'], array('error', 'warning', 'info', 'debug'))) {
                 $table_data = false;
@@ -189,7 +190,10 @@ class UdiRender extends PageRender {
             }
             $class = 'udi-report-'.$message['type'];
             $id = 'udi-report-'.$header['id'].'-'.$cnt;
-            $table .= '<tr id="'.$id.'" style="display: none;" class="udi-report-message '.$class.'"><td class="udi-report-left">'.$message['type'].'</td><td colspan="2">'.$message['message'].'</td></tr>';
+            $table .= '<tr id="'.$id.'" style="display: none;" class="udi-report-message '.$class.'"><td class="udi-report-left">'.$collapse.$message['type'].'</td><td colspan="2">'.$message['message'].'</td></tr>';
+            if ($collapse) {
+                $collapse = '';
+            }
         }
         
         // add the table data to the report
@@ -199,14 +203,14 @@ class UdiRender extends PageRender {
                 $table_data = '<table class="udi-report-tabledata"><tr class="udi-report-tabledata-header">';
                 // add the header line
                 foreach ($first as $field => $value) {
-                    $table_data .= '<td>'.$field.'</td>';
+                    $table_data .= '<td class="udi-report-tabledata">'.$field.'</td>';
                 }
                 $table_data .= '</tr>';
                 // add the rows
                 foreach ($table_lines as $row) {
                     $table_data .= '<tr>';
                     foreach ($first as $field => $discard) {
-                        $table_data .= '<td>'.$row[$field].'</td>';
+                        $table_data .= '<td class="udi-report-tabledata">'.$row[$field].'</td>';
                     }
                     $table_data .= '</tr>';
                 }

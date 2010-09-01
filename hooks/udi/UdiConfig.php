@@ -133,20 +133,23 @@ class UdiConfig {
             }
         }
                 
-        if (isset($this->config['enable_reporting']) && $this->config['enable_reporting'] == 'checked') {
-            // validate the file path - must exist
-            if (preg_match('/^http/', $this->config['filepath'])) {
-                $hdrs = get_headers($this->config['filepath']);
-                if (!preg_match('/^HTTP.*? 200 .*?OK/', $hdrs[0])) {
-                    $request['page']->warning(_('Source import URL does not exist: ').$this->config['filepath'], _('configuration'));
-                }
-            } 
-            else if (!file_exists($this->config['filepath'])) {
-                $request['page']->warning(_('Source import file does not exist: ').$this->config['filepath'], _('configuration'));
+        // validate the file path - must exist
+        if (preg_match('/^http/', $this->config['filepath'])) {
+            $hdrs = get_headers($this->config['filepath']);
+            if (!preg_match('/^HTTP.*? 200 .*?OK/', $hdrs[0])) {
+                $request['page']->warning(_('Source import URL does not exist: ').$this->config['filepath'], _('configuration'));
             }
-    
+        } 
+        else if (!file_exists($this->config['filepath'])) {
+            $request['page']->warning(_('Source import file does not exist: ').$this->config['filepath'], _('configuration'));
+        }
+        
+        if (isset($this->config['enable_reporting']) && $this->config['enable_reporting'] == 'checked') {
             // validate reporting email address
-            if (!preg_match('#^[-!\#$%&\'*+\\/0-9=?A-Z^_`a-z{|}~]+'.
+            if (empty($this->config['reportemail'])) {
+                $request['page']->warning(_('Reporting email address is empty'), _('configuration'));
+            }
+            else if (!preg_match('#^[-!\#$%&\'*+\\/0-9=?A-Z^_`a-z{|}~]+'.
                  '(\.[-!\#$%&\'*+\\/0-9=?A-Z^_`a-z{|}~]+)*'.
                   '@'.
                   '[-!\#$%&\'*+\\/0-9=?A-Z^_`a-z{|}~]+\.'.
@@ -157,16 +160,21 @@ class UdiConfig {
             }
             
             // create missing directory
-            if (!file_exists($this->config['reportpath'])) {
-                if (!mkdir($this->config['reportpath'], 0755)) {
-                    $request['page']->error(_('Reporting file path does not exist, and could not be created: ').$this->config['reportpath'], _('configuration'));
+            if (empty($this->config['reportpath'])) {
+                $request['page']->warning(_('Reporting file path is empty'), _('configuration'));
+            }
+            else {
+                if (!file_exists($this->config['reportpath'])) {
+                    if (!mkdir($this->config['reportpath'], 0755)) {
+                        $request['page']->error(_('Reporting file path does not exist, and could not be created: ').$this->config['reportpath'], _('configuration'));
+                        $valid = false;
+                    }
+                }
+                // check permissions
+                if (!is_writable($this->config['reportpath'])) {
+                    $request['page']->error(_('Reporting file path cannot be written to: ').$this->config['reportpath'], _('configuration'));
                     $valid = false;
                 }
-            }
-            // check permissions
-            if (!is_writable($this->config['reportpath'])) {
-                $request['page']->error(_('Reporting file path cannot be written to: ').$this->config['reportpath'], _('configuration'));
-                $valid = false;
             }
         }
         
