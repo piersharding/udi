@@ -741,7 +741,7 @@ class TemplateRender extends PageRender {
 			echo '<tr>';
 			$menuitem_number = 0;
 
-			foreach (array('entryrefresh','showinternal','switchtemplate','entryexport','entrycopy','entrydelete','entryrename','entrycompare','childcreate','addattr','msgdel','childview','childexport','msgschema','msgro','msgmodattr') as $item) {
+			foreach (array('entryrefresh','showinternal','switchtemplate','entryexport','entrycopy','entrydelete', 'deactivate', 'reactivate', 'entryrename','entrycompare','childcreate','addattr','msgdel','childview','childexport','msgschema','msgro','msgmodattr') as $item) {
 				$item = $this->getMenuItem($item);
 
 				if ($item) {
@@ -979,8 +979,23 @@ class TemplateRender extends PageRender {
 					return array('',$this->getModifiedAttributesMessage($modified_attrs));
 				else
 					return array();
-
+					
+            case 'deactivate':
+                // check this DN is in the deactivated container
+                if ($_SESSION[APPCONFIG]->isCommandAvailable('script','deactivate_form') && ! $this->template->isReadOnly())
+                    return $this->getMenuItemDeactivate();
+                else
+                    return '';
+                    
+            case 'reactivate':
+                // check that this DN is inside one of the search bases
+                if ($_SESSION[APPCONFIG]->isCommandAvailable('script','reactivate_form') && ! $this->template->isReadOnly())
+                    return $this->getMenuItemReactivate();
+                else
+                    return '';
+                    
 			default:
+			    echo "bugger";
 				return false;
 		}
 	}
@@ -1238,6 +1253,62 @@ class TemplateRender extends PageRender {
 				htmlspecialchars($href),_('Save a dump of this object and all of its children'),_('Export subtree'));
 	}
 
+	
+    private function getMenuItemDeactivate() {
+        if (DEBUG_ENABLED && (($fargs=func_get_args())||$fargs='NOARGS'))
+            debug_log('Entered (%%)',129,0,__FILE__,__LINE__,__METHOD__,$fargs);
+
+        if (DEBUGTMP) printf('<font size=-2>%s</font><br />',__METHOD__);
+    
+        // check against udi config
+        require_once HOOKSDIR.'udi/UdiConfig.php';
+        $server = $_SESSION[APPCONFIG]->getServer($this->server_id);
+        $udiconfig = new UdiConfig($server);
+        $cfg = $udiconfig->getConfig();
+        // if this DN is inside the Deactivate DN then it's NOT OK
+        if (preg_match('/'.$cfg['move_to'].'$/', $this->template->getDN())) {
+            return '';
+        }
+        
+        $href = sprintf('cmd=deactivate_form&%s',$this->url_base);
+
+        if (isAjaxEnabled())
+            return sprintf($this->layout['actionajax'],IMGDIR,'disabled.png',_('Deactivate'),
+                htmlspecialchars($href),_('You will be prompted to confirm this decision'),
+                htmlspecialchars($href),_('Loading'),_('Deactivate this entry'));
+        else
+            return sprintf($this->layout['action'],IMGDIR,'disabled.png',_('Deactivate'),
+                htmlspecialchars($href),_('You will be prompted to confirm this decision'),_('Deactivate this entry'));
+    }
+
+    
+    private function getMenuItemReactivate() {
+        if (DEBUG_ENABLED && (($fargs=func_get_args())||$fargs='NOARGS'))
+            debug_log('Entered (%%)',129,0,__FILE__,__LINE__,__METHOD__,$fargs);
+
+        if (DEBUGTMP) printf('<font size=-2>%s</font><br />',__METHOD__);
+
+        // check against udi config
+        require_once HOOKSDIR.'udi/UdiConfig.php';
+        $server = $_SESSION[APPCONFIG]->getServer($this->server_id);
+        $udiconfig = new UdiConfig($server);
+        $cfg = $udiconfig->getConfig();
+        // if this DN is inside the Deactivate DN then it's OK
+        if (!preg_match('/'.$cfg['move_to'].'$/', $this->template->getDN())) {
+            return '';
+        }
+        
+        $href = sprintf('cmd=reactivate_form&%s',$this->url_base);
+
+        if (isAjaxEnabled())
+            return sprintf($this->layout['actionajax'],IMGDIR,'import.png',_('Reactivate'),
+                htmlspecialchars($href),_('You will be prompted to confirm this decision'),
+                htmlspecialchars($href),_('Loading'),_('Reactivate this entry'));
+        else
+            return sprintf($this->layout['action'],IMGDIR,'import.png',_('Reaactivate'),
+                htmlspecialchars($href),_('You will be prompted to confirm this decision'),_('Reactivate this entry'));
+    }
+    
 	/** CHOOSERS **/
 
 	/**

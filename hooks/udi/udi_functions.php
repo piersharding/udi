@@ -650,7 +650,7 @@ class Processor {
     public $udiconfig;
 
     // arrays of the different record types
-    private $to_be_deleted;
+    public  $to_be_deactivated;
     private $to_be_created;
     private $to_be_updated;
 
@@ -857,7 +857,7 @@ class Processor {
         }
 
         // find the missing accounts in the directory
-        $this->to_be_deleted = array_diff_key($accounts, $imports);
+        $this->to_be_deactivated = array_diff_key($accounts, $imports);
         
         // find the new accounts in the file
         $this->to_be_created = array_diff_key($imports, $accounts);
@@ -938,7 +938,7 @@ class Processor {
             }
         }
         
-        $request['page']->info(_('Calculated: ').count($this->to_be_created)._(' creates ').count($this->to_be_updated)._(' updates ').count($this->to_be_deleted)._(' deletes'), _('processing'));
+        $request['page']->info(_('Calculated: ').count($this->to_be_created)._(' creates ').count($this->to_be_updated)._(' updates ').count($this->to_be_deactivated)._(' deletes'), _('processing'));
         return true;
     }
 
@@ -1025,7 +1025,7 @@ class Processor {
 
         // must do deletes first - as there might be rename issues
         if ($result && $this->cfg['ignore_deletes'] != 'checked') {
-            $result = $this->processDeletes();
+            $result = $this->processDeactivations();
         }
 
         if ($result && $this->cfg['ignore_updates'] != 'checked') {
@@ -1627,18 +1627,27 @@ class Processor {
      * 
      * @return bool true on success
      */
-    public function validateReactivation() {
+    public function validateReactivation($base=false) {
         global $request;
         $result = true;
 
-        $children = $this->server->getContainerContents($this->cfg['move_to'], 'user', 0, '(objectClass=*)', LDAP_DEREF_NEVER);
+        $children = array();
+        if ($base) {
+            $children []= $base;
+        }
+        else {
+            $children = $this->server->getContainerContents($this->cfg['move_to'], 'user', 0, '(objectClass=*)', LDAP_DEREF_NEVER);
+        }
         foreach ($children as $child) {
             $query = $this->server->query(array('base' => $child), 'user');
+            if (empty($query)) {
+                return $request['page']->error(_('Account not found: ').$child);
+            }
             $account = array_shift($query);
             // check that there isnt a duplicate there already
             $deactive_dn = $account['dn'];
             if (!isset($account['labeleduri'])) {
-                $request['page']->info(_('Deactivated account does not have old DN - cannot restore: ').$dactive_dn, _('processing'));
+                $request['page']->info(_('Deactivated account does not have old DN - cannot restore: ').$deactive_dn, _('processing'));
                 $result = false;
             }
             else {
@@ -1677,18 +1686,27 @@ class Processor {
      * 
      * @return bool true on success
      */
-    public function reactivate() {
+    public function reactivate($base=false) {
         global $request;
         $result = true;
 
-        $children = $this->server->getContainerContents($this->cfg['move_to'], 'user', 0, '(objectClass=*)', LDAP_DEREF_NEVER);
+        $children = array();
+        if ($base) {
+            $children []= $base;
+        }
+        else {
+            $children = $this->server->getContainerContents($this->cfg['move_to'], 'user', 0, '(objectClass=*)', LDAP_DEREF_NEVER);
+        }
         foreach ($children as $child) {
             $query = $this->server->query(array('base' => $child), 'user');
+            if (empty($query)) {
+                return $request['page']->error(_('Account not found: ').$child);
+            }
             $account = array_shift($query);
             // check that there isnt a duplicate there already
             $deactive_dn = $account['dn'];
             if (!isset($account['labeleduri'])) {
-                $request['page']->info(_('Deactivated account does not have old DN - cannot restore: ').$dactive_dn, _('processing'));
+                $request['page']->info(_('Deactivated account does not have old DN - cannot restore: ').$deactive_dn, _('processing'));
                 $result = false;
             }
             else {
@@ -1815,11 +1833,11 @@ class Processor {
      * 
      * @return bool true on success
      */
-    public function processDeletes() {
+    public function processDeactivations() {
         global $request;
         
         // process the deletes, which are really moves
-        foreach ($this->to_be_deleted as $account) {
+        foreach ($this->to_be_deactivated as $account) {
 
             $dn = $account['dn'];
             

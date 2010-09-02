@@ -310,7 +310,7 @@ class HTMLTree extends Tree {
 				$menu['div'] = 'BODY';
 				$menu['title'] = _('UDI');
 				$menu['img'] = 'wifi-radar.png';
-				$menu['name'] = _('udi');
+				$menu['name'] = _('UDI');
 
 				break;
 
