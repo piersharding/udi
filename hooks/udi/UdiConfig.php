@@ -101,7 +101,7 @@ class UdiConfig {
         }
 
         $this->config = array();
-        $query = $this->server->query(array('base' => $this->configdn, 'attrs' => array('description')), 'login');
+        $query = $this->server->query(array('base' => $this->configdn, 'attrs' => array('description')), 'user');
         $this->unpackConfig($query);
         return $this->config;
     }
@@ -456,7 +456,7 @@ class UdiConfig {
         if (!$this->createConfigDn($this->configdn)) {
             return false;
         }
-        $result = $this->server->modify($this->configdn, $attrs, 'login');
+        $result = $this->server->modify($this->configdn, $attrs, 'user');
         return $this->getConfig(true);
     }
 
@@ -466,7 +466,7 @@ class UdiConfig {
     private function createConfigDn($dn) {
 
         // check that the backup DN exists
-        $query = $this->server->query(array('base' => $dn, 'attrs' => array('description')), 'login');
+        $query = $this->server->query(array('base' => $dn, 'attrs' => array('description')), 'user');
         if (empty($query)) {
              if (!$this->server->add($dn, array('objectClass' => 'top', 'objectClass' => 'applicationProcess'))) {
                 system_message(array(
@@ -525,7 +525,7 @@ class UdiConfig {
     public function restoreConfig() {
 
         $this->config = array();
-        $query = $this->server->query(array('base' => $this->configbackupdn, 'attrs' => array('description')), 'login');
+        $query = $this->server->query(array('base' => $this->configbackupdn, 'attrs' => array('description')), 'user');
         $this->unpackConfig($query);
         return $this->updateConfig();
     }

@@ -23,12 +23,12 @@ $mandatory_fields = array(
                             'mlepGroupMembership',
                             );
 
-$socs = $app['server']->SchemaObjectClasses('login');
+$socs = $app['server']->SchemaObjectClasses('user');
 $mlepPerson = $socs['mlepperson'];
 $must = $mlepPerson->getMustAttrs();
 $may = $mlepPerson->getMayAttrs();
 $imo_attrs = array_merge($must, $may);
-$dmo_attrs = $app['server']->SchemaAttributes('login');
+$dmo_attrs = $app['server']->SchemaAttributes('user');
 $dmo_attrs = array_merge(array("none" => new ObjectClass_ObjectClassAttribute("", "")), $dmo_attrs);
 
 $no_mappings = 0;

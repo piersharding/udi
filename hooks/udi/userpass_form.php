@@ -1,6 +1,6 @@
 <?php
 $cfg = $request['udiconfig'];
-$socs = $app['server']->SchemaObjectClasses('login');
+$socs = $app['server']->SchemaObjectClasses('user');
 
 $configuration_action = get_request('configuration');
 $confirm = get_request('confirm');

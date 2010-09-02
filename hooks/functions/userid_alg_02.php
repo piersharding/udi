@@ -65,7 +65,7 @@ function userid_alg_02_userid_algorithm() {
             $counter = 0;
             $test = $uid;
             while (1) {
-                $query = $server->query(array('base' => $udiconfig->getBaseDN(), 'filter' => "(mlepUsername=$test)", 'attrs' => array('dn')), 'login');
+                $query = $server->query(array('base' => $udiconfig->getBaseDN(), 'filter' => "(mlepUsername=$test)", 'attrs' => array('dn')), 'user');
                 if (empty($query)) {
                     $uid = $test;
                     break;

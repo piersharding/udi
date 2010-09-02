@@ -191,7 +191,7 @@ class UDITestBase extends PHPUnit_Framework_TestCase {
      */
     static function cron ($opts) {
         global $UDI_RC;
-        $cmd = 'php ../tools/cron.php --server="Seagull LDAP Server" ' .$opts;
+        $cmd = 'php ../tools/cron.php --server="Seagull LDAP Server" --user="cn=admin,dc=example,dc=com" --passwd="letmein" ' .$opts;
         $result = self::call_exec($cmd);
         return explode("\n", $result);
     }

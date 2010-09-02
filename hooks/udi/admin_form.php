@@ -1,6 +1,6 @@
 <?php
 $cfg = $request['udiconfig'];
-$socs = $app['server']->SchemaObjectClasses('login');
+$socs = $app['server']->SchemaObjectClasses('user');
 
 $configuration_action = get_request('configuration');
 $confirm = get_request('confirm');
@@ -34,7 +34,7 @@ else {
     echo '<span style="white-space: nowrap;">';
     echo '<div class="tools-right">';
     echo '<a href="" title="'._('Backup Configuration').'" onclick="post_to_url(\'cmd.php\', {\'configuration\': \'backup\'}); return false;"><img src="images/udi/export.png" alt="'._('Backup Configuration').'"/> &nbsp; '._('Backup Configuration').'</a>';
-    $query = $app['server']->query(array('base' => $udiconfig->getConfigBackupDN(), 'attrs' => array('dn')), 'login');
+    $query = $app['server']->query(array('base' => $udiconfig->getConfigBackupDN(), 'attrs' => array('dn')), 'user');
     if (!empty($query)) {
         // base does not exist
         echo ' &nbsp; ';
@@ -79,7 +79,7 @@ else {
     echo $request['page']->configSelectEntry('import_match_on', _('Match from Import on:'), $imo_attrs, $imo_default);
     
     $dmo_default = isset($cfg['dir_match_on']) ? $cfg['dir_match_on'] : 'mlepsmspersonid';
-    $dmo_attrs = $app['server']->SchemaAttributes('login');
+    $dmo_attrs = $app['server']->SchemaAttributes('user');
     echo $request['page']->configSelectEntry('dir_match_on', _('Match to Directory on:'), $dmo_attrs, $dmo_default);
     
     // Allow for multiple search bases

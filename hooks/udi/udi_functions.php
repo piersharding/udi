@@ -21,7 +21,7 @@ function check_dn_exists($dn, $msg, $area = 'configuration') {
     //$query['filter'] = '(&(objectClass=*))';
     global $app, $udiconfig, $request;
     // check DN exists
-    $query = $app['server']->query(array('base' => $dn, 'attrs' => array('dn')), 'login');
+    $query = $app['server']->query(array('base' => $dn, 'attrs' => array('dn')), 'user');
     if (empty($query)) {
         // base does not exist
         $request['page']->error($msg, $area);
@@ -61,7 +61,7 @@ function check_objectclass($class) {
     // objectClass does not exist
     global $app, $udiconfig, $request;
 
-    $socs = $app['server']->SchemaObjectClasses('login');
+    $socs = $app['server']->SchemaObjectClasses('user');
     if (!isset($socs[strtolower($class)])) {
         $request['page']->error(_('objectClass does not exist: ').$class, 'configuration');
         return false;
@@ -427,10 +427,10 @@ class ImportCSV extends Import {
         }
 
         // mandatory headers must exist
-        $socs = $app['server']->SchemaObjectClasses('login');
+        $socs = $app['server']->SchemaObjectClasses('user');
         $mlepPerson = $socs['mlepperson'];
         $must = $mlepPerson->getMustAttrs();
-        $dmo_attrs = $app['server']->SchemaAttributes('login');
+        $dmo_attrs = $app['server']->SchemaAttributes('user');
         $dmo_attrs = array_merge(array("mlepgroupmembership" => new ObjectClass_ObjectClassAttribute("mlepgroupmembership", "mlepGroupMembership")), $dmo_attrs);
         //        $this->_valid_attrs = $dmo_attrs;
         $headers = array();
@@ -730,7 +730,7 @@ class Processor {
         // run through all the search bases
         foreach ($bases as $base) {
             // ensure that accounts inspected have the mlepPerson object class
-            $query = $this->server->query(array('base' => $base, 'filter' => "(&(objectclass=mlepperson)($id=*))"), 'login');
+            $query = $this->server->query(array('base' => $base, 'filter' => "(&(objectclass=mlepperson)($id=*))"), 'user');
             if (empty($query)) {
                 // base does not exist
                 $request['page']->warning(_('No user accounts found in search base: ').$base, _('processing'));
@@ -793,7 +793,7 @@ class Processor {
         // all target fields must exist in the schema
         $total_attrs = array();
         $classes = $this->udiconfig->getObjectClasses();
-        $socs = $this->server->SchemaObjectClasses('login');
+        $socs = $this->server->SchemaObjectClasses('user');
         foreach ($classes as $class) {
             foreach ($socs[strtolower($class)]->getMustAttrs(true) as $attr) {
                 $total_attrs[$attr->getName()] = true;
@@ -915,13 +915,13 @@ class Processor {
             // with this Id 
             if ($uid) {
                 // check for mlepUsername
-                $query = $this->server->query(array('base' => $this->udiconfig->getBaseDN(), 'filter' => "(mlepUsername=$uid)", 'attrs' => array('dn')), 'login');
+                $query = $this->server->query(array('base' => $this->udiconfig->getBaseDN(), 'filter' => "(mlepUsername=$uid)", 'attrs' => array('dn')), 'user');
                 if (!empty($query)) {
                     // base does not exist
                     $request['page']->warning(_('User account is duplicate in directory for mlepUsername: ').$uid, _('processing'));
                 }
                 // check for uid
-                $query = $this->server->query(array('base' => $this->udiconfig->getBaseDN(), 'filter' => "(uid=$uid)", 'attrs' => array('dn')), 'login');
+                $query = $this->server->query(array('base' => $this->udiconfig->getBaseDN(), 'filter' => "(uid=$uid)", 'attrs' => array('dn')), 'user');
                 if (!empty($query)) {
                     // base does not exist
                     $request['page']->warning(_('User account is duplicate in directory for uid: ').$uid, _('processing'));
@@ -929,7 +929,7 @@ class Processor {
 
                 // check for mlepUsername in the deletions directory
                 if (!empty($this->cfg['move_to'])) {
-                    $query = $this->server->query(array('base' => $this->cfg['move_to'], 'filter' => "(mlepUsername=$uid)", 'attrs' => array('dn')), 'login');
+                    $query = $this->server->query(array('base' => $this->cfg['move_to'], 'filter' => "(mlepUsername=$uid)", 'attrs' => array('dn')), 'user');
                     if (!empty($query)) {
                         // base does not exist
                         $request['page']->warning(_('User account is duplicate in deletion (').$this->cfg['move_to']._(') directory for mlepUsername: ').$uid, _('processing'));
@@ -966,7 +966,7 @@ class Processor {
 
         $total_attrs = array();
         $classes = $this->udiconfig->getObjectClasses();
-        $socs = $this->server->SchemaObjectClasses('login');
+        $socs = $this->server->SchemaObjectClasses('user');
         $skip = array('objectclass', 'userpassword');
         foreach ($classes as $class) {
             foreach ($socs[strtolower($class)]->getMustAttrs(true) as $attr) {
@@ -991,7 +991,7 @@ class Processor {
         // run through all the search bases
         foreach ($bases as $base) {
             // ensure that accounts inspected have the mlepPerson object class
-            $query = $this->server->query(array('base' => $base, 'filter' => "(&(objectclass=mlepperson)($id=*))"), 'login');
+            $query = $this->server->query(array('base' => $base, 'filter' => "(&(objectclass=mlepperson)($id=*))"), 'user');
             if (!empty($query)) {
                 // run through each discovered account
                 foreach ($query as $user) {
@@ -1223,7 +1223,7 @@ class Processor {
 //            }
             $template->setRDNAttributes($rdn);
             // set the CN
-            $result = $this->server->add($dn, $template->getLDAPadd(), 'login');
+            $result = $this->server->add($dn, $template->getLDAPadd(), 'user');
             if (!$result) {
                 $request['page']->error(_('Could not create: ').$dn, _('processing'));
                 return $result;
@@ -1299,7 +1299,7 @@ class Processor {
             $dn = $account['dn'];
             
             // find the existing one
-            $query = $this->server->query(array('base' => $dn), 'login');
+            $query = $this->server->query(array('base' => $dn), 'user');
             $existing_account = array_shift($query);
             $user_total_classes = array_unique(array_merge($existing_account['objectclass'], $objectclass));
             $old_uid = false;
@@ -1386,7 +1386,7 @@ class Processor {
             }
             // make sure item exists in the tree
             $this->addTreeItem($dn);
-            $result = $this->server->modify($dn, $template->getLDAPmodify(), 'login');
+            $result = $this->server->modify($dn, $template->getLDAPmodify(), 'user');
             if (!$result) {
                 $request['page']->error(_('Could not create: ').$dn, _('processing'));
                 return $result;
@@ -1449,10 +1449,10 @@ class Processor {
         foreach ($this->total_groups as $group) {
             // check and delete from group
             
-            $query = $this->server->query(array('base' => $group, 'filter' => "($group_attr=$uid)"), 'login');
+            $query = $this->server->query(array('base' => $group, 'filter' => "($group_attr=$uid)"), 'user');
             if (!empty($query)) {
                 // user exists in group
-                $query = $this->server->query(array('base' => $group), 'login');
+                $query = $this->server->query(array('base' => $group), 'user');
                 // remove user from membership attribute and then save again
                 $existing = array_shift($query);
                 $template = $this->createModifyTemplate($group);
@@ -1462,7 +1462,7 @@ class Processor {
                 $attribute->setValue($values);
                 // Perform the modification
                 $this->addTreeItem($group);
-                $result = $this->server->modify($group, $template->getLDAPmodify(), 'login');
+                $result = $this->server->modify($group, $template->getLDAPmodify(), 'user');
                 if (!$result) {
                     return $request['page']->error(_('Could not remove user from group: ').$uid.'/'.$group, _('processing'));
                 }
@@ -1569,7 +1569,7 @@ class Processor {
                     foreach($this->group_mappings[$group] as $mapping) {
                         // insert mlepUsername in to the group from here
                         $template = $this->createModifyTemplate($mapping);
-                        $query = $this->server->query(array('base' => $mapping), 'login');
+                        $query = $this->server->query(array('base' => $mapping), 'user');
                         if (empty($query)) {
                             // group does not exist
                             return $request['page']->error(_('Membership group does not exist: ').$mapping, _('processing'));
@@ -1594,7 +1594,7 @@ class Processor {
                             $this->modifyAttribute($template, $group_attr, $values);
                             # Perform the modification
                             $this->addTreeItem($mapping);
-                            $result = $this->server->modify($mapping,$template->getLDAPmodify(), 'login');
+                            $result = $this->server->modify($mapping,$template->getLDAPmodify(), 'user');
                             if (!$result) {
                                 return $request['page']->error(_('Could not add user to group: ').$new_uid.'/'.$mapping, _('processing'));
                             }
@@ -1611,7 +1611,7 @@ class Processor {
 //                $template->accept();
 //                $this->modifyAttribute($template, $group_attr, $memberof_groups);
 //                # Perform the modification
-//                $result = $this->server->modify($user_dn,$template->getLDAPmodify(), 'login');
+//                $result = $this->server->modify($user_dn,$template->getLDAPmodify(), 'user');
 //                if (!$result) {
 //                    $request['page']->error(_('Could not update user groups: ').$user_dn.'/'.implode('|', $memberof_groups), _('processing'));
 //                }
@@ -1631,9 +1631,9 @@ class Processor {
         global $request;
         $result = true;
 
-        $children = $this->server->getContainerContents($this->cfg['move_to'], 'login', 0, '(objectClass=*)', LDAP_DEREF_NEVER);
+        $children = $this->server->getContainerContents($this->cfg['move_to'], 'user', 0, '(objectClass=*)', LDAP_DEREF_NEVER);
         foreach ($children as $child) {
-            $query = $this->server->query(array('base' => $child), 'login');
+            $query = $this->server->query(array('base' => $child), 'user');
             $account = array_shift($query);
             // check that there isnt a duplicate there already
             $deactive_dn = $account['dn'];
@@ -1651,7 +1651,7 @@ class Processor {
                 }
                 else {
                     list($discard, $old_dn) = explode('udi_deactivated:', $old_dn, 2);
-                    $query = $this->server->query(array('base' => $old_dn), 'login');
+                    $query = $this->server->query(array('base' => $old_dn), 'user');
                     if (!empty($query)) {
                         $existing_account = array_shift($query);
                         $request['page']->info(_('Deactivated account ').$deactive_dn._(' cannot be restored over: ').$old_dn, _('processing'));
@@ -1659,7 +1659,7 @@ class Processor {
                     }
                     // check that the target container exists
                     $container = $this->server->getContainer($old_dn);
-                    $query = $this->server->query(array('base' => $container), 'login');
+                    $query = $this->server->query(array('base' => $container), 'user');
                     if (empty($query)) {
                         $request['page']->info(_('Deactivated account ').$deactive_dn._(' cannot be restored to non-existent container: ').$container, _('processing'));
                         $result = false;
@@ -1681,9 +1681,9 @@ class Processor {
         global $request;
         $result = true;
 
-        $children = $this->server->getContainerContents($this->cfg['move_to'], 'login', 0, '(objectClass=*)', LDAP_DEREF_NEVER);
+        $children = $this->server->getContainerContents($this->cfg['move_to'], 'user', 0, '(objectClass=*)', LDAP_DEREF_NEVER);
         foreach ($children as $child) {
-            $query = $this->server->query(array('base' => $child), 'login');
+            $query = $this->server->query(array('base' => $child), 'user');
             $account = array_shift($query);
             // check that there isnt a duplicate there already
             $deactive_dn = $account['dn'];
@@ -1716,7 +1716,7 @@ class Processor {
                     $attrs['newsuperior'] = $container;
                     $template->modrdn = $attrs;
                     $this->addTreeItem($deactive_dn);
-                    $result = $this->server->rename($deactive_dn, $template->modrdn['newrdn'], $template->modrdn['newsuperior'], $template->modrdn['deleteoldrdn'], 'login');
+                    $result = $this->server->rename($deactive_dn, $template->modrdn['newrdn'], $template->modrdn['newsuperior'], $template->modrdn['deleteoldrdn'], 'user');
                     if (!$result) {
                         $request['page']->error(_('Could not resurect (rename): ').$deactive_dn, _('processing'));
                         return $result;
@@ -1728,7 +1728,7 @@ class Processor {
                     $template->setDN($old_dn);
                     $template->accept();
                     $this->modifyAttribute($template, 'labeleduri', $labeleduri);
-                    $result = $this->server->modify($old_dn, $template->getLDAPmodify(), 'login');
+                    $result = $this->server->modify($old_dn, $template->getLDAPmodify(), 'user');
                     if (!$result) {
                         $request['page']->error(_('Could not modify: ').$old_dn, _('processing'));
                         return $result;
@@ -1753,9 +1753,9 @@ class Processor {
         global $request;
         $result = true;
 
-        $children = $this->server->getContainerContents($this->cfg['move_to'], 'login', 0, '(objectClass=*)', LDAP_DEREF_NEVER);
+        $children = $this->server->getContainerContents($this->cfg['move_to'], 'user', 0, '(objectClass=*)', LDAP_DEREF_NEVER);
         foreach ($children as $child) {
-            $query = $this->server->query(array('base' => $child), 'login');
+            $query = $this->server->query(array('base' => $child), 'user');
             $account = array_shift($query);
             // check that there isnt a duplicate there already
             $deactive_dn = $account['dn'];
@@ -1794,7 +1794,7 @@ class Processor {
             }
             
             // Delete the entry.
-            $result = $this->server->delete($deactive_dn, 'login');
+            $result = $this->server->delete($deactive_dn, 'user');
             if (!$result) {
                 $request['page']->error(_('Could not completely delete: ').$deactive_dn, _('processing'));
                 return $result;
@@ -1832,7 +1832,7 @@ class Processor {
             $values = isset($account['labeleduri']) ? $account['labeleduri'] : array();
             $values []= 'udi_deactivated:'.$dn;
             $this->modifyAttribute($template, 'labeleduri', $values);
-            $result = $this->server->modify($dn, $template->getLDAPmodify(), 'login');
+            $result = $this->server->modify($dn, $template->getLDAPmodify(), 'user');
             if (!$result) {
                 $request['page']->error(_('Could not modify: ').$dn, _('processing'));
                 return $result;
@@ -1857,7 +1857,7 @@ class Processor {
             // might not be able to rename branches
             if (! $this->server->isBranchRenameEnabled()) {
                 // We search all children, not only the visible children in the tree
-                $children = $this->server->getContainerContents($dn, 'login', 0, '(objectClass=*)', LDAP_DEREF_NEVER);
+                $children = $this->server->getContainerContents($dn, 'user', 0, '(objectClass=*)', LDAP_DEREF_NEVER);
             
                 if (count($children) > 0) {
                     return $request['page']->error(_('You cannot rename an entry which has children entries (eg, the rename operation is not allowed on non-leaf entries)'), _('processing'));
@@ -1865,7 +1865,7 @@ class Processor {
            }
 
            // make sure that this rename wont attempt an overwrite
-           $query = $this->server->query(array('base' => $rdn.','.$this->cfg['move_to']), 'login');
+           $query = $this->server->query(array('base' => $rdn.','.$this->cfg['move_to']), 'user');
             if (!empty($query)) {
                 // group does not exist
                 $request['page']->warning(_('Target DN allready exists for deactivate of : ').$dn, _('processing'));
@@ -1874,7 +1874,7 @@ class Processor {
             
             // make sure that the existing dn is in the tree
             $this->addTreeItem($dn);
-            $result = $this->server->rename($dn, $template->modrdn['newrdn'], $template->modrdn['newsuperior'], $template->modrdn['deleteoldrdn'], 'login');
+            $result = $this->server->rename($dn, $template->modrdn['newrdn'], $template->modrdn['newsuperior'], $template->modrdn['deleteoldrdn'], 'user');
             if (!$result) {
                 $request['page']->error(_('Could not delete (rename): ').$dn, _('processing'));
                 return $result;

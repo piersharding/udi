@@ -43,8 +43,8 @@ if (count($args) <= 1) {
     exit(1);
 }
 
-$short_opts = 's:f:vprdly';
-$long_opts = array('server=', 'file=', 'validate', 'process', 'reactivate', 'delete', 'list', 'yes');
+$short_opts = 's:f:D:w:vprdly';
+$long_opts = array('server=', 'file=', 'user=', 'passwd=', 'validate', 'process', 'reactivate', 'delete', 'list', 'yes');
 // still parse/check rest of options
 // override the values with the command line opts now - take precedence over stdin values
 // parse the command line options
@@ -76,12 +76,24 @@ $reactivate = false;
 $delete = false;
 $list = false;
 $yes = false;
+$user_name = false;
+$passwd = false;
 $action = '';
 foreach ($values as $param => $value) {
     switch ($param) {
         case 's':
         case 'server':
             $server_name = $value;
+            break;
+
+        case 'D':
+        case 'user':
+            $user_name = $value;
+            break;
+            
+        case 'w':
+        case 'passwd':
+            $passwd = $value;
             break;
             
         case 'f':
@@ -127,6 +139,15 @@ foreach ($values as $param => $value) {
             break;
     }
 }
+
+// must have bind user name and password
+if (!$user_name || !$passwd) {
+        console_write(_('argument error: must specify bind user name and password'));
+        console_write(help_text());
+        exit(1);
+}
+
+// most only request one operation at a time
 $choice = false;
 foreach (array($list, $process, $reactivate, $delete) as $switch) {
     if ($choice && $switch) {
@@ -278,6 +299,15 @@ global $app, $udiconfig, $request;
 
 // now fire common
 require_once '../lib/common.php';
+
+// ensure that the user can login
+if (!$app['server']->login($user_name, $passwd, 'user')) {
+    console_write(_('Login failed'));
+    console_write(help_text());
+    exit(1);
+}
+$app['server']->setValue('unique','dn', $user_name);
+$app['server']->setValue('unique','pass', $passwd);
 
 // We are now ready for the main event - load classes, and then run the process
 require_once HOOKSDIR.'udi/UdiConfig.php';
@@ -436,6 +466,8 @@ function help_text() {
        --help  - this help text
        -s or --server='The Server Name' - the LDAP directory connection to use
                         This is the name as entered in the config.php file
+       -D or --user='<user dn>' the user DN to bind with - must be a serious admin
+       -w or --passwd='password' the password of the bind DN user
        -l --list generate a CSV file of the current set of user accounts
                  as per the UDI configuration
        -p --process process the input file for the UDI create/update/deactivate

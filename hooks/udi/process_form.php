@@ -33,7 +33,7 @@ else {
     echo '<span style="white-space: nowrap;">';
     echo '<div class="tools-right">';
     if ((!isset($cfg['ignore_deletes']) || $cfg['ignore_deletes'] != 'checked') && $cfg['move_to']) {
-        $children = $app['server']->getContainerContents($cfg['move_to'], 'login', 0, '(objectClass=*)', LDAP_DEREF_NEVER);
+        $children = $app['server']->getContainerContents($cfg['move_to'], 'user', 0, '(objectClass=*)', LDAP_DEREF_NEVER);
         if (count($children) > 0) {
             echo '<a href="" title="'._('Restore users').'" onclick="post_to_url(\'cmd.php\', {\'reactivate\': \'reactivate\'}); return false;"><img src="images/udi/import-big.png" alt="'._('Restore users').'"/> &nbsp; '._('Restore users').'</a>';
             echo '&nbsp; ';
@@ -63,7 +63,7 @@ else {
     }
     
     // matching attributes - file to directory
-    $socs = $app['server']->SchemaObjectClasses('login');
+    $socs = $app['server']->SchemaObjectClasses('user');
     $mlepPerson = $socs['mlepperson'];
     $must = $mlepPerson->getMustAttrs();
     $may = $mlepPerson->getMayAttrs();
@@ -72,7 +72,7 @@ else {
     echo $request['page']->configEntry('import_match_on', _('Match from Import on:'), array('type' => 'text', 'value' => $imo_default, 'size' => 50, 'disabled' => 'disabled'), true, false);
     
     $dmo_default = isset($cfg['dir_match_on']) ? $cfg['dir_match_on'] : 'mlepsmspersonid';
-    $dmo_attrs = $app['server']->SchemaAttributes('login');
+    $dmo_attrs = $app['server']->SchemaAttributes('user');
     echo $request['page']->configEntry('dir_match_on', _('Match to Directory on:'), array('type' => 'text', 'value' => $dmo_default, 'size' => 50, 'disabled' => 'disabled'), true, false);
     
     // Allow for multiple search bases

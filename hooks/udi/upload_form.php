@@ -53,7 +53,7 @@ if (get_request('udi_decoration', 'REQUEST') == 'none') {
 //        echo "row is: $row";
         //output update results
         echo "<data>";
-        $socs = $app['server']->SchemaObjectClasses('login');
+        $socs = $app['server']->SchemaObjectClasses('user');
         $mlepPerson = $socs['mlepperson'];
         $must = array();
         foreach ($mlepPerson->getMustAttrs() as $attr) {
