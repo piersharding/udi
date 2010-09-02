@@ -491,6 +491,61 @@ class UdiRender extends PageRender {
         $this->log_to_file('end', $msg);
     }
     
+    public function email_report() {
+        if ($this->udiconfig && $this->logfile) {
+            $cfg = $this->udiconfig->getConfig();
+            $report = read_report($this->logfile);
+            $report = $this->reportSummary($report);
+            // series of nasty hacks because css is not honoured in email clients
+            $report = preg_replace('/<img.*?\>/', '', $report);
+            $report = preg_replace('/style="display: none;"/', '', $report);
+            $report = preg_replace('/udi-report-info"/', '" style="background: #ffffff;"', $report);
+            $report = preg_replace('/udi-report-warning"/', '" style="background: #fff194;"', $report);
+            $report = preg_replace('/udi-report-error"/', '" style="background: #ffd6d6;"', $report);
+            $report = preg_replace('/udi-report-complete"/', '" style="background: #c1f9a5;"', $report);
+            $report = preg_replace('/class="udi-report-header"/', ' style="background: #a2cffd;"', $report);
+            $report = preg_replace('/class="udi-report-left"/', ' valign="top" style="white-space: nowrap; vertical-align: top; padding-right: 10px;"', $report);
+            $report = preg_replace('/class="udi-report-container"/', ' width="100%" cell-padding="2px" cell-spacing="0px" style="margin: 0; border-spacing: 0px;"', $report);
+            $report = preg_replace('/class="udi-report-tabledata"/', ' width="100%" cell-padding="0px" cell-spacing="0px" style="text-align: left; vertical-align: top; margin: 0; border-spacing: 0px;"', $report);
+            $report = preg_replace('/class="udi-report-tabledata-header"/', ' style="background: #efe9e3;"', $report);
+            $report = preg_replace('/class="udi-report"/', ' width="100%" cell-padding="0px" cell-spacing="0px" style="border: 1px solid #AAC; padding: 10px; border-spacing: 0px; vertical-align: top;"', $report);
+            $to = $cfg['reportemail']; 
+            $subject = _('UDI Processing report'); 
+            $random_hash = md5(date('r', time())); 
+            $headers = "From: udi@localhost\r\nReply-To: noreply@localhost"; 
+            $headers .= "\r\nContent-Type: multipart/mixed; boundary=\"PHP-mixed-".$random_hash."\"";
+            $body = "
+--PHP-mixed-$random_hash
+Content-Type: multipart/alternative; boundary=\"PHP-alt-$random_hash\"
+
+--PHP-alt-$random_hash
+Content-Type: text/plain; charset=\"iso-8859-1\" 
+Content-Transfer-Encoding: 7bit
+
+This report is only visible in HTML format 
+
+--PHP-alt-$random_hash
+Content-Type: text/html; charset=\"iso-8859-1\"
+Content-Transfer-Encoding: 7bit
+
+<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">
+<html>
+<head>
+    <title>UDI Processing Report</title>
+<meta http-equiv=\"Content-Type\" content=\"text/html; charset=iso-8859-1\">
+</head>
+<body>
+<h2>UDI Processing report</h2> 
+$report
+</body>
+</html>
+--PHP-alt-$random_hash-- 
+
+"; 
+            $mail_sent = @mail( $to, $subject, $body, $headers ); 
+        }
+    }
+    
     public function outputMessages() {
         $msgs = '';
         foreach ($this->messages as $msg) {

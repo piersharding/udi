@@ -193,36 +193,44 @@ function read_reports ($type) {
             unlink($file);
             continue;
         }
-        
-        $data = preg_grep('/\w/', explode("\n", file_get_contents($file)));
-        if (count($data) > 0) {
-            $header = array_shift($data);
-            list($label, $header) = explode("\t", $header, 2);
-            eval('$header = ' . $header . ';');
-            $footer = false;
-            if (count($data) > 0 && substr($data[count($data)-1], 0, 4) == "end\t") {
-                $footer = array_pop($data);
-                list($label, $footer) = explode("\t", $footer, 2);
-                eval('$footer = ' . $footer . ';');
-            } 
-            // if footer then finished successfully
-            $start = (int)$header['time'];
-            $header['time'] = date("d/m/Y H:i:s", $start);
-            $header['id'] = $start;
-            $report = array('file' => $file, 'header' => $header, 'footer' => $footer, 'messages' => array());
-            foreach ($data as $line) {
-                list($type, $msg) = explode("\t", $line, 2);
-                if ($type == 'warn') {
-                    $type = 'warning';
-                }
-                $report['messages'] []= array('type' => $type, 'message' => $msg);
-            }
-            $reports[$start]= $report;
+        $report = read_report($file);
+        if (!empty($report)) {
+            $reports[$report['header']['id']]= $report;
         }
     }
     // sort into date order - $header['time']
     krsort($reports, SORT_NUMERIC);
     return $reports;
+}
+
+
+function read_report ($file) {
+    $data = preg_grep('/\w/', explode("\n", file_get_contents($file)));
+    $report = array();
+    if (count($data) > 0) {
+        $header = array_shift($data);
+        list($label, $header) = explode("\t", $header, 2);
+        eval('$header = ' . $header . ';');
+        $footer = false;
+        if (count($data) > 0 && substr($data[count($data)-1], 0, 4) == "end\t") {
+            $footer = array_pop($data);
+            list($label, $footer) = explode("\t", $footer, 2);
+            eval('$footer = ' . $footer . ';');
+        } 
+        // if footer then finished successfully
+        $start = (int)$header['time'];
+        $header['time'] = date("d/m/Y H:i:s", $start);
+        $header['id'] = $start;
+        $report = array('file' => $file, 'header' => $header, 'footer' => $footer, 'messages' => array());
+        foreach ($data as $line) {
+            list($type, $msg) = explode("\t", $line, 2);
+            if ($type == 'warn') {
+                $type = 'warning';
+            }
+            $report['messages'] []= array('type' => $type, 'message' => $msg);
+        }    
+    }
+    return $report;
 }
 
 

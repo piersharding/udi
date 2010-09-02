@@ -352,6 +352,7 @@ if ($list) {
     fclose($fh);
     $request['page']->log_system_messages();
     $request['page']->log_footer();
+    $request['page']->email_report();
     exit(0);
 }
 // check for reactivate next
@@ -392,6 +393,7 @@ else {
             $request['page']->error(_('Source import URL does not exist: ').$filename, _('process'));
             console_write($request['page']->outputMessagesConsole());
             $request['page']->log_system_messages();
+            $request['page']->email_report();
             exit(1);
         }
     } 
@@ -399,6 +401,7 @@ else {
         $request['page']->error(_('Source import file does not exist: ').$filename, _('process'));
         console_write($request['page']->outputMessagesConsole());
         $request['page']->log_system_messages();
+        $request['page']->email_report();
         exit(1);
     }
     $import = new ImportCSV($app['server']->getIndex(), $filename);
@@ -413,6 +416,7 @@ else {
     if ($request['page']->isError()) {
         console_write($request['page']->outputMessagesConsole());
         $request['page']->log_system_messages();
+        $request['page']->email_report();
         exit(1);
     }
     
@@ -429,9 +433,11 @@ else {
 // output messages
 console_write($request['page']->outputMessagesConsole());
 if ($request['page']->isError()) {
+    $request['page']->email_report();
     exit(1);
 }
 $request['page']->log_footer();
+$request['page']->email_report();
 
 exit(0);
 /******************************************************************************/
