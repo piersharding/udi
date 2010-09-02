@@ -1269,16 +1269,22 @@ class TemplateRender extends PageRender {
         if (preg_match('/'.$cfg['move_to'].'$/', $this->template->getDN())) {
             return '';
         }
+        // now check the objectClasses
+        $query = $server->query(array('base' => $this->template->getDN()), 'user');
+        !empty($query) && $query = array_shift($query);
+        if (!isset($query['objectclass']) || !preg_grep('/mlepPerson/', $query['objectclass'])) {
+            return '';
+        }
         
         $href = sprintf('cmd=deactivate_form&%s',$this->url_base);
 
         if (isAjaxEnabled())
             return sprintf($this->layout['actionajax'],IMGDIR,'disabled.png',_('Deactivate'),
                 htmlspecialchars($href),_('You will be prompted to confirm this decision'),
-                htmlspecialchars($href),_('Loading'),_('Deactivate this entry'));
+                htmlspecialchars($href),_('Loading'),_('Deactivate this UDI entry'));
         else
             return sprintf($this->layout['action'],IMGDIR,'disabled.png',_('Deactivate'),
-                htmlspecialchars($href),_('You will be prompted to confirm this decision'),_('Deactivate this entry'));
+                htmlspecialchars($href),_('You will be prompted to confirm this decision'),_('Deactivate this UDI entry'));
     }
 
     
@@ -1297,16 +1303,22 @@ class TemplateRender extends PageRender {
         if (!preg_match('/'.$cfg['move_to'].'$/', $this->template->getDN())) {
             return '';
         }
+        // now check the objectClasses
+        $query = $server->query(array('base' => $this->template->getDN()), 'user');
+        !empty($query) && $query = array_shift($query);
+        if (!isset($query['objectclass']) || !preg_grep('/mlepPerson/', $query['objectclass'])) {
+            return '';
+        }
         
         $href = sprintf('cmd=reactivate_form&%s',$this->url_base);
 
         if (isAjaxEnabled())
             return sprintf($this->layout['actionajax'],IMGDIR,'import.png',_('Reactivate'),
                 htmlspecialchars($href),_('You will be prompted to confirm this decision'),
-                htmlspecialchars($href),_('Loading'),_('Reactivate this entry'));
+                htmlspecialchars($href),_('Loading'),_('Reactivate this UDI entry'));
         else
             return sprintf($this->layout['action'],IMGDIR,'import.png',_('Reaactivate'),
-                htmlspecialchars($href),_('You will be prompted to confirm this decision'),_('Reactivate this entry'));
+                htmlspecialchars($href),_('You will be prompted to confirm this decision'),_('Reactivate this UDI entry'));
     }
     
 	/** CHOOSERS **/

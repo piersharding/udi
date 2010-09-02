@@ -1077,6 +1077,14 @@ fieldset.config-block {
     border: 1px solid #AAC;
 }
 
+table.udi-report-container {
+    width: 100%;
+    cell-padding: 0px;
+    cell-spacing: 0px;
+    border-spacing: 0px;
+    margin: 0;
+}
+
 table.udi-report {
 	width: 100%;
 	cell-padding: 0px;
@@ -1107,11 +1115,13 @@ td.udi-report-tabledata {
 }
 
 
-div.udi-report {
-    margin-top: 10px;
-    margin-bottom: 10px;
+td.udi-report {
+    margin-top: 5px;
+    margin-bottom: 5px;
     margin-right: 10%;
-    padding: 10px;
+    marg-left: 0px;
+    padding: 5px;
+    width: 100%;
     /* border: 1px solid; */
 }
 
@@ -1122,7 +1132,6 @@ td.udi-report-left {
     padding-right: 10px;
 }
 
-
 td.udi-report-header-left {
 	padding-top: 3px;
     vertical-align: top;
@@ -1131,6 +1140,11 @@ td.udi-report-header-left {
     padding-right: 10px;
 }
 
+td.udi-report-header-collapse {
+    padding-top: 8px;
+    vertical-align: top;
+    width: 0%;
+}
 
 td.udi-report-middle {
     width: 80%;   

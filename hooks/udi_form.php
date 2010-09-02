@@ -123,6 +123,13 @@ if (get_request('udi_decoration', 'REQUEST') != 'none') {
                 } 
             } 
         } 
+        var collapse = document.getElementById(idprefix + "-collapse");
+        if (collapse.style.display == "none") {
+            collapse.style.display = "block";
+        }
+        else {
+            collapse.style.display = "none";
+        }
         return false;
     }
     </script>

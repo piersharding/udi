@@ -163,7 +163,8 @@ class UdiRender extends PageRender {
         $header = $report['header'];
         $footer = $report['footer'];
         $messages = $report['messages'];
-        $table = '<div id="udi-report-'.$header['id'].'" class="udi-report"><table class="udi-report"><tr class="udi-report-header"><td class="udi-report-header-left">'._('Action: ').$header['action'].'</td><td class="udi-report-middle">';
+        $table = '<table class="udi-report-container"><tr><td class="udi-report-header-collapse"><span style="display: none;" id="udi-report-'.$header['id'].'-collapse" ><a href="" onclick="udi_report_toggle(\''.'udi-report-'.$header['id'].'\'); return false;"><img src="'.IMGDIR.'/collapse.png" alt="Toggle"/></a></span></td>';
+        $table .= '<td id="udi-report-'.$header['id'].'" class="udi-report"><table class="udi-report"><tr class="udi-report-header"><td class="udi-report-header-left">'._('Action: ').$header['action'].'</td><td class="udi-report-middle">';
         $table .= _('Who: ').$header['user'].' &nbsp; '.
                   _('Mode: ').$header['mode'].' &nbsp; '.
                   _('Started: ').$header['time']; //.' &nbsp; '.$report['file'];
@@ -171,7 +172,6 @@ class UdiRender extends PageRender {
         $cnt = 0;
         $errors = false;
         $data_tables = array();
-        $collapse = '<a href="" onclick="udi_report_toggle(\''.'udi-report-'.$header['id'].'\'); return false;"><img src="'.IMGDIR.'/collapse.png" alt="Toggle"/></a> &nbsp; ';
         foreach ($report['messages'] as $message) {
             if (!in_array($message['type'], array('error', 'warning', 'info', 'debug'))) {
                 $table_data = false;
@@ -190,10 +190,7 @@ class UdiRender extends PageRender {
             }
             $class = 'udi-report-'.$message['type'];
             $id = 'udi-report-'.$header['id'].'-'.$cnt;
-            $table .= '<tr id="'.$id.'" style="display: none;" class="udi-report-message '.$class.'"><td class="udi-report-left">'.$collapse.$message['type'].'</td><td colspan="2">'.$message['message'].'</td></tr>';
-            if ($collapse) {
-                $collapse = '';
-            }
+            $table .= '<tr id="'.$id.'" style="display: none;" class="udi-report-message '.$class.'"><td class="udi-report-left">'.$message['type'].'</td><td colspan="2">'.$message['message'].'</td></tr>';
         }
         
         // add the table data to the report
@@ -236,7 +233,7 @@ class UdiRender extends PageRender {
         else {
             $table .= '<tr class="udi-report-footer udi-report-error"><td colspan="3" class="udi-report-error">'._('processing step failed to complete (is it still running?)').'</td></tr>';
         }
-        $table .= '</table></div>';
+        $table .= '</table></td></tr></table>';
         return $table;
     }
 
