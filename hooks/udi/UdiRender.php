@@ -237,6 +237,100 @@ class UdiRender extends PageRender {
         return $table;
     }
 
+    
+    public function emailSummary($report) {
+        $cssclasses = array(
+                            'udi-report-info' => 'background: #ffffff;',
+                            'udi-report-warning' => 'background: #fff194;',
+                            'udi-report-error' => 'background: #ffd6d6;',
+                            'udi-report-complete' => 'background: #c1f9a5;',
+                            'udi-report-header' => 'background: #a2cffd;',
+                            'udi-report-left' => 'white-space: nowrap; vertical-align: top; padding-right: 10px;',
+                            'udi-report-container' => 'margin: 0; border-spacing: 0px;',
+                            'udi-report-tabledata' => 'text-align: left; vertical-align: top; margin: 0; border-spacing: 0px;',
+                            'udi-report-tabledata-header' => 'border: 1px solid #AAC; padding: 10px; border-spacing: 0px; vertical-align: top;',
+                            'udi-report' => 'border: 1px solid #AAC; padding: 10px; border-spacing: 0px; vertical-align: top;',
+                            );
+            
+                            
+        $header = $report['header'];
+        $footer = $report['footer'];
+        $messages = $report['messages'];
+        $table = '<table width="100%" cell-padding="2px" cell-spacing="0px" class="udi-report-container"><tr><td></td>';
+        $table .= '<td id="udi-report-'.$header['id'].'" style="'.$cssclasses['udi-report'].'"><table  width="100%" cell-padding="0px" cell-spacing="0px" style="'.$cssclasses['udi-report'].'"><tr  style="'.$cssclasses['udi-report-header'].'"><td style="'.$cssclasses['udi-report-header-left'].'">'._('Action: ').$header['action'].'</td><td style="'.$cssclasses['udi-report-header-middle'].'">';
+        $table .= _('Who: ').$header['user'].' &nbsp; '.
+                  _('Mode: ').$header['mode'].' &nbsp; '.
+                  _('Started: ').$header['time']; //.' &nbsp; '.$report['file'];
+        $table .= '</td><td class="far-right"></td></tr>';
+        $cnt = 0;
+        $errors = false;
+        $data_tables = array();
+        foreach ($report['messages'] as $message) {
+            if (!in_array($message['type'], array('error', 'warning', 'info', 'debug'))) {
+                $table_data = false;
+                eval('$table_data = ' . $message['message'] . ';');
+                if ($table_data) {
+                    if (!isset($data_tables[$message['type']])) {
+                        $data_tables[$message['type']] = array();
+                    }
+                    $data_tables[$message['type']] []= $table_data;
+                }
+                continue;
+            }
+            $cnt++;
+            if ($message['type'] == 'error') {
+                $errors = true;
+            }
+            $class = 'udi-report-'.$message['type'];
+            $id = 'udi-report-'.$header['id'].'-'.$cnt;
+            $table .= '<tr id="'.$id.'" style="'.$cssclasses[$class].'"><td  valign="top" style="'.$cssclasses['udi-report-left'].'">'.$message['type'].'</td><td colspan="2">'.$message['message'].'</td></tr>';
+        }
+        
+        // add the table data to the report
+        if (!empty($data_tables)) {
+            foreach ($data_tables as $table_description => $table_lines) {  
+                $first = $table_lines[0];
+                $table_data = '<table  width="100%" cell-padding="0px" cell-spacing="0px"  style="'.$cssclasses['udi-report-tabledata'].'"><tr  style="'.$cssclasses['udi-report-tabledata-header'].'">';
+                // add the header line
+                foreach ($first as $field => $value) {
+                    $table_data .= '<td  style="'.$cssclasses['udi-report-tabledata'].'">'.$field.'</td>';
+                }
+                $table_data .= '</tr>';
+                // add the rows
+                foreach ($table_lines as $row) {
+                    $table_data .= '<tr>';
+                    foreach ($first as $field => $discard) {
+                        $table_data .= '<td  style="'.$cssclasses['udi-report-tabledata'].'">'.$row[$field].'</td>';
+                    }
+                    $table_data .= '</tr>';
+                }
+                $table_data .= '</table>';
+                $cnt++;
+                $class = 'udi-report-info';
+                $id = 'udi-report-'.$header['id'].'-'.$cnt;
+                $table .= '<tr id="'.$id.'" style="display: none;"  style="'.$cssclasses['udi-report-message'].$cssclasses[$class].'"><td  valign="top" class="udi-report-left">'.$table_description.'</td><td colspan="2">'.$table_data.'</td></tr>';
+            }
+        }
+        
+        if ($footer) {
+            if ($errors) {
+                $table .= '<tr style="'.$cssclasses['udi-report-footer'].$cssclasses['udi-report-error'].'">';
+            }
+            else {
+                $table .= '<tr style="'.$cssclasses['udi-report-footer'].$cssclasses['udi-report-complete'].'">';
+            }
+            $table .= '<td  valign="top" style="'.$cssclasses['udi-report-left'].'">'._('Action: ').$header['action'].'</td>'.       
+                      '<td colspan="2">'._('Finished: ').$footer['time'].'</td>';
+            $table .= '</tr>';
+        }
+        else {
+            $table .= '<tr style="'.$cssclasses['udi-report-footer'].$cssclasses['udi-report-error'].'"><td colspan="3"  style="'.$cssclasses['udi-report-error'].'">'._('processing step failed to complete (is it still running?)').'</td></tr>';
+        }
+        $table .= '</table></td></tr></table>';
+        return $table;
+    }
+    
+    
     public function configRow($label, $field, $required=true) {
         if ($required) {
             return '<div class="fitem required">' . $label . $field .  '</div>';
@@ -495,20 +589,8 @@ class UdiRender extends PageRender {
         if ($this->udiconfig && $this->logfile) {
             $cfg = $this->udiconfig->getConfig();
             $report = read_report($this->logfile);
-            $report = $this->reportSummary($report);
+            $report = $this->emailSummary($report);
             // series of nasty hacks because css is not honoured in email clients
-            $report = preg_replace('/<img.*?\>/', '', $report);
-            $report = preg_replace('/style="display: none;"/', '', $report);
-            $report = preg_replace('/udi-report-info"/', '" style="background: #ffffff;"', $report);
-            $report = preg_replace('/udi-report-warning"/', '" style="background: #fff194;"', $report);
-            $report = preg_replace('/udi-report-error"/', '" style="background: #ffd6d6;"', $report);
-            $report = preg_replace('/udi-report-complete"/', '" style="background: #c1f9a5;"', $report);
-            $report = preg_replace('/class="udi-report-header"/', ' style="background: #a2cffd;"', $report);
-            $report = preg_replace('/class="udi-report-left"/', ' valign="top" style="white-space: nowrap; vertical-align: top; padding-right: 10px;"', $report);
-            $report = preg_replace('/class="udi-report-container"/', ' width="100%" cell-padding="2px" cell-spacing="0px" style="margin: 0; border-spacing: 0px;"', $report);
-            $report = preg_replace('/class="udi-report-tabledata"/', ' width="100%" cell-padding="0px" cell-spacing="0px" style="text-align: left; vertical-align: top; margin: 0; border-spacing: 0px;"', $report);
-            $report = preg_replace('/class="udi-report-tabledata-header"/', ' style="background: #efe9e3;"', $report);
-            $report = preg_replace('/class="udi-report"/', ' width="100%" cell-padding="0px" cell-spacing="0px" style="border: 1px solid #AAC; padding: 10px; border-spacing: 0px; vertical-align: top;"', $report);
             $to = $cfg['reportemail']; 
             $subject = _('UDI Processing report'); 
             $random_hash = md5(date('r', time())); 
