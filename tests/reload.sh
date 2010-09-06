@@ -29,4 +29,4 @@ ldapadd -c -D cn=admin,cn=config -w letmein -f ldap/eduperson.ldif
 ldapadd -c -D cn=admin,cn=config -w letmein -f ldap/mlep.ldif
 echo "installed schemas ..."
 ldapadd -x -c -D cn=admin,dc=example,dc=com -w letmein -f ldap/example.com.ldif
-ldapadd -x -c -D cn=admin,dc=example,dc=com -w letmein -f ldap/udiconfig.ldif
+#ldapadd -x -c -D cn=admin,dc=example,dc=com -w letmein -f ldap/udiconfig_posix.ldif

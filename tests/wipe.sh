@@ -1,4 +1,4 @@
 #!/bin/sh
 BASE=`pwd`
-php ../tools/cron.php --server 'Seagull LDAP Server' --process  --file=$BASE/data/udi_import_empty.csv
-php ../tools/cron.php --server 'Seagull LDAP Server' --delete --yes
+php ../tools/cron.php --server 'UDI LDAP Server' --process  --file=$BASE/data/udi_import_empty.csv
+php ../tools/cron.php --server 'UDI LDAP Server' --delete --yes
