@@ -37,8 +37,8 @@ class UdiConfig {
                     'group_attr' => 'member',
                     'create_in' => '',
                     'dn_attribute' => 'cn',
-                    'objectclasses' => 'user;mlepPerson;securityPrincipal',
-                    'ignore_attrs' => 'mlepUsername;samaccountname;uid',
+                    'objectclasses' => 'user;mlepPerson;securityPrincipal', // objectClass containing sAMAccountName
+                    'ignore_attrs' => 'mlepUsername;samaccountname;uid', // dont update the key user id fields
                     'userid_algo' => 'userid_alg_03_userid_algorithm',
                     'userid_parameters' => '%[mlepUsername]',
                     'encrypt_passwd' => 'md5',
@@ -558,7 +558,7 @@ class UdiConfig {
     public function serverType() {
         if (!isset($this->config['server_type'])) {
             // check if this server is an Active Directory
-            $this->config['server_type'] = 'other';
+            $this->config['server_type'] = 'default';
             $dmo_attrs = $this->server->SchemaAttributes('user');
             if (isset($dmo_attrs['samaccountname'])) {
                 $this->config['server_type'] = 'ad';

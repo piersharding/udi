@@ -690,6 +690,9 @@ class Processor {
     private $total_groups;
     private $group_mappings;
     
+    // group membership cache
+    private $group_cache;
+    
     /**
      * Constructor
      * build connection to environment and LDAP directory
@@ -703,6 +706,7 @@ class Processor {
         $this->data = $data;
         $this->udiconfig = new UdiConfig($this->server);
         $this->cfg = $this->udiconfig->getConfig();
+        $this->group_cache = array();
     }
 
 
@@ -723,7 +727,9 @@ class Processor {
          *
          * user exists in directory - but not in file
          *      - delete/deactivate account
-         *
+         *           $query = $this->server->query(array('base' => $group, 'filter' => "($group_attr=$uid)"), 'user');
+            if (!empty($query)) {
+
          * user exists in directory and file
          *      - update account
          *
@@ -1243,18 +1249,19 @@ class Processor {
                         if (isset($total_fields[$target])) {
                             continue;
                         }
-                        $total_fields[$target] = $target;
+                        $total_fields[$target] = $value;
                         $this->addAttribute($template, $target, $value);
                     }
                 }
                 else {
                     // dont allow doubling up
                     if (!isset($total_fields[$attr])) {
-                        $total_fields[$attr] = $attr;
+                        $total_fields[$attr] = $value;
                         $this->addAttribute($template, $attr, $value);
                     }
                 }
             }
+            
             // ensure the sanity fields are set
             if (!isset($total_fields['cn'])) {
                 $this->addAttribute($template, 'cn', array($cn));
@@ -1267,7 +1274,41 @@ class Processor {
             if ($this->cfg['server_type'] == 'ad') {
                 $this->addAttribute($template, 'useraccountcontrol', array(514));
             }
+            
+            // now do expression substitutions
+            foreach ($field_mappings as $source => $targets) {
+                if (preg_match('/\%\[.+\]/', $source)) {
+                    // do the expansion then map to fields
+                    $value = $source;
+                    // find the substitutions
+                    if (preg_match_all('/\%\[(.+?)\]/', $source, $matches)) {
+                        foreach ($matches[1] as $match) {
+                            $parts = explode(':', $match);
+                            $attr = array_shift($parts);
+                            $length = empty($parts) ? 0 : (int)array_shift($parts);
+                            $length = (int)$length;
+                            $part = isset($total_fields[$attr]) ? $total_fields[$attr] : '';
+                            if ($length > 0) {
+                                $part = substr($part, 0, $length);
+                            }
+                            $value = preg_replace('/\%\['.preg_quote($match).'\]/', $part, $value, 1);
+                        }
+                    }
+                    // do the mapping
+                    foreach ($targets as $target) {
+                        // dont allow doubling up
+                        if (isset($total_fields[$target])) {
+                            continue;
+                        }
+                        $total_fields[$target] = $value;
+                        $this->addAttribute($template, $target, $value);
+                    }
+                    
+                }
+            }
+            
             $template->setRDNAttributes($rdn);
+            
             // set the CN
             $result = $this->server->add($dn, $template->getLDAPadd(), 'user');
             if (!$result) {
@@ -1470,6 +1511,57 @@ class Processor {
         return true;
     }
 
+    /**
+     * Use a cache lookup to determine if a user is allready in a group
+     * 
+     * @param String $uid user id - either uid or dn
+     * @param String $group dn of the group of membership
+     * @return bool true if exists in group
+     */
+    private function userInGroup($uid, $group) {
+       // hunt for existing group membership and remove
+        $group_attr = strtolower($this->cfg['group_attr']);
+        
+        // ensure that the uid is reduced to common terms
+        if ($group_attr != 'memberuid') {
+            $uid = get_canonical_name($uid);
+        }
+        else {
+            $uid = strtolower($uid);
+        }
+        
+        // and the group
+        $group = get_canonical_name($group);
+        
+        // check the cache exists first
+        if (!isset($this->group_cache[$group])) {
+            // cache group
+            $query = $this->server->query(array('base' => $group, 'attrs' => array($group_attr)), 'user');
+            $this->group_cache[$group] = array();
+            if (!empty($query)) {
+                $query = array_shift($query);
+                foreach($query[$group_attr] as $member) {
+                    // ensure that the uid is reduced to common terms
+                    if ($group_attr != 'memberuid') {
+                        $this->group_cache[$group][]= get_canonical_name($member);
+                    }
+                    else {
+                        $this->group_cache[$group][]= strtolower($member);
+                    }
+                    
+                }
+            }
+        }
+
+        // now check the cache
+        if (in_array($uid, $this->group_cache[$group])) {
+            return true;
+        }
+        else {
+            return false;
+        }
+        
+    }
     
     /**
      * Replace a users group membership 
@@ -1496,8 +1588,9 @@ class Processor {
         foreach ($this->total_groups as $group) {
             // check and delete from group
             
-            $query = $this->server->query(array('base' => $group, 'filter' => "($group_attr=$uid)"), 'user');
-            if (!empty($query)) {
+//            $query = $this->server->query(array('base' => $group, 'filter' => "($group_attr=$uid)"), 'user');
+//            if (!empty($query)) {
+            if ($this->userInGroup($uid, $group)) {
                 // user exists in group
                 $query = $this->server->query(array('base' => $group), 'user');
                 // remove user from membership attribute and then save again

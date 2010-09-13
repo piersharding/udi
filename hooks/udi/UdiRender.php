@@ -159,6 +159,8 @@ class UdiRender extends PageRender {
         return $menu;
     }
     
+    private static    $skip_fields = array('objectclass');
+    
     public function reportSummary($report) {
         $header = $report['header'];
         $footer = $report['footer'];
@@ -200,6 +202,9 @@ class UdiRender extends PageRender {
                 $table_data = '<table class="udi-report-tabledata"><tr class="udi-report-tabledata-header">';
                 // add the header line
                 foreach ($first as $field => $value) {
+                    if (in_array($field, self::$skip_fields)) {
+                        continue;
+                    }
                     $table_data .= '<td class="udi-report-tabledata">'.$field.'</td>';
                 }
                 $table_data .= '</tr>';
@@ -207,6 +212,9 @@ class UdiRender extends PageRender {
                 foreach ($table_lines as $row) {
                     $table_data .= '<tr>';
                     foreach ($first as $field => $discard) {
+                        if (in_array($field, self::$skip_fields)) {
+                            continue;
+                        }
                         $table_data .= '<td class="udi-report-tabledata">'.$row[$field].'</td>';
                     }
                     $table_data .= '</tr>';
@@ -293,6 +301,9 @@ class UdiRender extends PageRender {
                 $table_data = '<table  width="100%" cell-padding="0px" cell-spacing="0px"  style="'.$cssclasses['udi-report-tabledata'].'"><tr  style="'.$cssclasses['udi-report-tabledata-header'].'">';
                 // add the header line
                 foreach ($first as $field => $value) {
+                    if (in_array($field, self::$skip_fields)) {
+                        continue;
+                    }
                     $table_data .= '<td  style="'.$cssclasses['udi-report-tabledata'].'">'.$field.'</td>';
                 }
                 $table_data .= '</tr>';
@@ -300,6 +311,9 @@ class UdiRender extends PageRender {
                 foreach ($table_lines as $row) {
                     $table_data .= '<tr>';
                     foreach ($first as $field => $discard) {
+                        if (in_array($field, self::$skip_fields)) {
+                            continue;
+                        }
                         $table_data .= '<td  style="'.$cssclasses['udi-report-tabledata'].'">'.$row[$field].'</td>';
                     }
                     $table_data .= '</tr>';

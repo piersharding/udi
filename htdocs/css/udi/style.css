@@ -990,6 +990,7 @@ table.item-list-config td {
 .udiform .fitem {width:100%;overflow:hidden;margin-top:5px;margin-bottom:0px;clear:right; vertical-align: middle;}
 .udiform .fitem .fitemtitle {width:20%;text-align:right;float:left;}
 .udiform .fitem .fitemtitle_left {width:20%;text-align:left;float:left;}
+.udiform .fitem .fitemtitle_left_wide {width:25%;text-align:left;float:left;}
 .udiform .fitem .fitemtitle_free {text-align:right;float:left;}
 .udiform .fitem .fitemtitle div {display: inline;}
 .udiform .fitem .fitemtitle_left div {display: inline;}

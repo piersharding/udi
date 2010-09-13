@@ -8,9 +8,14 @@
 # Version: 1.2.0.5
 
 version: 1
+dn: OU=UDIConfig,dc=example,dc=com
+description: UDIConfig
+objectclass: top
+objectclass: organizationalUnit
+ou: UDIConfig
 
-# Entry 5: cn=UDIConfig,dc=example,dc=com
-dn: cn=UDIConfig,dc=example,dc=com
+# Entry 5: cn=UDIConfig,OU=UDIConfig,dc=example,dc=com
+dn: cn=UDIConfig,OU=UDIConfig,dc=example,dc=com
 cn: UDIConfig
 description: filepath=/home/piers/Desktop/udi_import.csv
 description: udi_version=1.2.0.5

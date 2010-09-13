@@ -74,8 +74,8 @@ if (isset($cfg['mappings'])) {
                                         $request['page']->configSelect(
                                                             'mapping_'.$no_mappings, 
                                                             $source_attrs, 
-                                                            strtolower($source)).'</span>'
-                                        ), 
+                                                            strtolower($source)).'</span>',
+                                        '_left_wide'), 
                     $field, 
                     false);
         echo '<div class="underline">&nbsp;</div>';
