@@ -15,8 +15,43 @@
 class UdiConfig {
 
     public static $DEFAULTS = array(
+           'ad' => array(
                     'enabled' => null,
-                    'ignore_deletes' => 'checked',
+                    'ignore_deletes' => null,
+                    'ignore_creates' => null,
+                    'ignore_updates' => null,
+                    'enable_reporting' => null,
+                    'move_on_delete' => 'checked',
+                    'ignore_userids' => null,
+                    'ignore_passwds' => null,
+                    'move_to' => '',
+                    'filepath' => '',
+                    'reportpath' => '',
+                    'reportemail' => '',
+                    'dir_match_on' => 'mlepsmspersonid',
+                    'import_match_on' => 'mlepsmspersonid',
+                    'groups_enabled' => null,
+                    'mappings' => 'mlepSmsPersonId(mlepSmsPersonId);mlepStudentNSN(mlepStudentNSN);mlepUsername(mlepUsername,sAMAccountName,uid);mlepFirstAttending(mlepFirstAttending);mlepLastAttendance(mlepLastAttendance);mlepFirstName(mlepFirstName,givenName);mlepLastName(mlepLastName,sn);mlepRole(mlepRole);mlepAssociatedNSN(mlepAssociatedNSN);mlepEmail(mlepEmail,mail);mlepOrganisation(mlepOrganisation)',
+                    'group_mappings' => '',
+                    'container_mappings' => '',
+                    'group_attr' => 'member',
+                    'create_in' => '',
+                    'dn_attribute' => 'cn',
+                    'objectclasses' => 'user;mlepPerson;securityPrincipal',
+                    'ignore_attrs' => 'mlepUsername;samaccountname;uid',
+                    'userid_algo' => 'userid_alg_03_userid_algorithm',
+                    'userid_parameters' => '%[mlepUsername]',
+                    'encrypt_passwd' => 'md5',
+                    'passwd_algo' => 'passwd_alg_01_passwd_algorithm',
+                    'passwd_parameters' => 'pass',
+                    'search_bases' => '',
+                    'next_seq_no' => 0,
+                    'udi_version' => '1.2.0.5',
+                    'server_type' => 'ad',
+            ),
+           'default' => array(
+                    'enabled' => null,
+                    'ignore_deletes' => null,
                     'ignore_creates' => null,
                     'ignore_updates' => null,
                     'enable_reporting' => null,
@@ -46,17 +81,21 @@ class UdiConfig {
                     'search_bases' => '',
                     'next_seq_no' => 0,
                     'udi_version' => '1.2.0.5',
+                    'server_type' => 'default',
+            ),            
     );
     
     private $server;
 
     private $base;
     
-    private $config = null;
+    public $config = null;
     
 	# Config DN
+    protected $configouname = 'OU=UDIConfig';
     protected $configdnname = 'cn=UDIConfig';
     protected $configbackupdnname = 'cn=UDIConfig.backup';
+    protected $configou;
     protected $configdn;
     protected $configbackupdn;
 
@@ -67,8 +106,9 @@ class UdiConfig {
         $this->server = $server;
         $base = $this->server->getBaseDN();
         $this->base = $base[0];
-        $this->configdn = $this->configdnname.','.$this->base;
-        $this->configbackupdn = $this->configbackupdnname.','.$this->base;
+        $this->configdn = $this->configdnname.','.$this->configouname.','.$this->base;
+        $this->configbackupdn = $this->configbackupdnname.','.$this->configouname.','.$this->base;
+        $this->configou = $this->configouname.','.$this->base;
     }
 
 	/**
@@ -127,11 +167,11 @@ class UdiConfig {
         $valid = true;
         
         // prepoulate defaults
-        foreach (self::$DEFAULTS as $var => $default) {
-            if (!isset($this->config[$var])) {
-                $this->config[$var] = $default;
-            }
-        }
+//        foreach (self::$DEFAULTS as $var => $default) {
+//            if (!isset($this->config[$var])) {
+//                $this->config[$var] = $default;
+//            }
+//        }
                 
         // validate the file path - must exist
         if (preg_match('/^http/', $this->config['filepath'])) {
@@ -179,19 +219,31 @@ class UdiConfig {
         }
         
         // get the search bases
-        $bases = explode(';', $this->config['search_bases']);
-        foreach ($bases as $base) {
-            if (!empty($base)) {
-                check_search_base($base) ? true : $valid = false;
+        if (isset($this->config['search_bases'])) {
+            $bases = explode(';', $this->config['search_bases']);
+            foreach ($bases as $base) {
+                if (!empty($base)) {
+                    check_search_base($base) ? true : $valid = false;
+                }
             }
+        }
+        else {
+            $request['page']->warning(_('Search bases are empty - the UDI cannot run without them set'), _('configuration'));
         }
         
         // The create in bucket for new accounts
         if (!empty($this->config['create_in'])) {
             if (check_dn_exists($this->config['create_in'], _('Create new accounts target DN does not exist: ').$this->config['create_in'])) {
-                if (!in_array($this->config['create_in'], $bases)) {
-                    $request['page']->error(_('Create new accounts target DN must be one of the search bases: ').$this->config['create_in'], _('configuration'));
-                    $valid = false;
+                // check through search bases to see if this is equal to or child of
+                $found = false;
+                foreach ($bases as $base) {
+                    if (preg_match('/'.get_canonical_name($base).'$/', get_canonical_name($this->config['create_in']))) {
+                        $found = true;
+                        break;
+                    }
+                }
+                if (!$found) {
+                    $valid = $request['page']->error(_('Create new accounts target DN must be within one of the search bases: ').$this->config['create_in'], _('configuration'));
                 }
             }
             else {
@@ -214,7 +266,8 @@ class UdiConfig {
                     }
                 }
                 else {
-                    $valid = false;
+                    $request['page']->warning(_('Target delete DN is not set, but move accounts on delete is'), _('configuration'));
+//                    $valid = false;
                 }
             }
         }
@@ -448,14 +501,16 @@ class UdiConfig {
      */
     public function updateConfig() {
 
-        $attrs = array('description' => array());
-        foreach ($this->config as $k => $v) {
-            $attrs['description'][]= "$k=$v";
-        }
         // check that the config exists
         if (!$this->createConfigDn($this->configdn)) {
             return false;
         }
+        $attrs = array('description' => array());
+        foreach ($this->config as $k => $v) {
+            $attrs['description'][]= "$k=$v";
+        }
+//        global $request;
+//        $request['page']->warning(var_export($attrs, true), _('configuration'));
         $result = $this->server->modify($this->configdn, $attrs, 'user');
         return $this->getConfig(true);
     }
@@ -468,17 +523,50 @@ class UdiConfig {
         // check that the backup DN exists
         $query = $this->server->query(array('base' => $dn, 'attrs' => array('description')), 'user');
         if (empty($query)) {
-             if (!$this->server->add($dn, array('objectClass' => 'top', 'objectClass' => 'applicationProcess'))) {
+            $query = $this->server->query(array('base' => $this->configou, 'attrs' => array('ou')), 'user');
+            if (empty($query)) {
+                // create the UDIConfig OU container
+                if (!$this->server->add($this->configou, array('objectClass' => array('organizationalUnit'), 'ou' => array('UDIConfig'), 'description' => array('UDIConfig')))) {
+                    system_message(array(
+                                 'title'=>_('UDI Configuration update Failed'),
+                                            'body'=> _('Failed to create configuration OU: '.$this->configou.' - check server write permissions'),
+                                            'type'=>'error'));
+                    return false;
+                }
+            }
+            // check if this server is an Active Directory
+            $this->serverType();
+            if (!$this->server->add($dn, array('objectClass' => array('document'), 'cn' => array('UDIConfig'), 'documentIdentifier' => array('UDIConfig')))) {
                 system_message(array(
                              'title'=>_('UDI Configuration backup Failed'),
                                         'body'=> _('Failed to create configuration node: '.$dn.' - check server write permissions'),
                                         'type'=>'error'));
                 return false;
              };
+             // Flush the cache
+             $processor = new Processor($this->server);
+             $processor->purge();
         }
         return true;
     }
 
+    /**
+     * Determine the server type and then set the config 
+     * for it - server_type
+     * @return String server type
+     */
+    public function serverType() {
+        if (!isset($this->config['server_type'])) {
+            // check if this server is an Active Directory
+            $this->config['server_type'] = 'other';
+            $dmo_attrs = $this->server->SchemaAttributes('user');
+            if (isset($dmo_attrs['samaccountname'])) {
+                $this->config['server_type'] = 'ad';
+            }
+        }
+        return $this->config['server_type'];
+    }
+    
     /**
      * backup the Config
      */
@@ -510,9 +598,13 @@ class UdiConfig {
                         $this->config[$config_var[0]] = $config_var[1];
                     }
                 }
-            }            
+            }    
         }
-        foreach (self::$DEFAULTS as $var => $default) {
+        // determine server type
+        $this->serverType();
+
+        // set defaults for values that are missing
+        foreach (self::$DEFAULTS[$this->config['server_type']] as $var => $default) {
             if (!isset($this->config[$var])) {
                 $this->config[$var] = $default;
             }

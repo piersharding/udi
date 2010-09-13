@@ -76,6 +76,7 @@ switch ($action) {
         if ($processor->validate(true)) {
             $processor->purge();
             $processor->import();
+            $processor->purge();
         }
         $request['page']->log_system_messages();
         $request['page']->info(_('File processing finished'));

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE template SYSTEM "template.dtd">
+<template>
+<title>UDIConfig Entry Change</title>
+<description>UDIConfig Entry Change</description>
+<regexp>^cn=UDIConfig,</regexp>
+<!-- noleaf>1</noleaf -->
+<icon>document.png</icon>
+<visible>1</visible>
+<askcontainer>1</askcontainer>
+<rdn>cn</rdn>
+
+<objectClasses>
+<objectClass id="applicationProcess"></objectClass>
+<objectClass id="top"></objectClass>
+</objectClasses>
+
+<attributes>
+<attribute id="cn">
+	<display>Common Name</display>
+	<order>1</order>
+	<page>1</page>
+	<spacer>1</spacer>
+</attribute>
+<attribute id="description">
+    <display>Configuration Element</display>
+    <icon>lock.png</icon>
+    <order>2</order>
+    <verify>1</verify>
+    <page>1</page>
+    <spacer>1</spacer>
+</attribute>
+</attributes>
+</template>

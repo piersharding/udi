@@ -1,5 +1,6 @@
 <?php
 $cfg = $request['udiconfig'];
+
 $socs = $app['server']->SchemaObjectClasses('user');
 
 $configuration_action = get_request('configuration');
@@ -53,6 +54,8 @@ else {
     echo '<fieldset class="config-block"><legend>'._('Basic data').'</legend>';
     echo $request['page']->configEntry('udi_version', _('Configuration version:'), array('type' => 'text', 'value' => $cfg['udi_version'], 'disabled' => 'disabled'), true, false);
     echo $request['page']->configEntry('udi_version', '', array('type' => 'hidden', 'value' => $cfg['udi_version']), false);
+    echo $request['page']->configEntry('server_type', _('Directory Server Type:'), array('type' => 'text', 'value' => $cfg['server_type'], 'disabled' => 'disabled'), true, false);
+    echo $request['page']->configEntry('server_type', '', array('type' => 'hidden', 'value' => $cfg['server_type']), false);
     
     // is the import enabled
     $enabled_opts = array('value' => 0, 'type' => 'checkbox');
@@ -335,10 +338,12 @@ else {
     $ignore_deletes_opts = array('value' => 0, 'type' => 'checkbox');
     $move_on_delete_opts = array('value' => 0, 'type' => 'checkbox');
     $move_to_opts = array('type' => 'text', 'value' => $cfg['move_to'], 'size' => 50);
-    
     if (isset($cfg['ignore_deletes']) && $cfg['ignore_deletes'] == 'checked') {
         $ignore_deletes_opts['checked'] = 'checked';
         $ignore_deletes_opts['value'] = 1;
+        if (isset($cfg['move_on_delete']) && $cfg['move_on_delete'] == 'checked') {
+            $move_on_delete_opts['checked'] = 'checked';
+        }        
         $move_on_delete_opts['disabled'] = 'disabled';
         $move_to_opts['disabled'] = 'disabled';
     }

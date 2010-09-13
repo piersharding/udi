@@ -294,6 +294,28 @@ class ldap_pla extends ldap {
 		return $this->isAttrTest($attr,$attrs,$except_dn);
 	}
 
+	
+    /**
+     * Returns true if the specified attribute is configured as read only
+     * in config.php.
+     * Attributes are configured as read-only in config.php thus:
+     * <code>
+     *  $config->custom->appearance['readonly_attrs'] = array('objectClass');
+     * </code>
+     *
+     * @param string The name of the attribute to test.
+     * @return boolean
+     */
+    public function isIgnoredAttr($attr) {
+        if (DEBUG_ENABLED && (($fargs=func_get_args())||$fargs='NOARGS'))
+            debug_log('Entered (%%)',17,0,__FILE__,__LINE__,__METHOD__,$fargs);
+
+        $attrs = $_SESSION[APPCONFIG]->getValue('appearance','ignore_attrs');
+        $except_dn = array();
+
+        return $this->isAttrTest($attr,$attrs,$except_dn);
+    }
+	
 	/**
 	 * Returns true if the specified attribute is configured as hidden
 	 * in config.php.

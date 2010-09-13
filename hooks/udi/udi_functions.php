@@ -8,6 +8,13 @@
  * @package phpLDAPadmin
  */
 
+if (!defined('AUTH_AD_ACCOUNTDISABLE')) {
+    define('AUTH_AD_ACCOUNTDISABLE', 0x0002);
+}
+if (!defined('AUTH_AD_NORMAL_ACCOUNT')) {
+    define('AUTH_AD_NORMAL_ACCOUNT', 0x0200);
+}
+
 /**
  *  Check that a DN exists in the directory
  *  
@@ -31,10 +38,27 @@ function check_dn_exists($dn, $msg, $area = 'configuration') {
     // now check that this DN is within the scope of the server base DN
     $query = array_keys($query);
     $dn = array_shift($query);
-    if (!preg_match('/'.$udiconfig->getBaseDN().'$/', $dn)) {
+    if (!preg_match('/'.get_canonical_name($udiconfig->getBaseDN()).'$/', get_canonical_name($dn))) {
         return $request['page']->error(_('DN does not exist inside server connection Base DN: ').$dn, 'configuration');
     }
     return true;
+}
+
+/**
+ * Calculate a homogenised version of a given dn, for string comparison
+ * 
+ * @param String $dn DN to clean
+ */
+function get_canonical_name($dn) {
+    $parts = explode(',', $dn);
+    $cleaned = array();
+    foreach ($parts as $part) {
+        $els = explode('=', $part);
+        $attr_type = strtolower(trim($els[0]));
+        $attr = strtolower(trim($els[1]));
+        $cleaned[]= $attr_type."=".$attr;
+    }
+    return implode(',', $cleaned);
 }
 
 /**
@@ -825,6 +849,12 @@ class Processor {
                 continue;
             }
             if ($mandatory && !isset($total_fields[$attr])) {
+                // some mandatory attributes aren't really mandatory
+                if ($this->cfg['server_type'] == 'ad') {
+                    if (in_array($attr, array('objectsid'))) {
+                        continue;
+                    }
+                }
                 $request['page']->error(_('Mandatory LDAP attribute missing from import: ').$attr, _('processing'));
                 return false;
             }
@@ -848,14 +878,14 @@ class Processor {
                 if (isset($field_mappings[$header])) {
                     foreach ($field_mappings[$header] as $target) {
                         $value = trim($user[$header]);
-                        if ($total_attrs[strtolower($target)] && empty($value) && strtolower($target) != 'mlepusername') {
+                        if ($total_attrs[strtolower($target)] && empty($value) && !in_array(strtolower($target), array('mlepusername', 'samaccountname'))) {
                             return $request['page']->error(_('Mandatory value: ').$header._(' (maps to: ').$target.')'._(' is empty in row: ').$row_cnt, _('processing'));
                         }
                     }
                 }
                 else {
                     $value = trim($user[$header]);
-                    if ($total_attrs[strtolower($header)] && empty($value) && strtolower($header) != 'mlepusername') {
+                    if ($total_attrs[strtolower($header)] && empty($value) && !in_array(strtolower($header), array('mlepusername', 'samaccountname'))) {
                         return $request['page']->error(_('Mandatory value: ').$header._(' (maps to: ').$header.')'._(' is empty in row: ').$row_cnt, _('processing'));
                     }
                 }
@@ -1166,9 +1196,12 @@ class Processor {
             }
             
             // encrypt the passwords
-            $account['raw_passwd'] = $account['userPassword'];
             if (isset($account['userPassword']) && $this->cfg['encrypt_passwd'] != 'none') {
+                $account['raw_passwd'] = $account['userPassword'];
                 $account['userPassword'] = password_hash($account['userPassword'], $this->cfg['encrypt_passwd']);
+            }
+            else {
+                $account['raw_passwd'] = '';
             }
 
             // need to prevent doubling up of attribute values
@@ -1229,6 +1262,11 @@ class Processor {
 //            if (!isset($total_fields['uid'])) {
 //                $this->addAttribute($template, 'uid', array($uid));
 //            }
+            // if we are using AD, then we have to actually disable the user
+            // and set the password later
+            if ($this->cfg['server_type'] == 'ad') {
+                $this->addAttribute($template, 'useraccountcontrol', array(514));
+            }
             $template->setRDNAttributes($rdn);
             // set the CN
             $result = $this->server->add($dn, $template->getLDAPadd(), 'user');
@@ -1394,9 +1432,10 @@ class Processor {
             }
             // make sure item exists in the tree
             $this->addTreeItem($dn);
+//            var_dump($template->getLDAPmodify());
             $result = $this->server->modify($dn, $template->getLDAPmodify(), 'user');
             if (!$result) {
-                $request['page']->error(_('Could not create: ').$dn, _('processing'));
+                $request['page']->error(_('Could not update: ').$dn, _('processing'));
                 return $result;
             }
             else {
@@ -1754,6 +1793,11 @@ class Processor {
                     $template->setDN($old_dn);
                     $template->accept();
                     $this->modifyAttribute($template, 'labeleduri', $labeleduri);
+                    // if we are using AD, then we have to actually unlock the user too
+                    // cannot do this if the account has no password
+                    if ($this->cfg['server_type'] == 'ad' && isset($account['pwdlastset']) && $account['pwdlastset'][0] > 1) {
+                        $this->modifyAttribute($template, 'useraccountcontrol', array(512));
+                    }
                     $result = $this->server->modify($old_dn, $template->getLDAPmodify(), 'user');
                     if (!$result) {
                         $request['page']->error(_('Could not modify: ').$old_dn, _('processing'));
@@ -1844,6 +1888,22 @@ class Processor {
     public function processDeactivations() {
         global $request;
         
+        // final check of config
+        if (isset($this->cfg['ignore_deletes']) && $this->cfg['ignore_deletes'] == 'checked') {
+            // deletes are disabled
+            return false;
+        }
+        if (!isset($this->cfg['move_on_delete']) || $this->cfg['move_on_delete'] != 'checked') {
+            // no moving on delete
+            return false;
+        }
+        
+        if (!isset($this->cfg['move_to']) || empty($this->cfg['move_to'])) {
+            // must have a target to relocate to
+            return $request['page']->error(_('Move on delete to target is not specified in config - aborting'), _('processing'));
+        }
+        
+        
         // process the deletes, which are really moves
         foreach ($this->to_be_deactivated as $account) {
 
@@ -1858,6 +1918,10 @@ class Processor {
             $values = isset($account['labeleduri']) ? $account['labeleduri'] : array();
             $values []= 'udi_deactivated:'.$dn;
             $this->modifyAttribute($template, 'labeleduri', $values);
+            // if we are using AD, then we have to actually lock the user too
+            if ($this->cfg['server_type'] == 'ad') {
+                $this->modifyAttribute($template, 'useraccountcontrol', array(514));
+            }
             $result = $this->server->modify($dn, $template->getLDAPmodify(), 'user');
             if (!$result) {
                 $request['page']->error(_('Could not modify: ').$dn, _('processing'));

@@ -8,7 +8,7 @@ sudo chown openldap:openldap /var/lib/ldap
 sudo rm -rf /etc/ldap/slapd.d
 #sudo mkdir /etc/ldap/slapd.d
 #sudo chown openldap:openldap /etc/ldap/slapd.d
-sudo apt-get -y install slapd
+sudo apt-get --force-yes -y install slapd
 
 echo "installed slapd ..."
 

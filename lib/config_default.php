@@ -98,7 +98,11 @@ class Config {
 		$this->default->appearance['hide_attrs'] = array(
 			'desc'=>'Hide attributes from display',
 			'default'=>array());
-
+        
+		$this->default->appearance['ignore_attrs'] = array(
+            'desc'=>'Ignore attributes for processing',
+            'default'=>array());
+		
 		$this->default->appearance['hide_attrs_exempt'] = array(
 			'desc'=>'Group DN, where membership will exempt the users from hide_attrs',
 			'default'=>null);
