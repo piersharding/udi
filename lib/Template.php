@@ -258,7 +258,7 @@ class Template extends xmlTemplate {
 	 * or delete.
 	 * (OLD values are IGNORED, we will have got them when we build this object from the LDAP server DN.)
 	 */
-	public function accept($makeVisible=false) {
+	public function accept($makeVisible=false, $method=null) {
 		if (DEBUG_ENABLED && (($fargs=func_get_args())||$fargs='NOARGS'))
 			debug_log('Entered (%%)',5,0,__FILE__,__LINE__,__METHOD__,$fargs);
 
@@ -266,7 +266,7 @@ class Template extends xmlTemplate {
 
 		# If a DN is set, then query the LDAP server for the details.
 		if ($this->dn) {
-			if (! $server->dnExists($this->dn))
+			if (! $server->dnExists($this->dn, $method))
 				system_message(array(
 					'title'=>__METHOD__,
 					'body'=>sprintf('DN (%s) didnt exist in LDAP?',$this->dn),
