@@ -159,7 +159,7 @@ class UdiRender extends PageRender {
         return $menu;
     }
     
-    private static    $skip_fields = array('objectclass');
+    private static    $skip_fields = array('objectclass', 'dn');
     
     public function reportSummary($report) {
         $header = $report['header'];

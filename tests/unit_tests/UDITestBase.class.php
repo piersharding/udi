@@ -89,6 +89,10 @@ class UDITestBase extends PHPUnit_Framework_TestCase {
             $this->assertTrue($UDI_RC == true, 'Search for group succeeded'); // search succeeded
             array_shift($result); // git rid of dn:
             // member attribute is not allowed to be empty so I put 1 in there by default
+            if (count($result) != 1) {
+                var_dump($group);
+                var_dump($result);
+            }
             $this->assertTrue(count($result) == 1, 'Group('.$group.') is empty of members'); // failed to find any members in groups
         }
     }
@@ -104,9 +108,14 @@ class UDITestBase extends PHPUnit_Framework_TestCase {
         echo "checking posix groups against file: $file\n";
         $result = self::ldap_search('ou=Services, dc=example,dc=com', '(objectclass=posixGroup)', 'memberUid');
         $this->assertTrue($UDI_RC == true, 'serach for posix groups succeeded'); // search succeeded
-        $this->assertTrue(count($result) > 10, 'posix Groups found'); 
+        $this->assertTrue(count($result) > 10, 'posix Groups found');
         $data = self::get_data($file);
         $this->assertTrue(count($data) > 10, 'group comparison data found'); 
+        if (count(array_diff($result, $data)) != 0) {
+            var_dump(array_diff($result, $data));
+            var_dump($result);
+            var_dump($data);
+        }
         $this->assertTrue(count(array_diff($result, $data)) == 0, 'posix groups and check data correct');
     }
 
@@ -123,8 +132,14 @@ class UDITestBase extends PHPUnit_Framework_TestCase {
         $result = self::ldap_search('ou=Services, dc=example,dc=com', '(objectclass=groupOfNames)', 'member');
         $this->assertTrue($UDI_RC == true, 'search for member groups succeeded'); // search succeeded
         $this->assertTrue(count($result) > 10, 'member Groups found'); 
+        $result = preg_grep('/member: cn=bogus,ou=staff,ou=new people,dc=example,dc=com/', $result, PREG_GREP_INVERT); 
         $data = self::get_data($file);
         $this->assertTrue(count($data) > 10, 'group comparison data found'); 
+        if (count(array_diff($result, $data)) != 0) {
+            var_dump(array_diff($result, $data));
+            var_dump($result);
+            var_dump($data);
+        }
         $this->assertTrue(count(array_diff($result, $data)) == 0, 'member groups and check data correct');
     }
     

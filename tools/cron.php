@@ -1,6 +1,9 @@
 <?php
 include ("Console/Getopt.php");
 
+// broadcast that this is the cron process running 
+define('UDI_CRON', 1);
+
 // increase error reporting
 error_reporting(E_ALL);
 
@@ -10,9 +13,6 @@ if (isset($_SERVER['REMOTE_ADDR']) || isset($_SERVER['GATEWAY_INTERFACE'])){
     exit(-1);
 }
 
-// allow unlimited execution time
-@set_time_limit(0);
-
 /// The current directory in PHP version 4.3.0 and above isn't necessarily the
 /// directory of the script when run from the command line. The require_once()
 /// would fail, so we'll have to chdir()
@@ -20,9 +20,6 @@ if (isset($_SERVER['REMOTE_ADDR']) || isset($_SERVER['GATEWAY_INTERFACE'])){
 if (!isset($_SERVER['REMOTE_ADDR']) && isset($_SERVER['argv'][0])) {
     chdir(dirname($_SERVER['argv'][0]));
 }
-
-/// increase memory limit (PHP 5.2 does different calculation, we need more memory now)
-ini_set('memory_limit', '512M');
 
 //fetch arguments
 $args = Console_Getopt::readPHPArgv();
@@ -313,6 +310,12 @@ $app['server']->setValue('unique','pass', $passwd);
 require_once HOOKSDIR.'udi/UdiConfig.php';
 require_once HOOKSDIR.'udi/UdiRender.php';
 require_once HOOKSDIR.'udi/udi_functions.php';
+
+// allow unlimited execution time
+@set_time_limit(0);
+
+/// increase memory limit (PHP 5.2 does different calculation, we need more memory now)
+ini_set('memory_limit', '512M');
 
 // setup the page renderer
 $request['page'] = new UdiRender($app['server']->getIndex(),get_request('template','REQUEST',false,'none'));
