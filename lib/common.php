@@ -35,7 +35,8 @@ if (! defined('APPCONFIG'))
 $app['direct_scripts'] = array('cmd.php','index.php',
 	'view_jpeg_photo.php','entry_chooser.php',
 	'password_checker.php','download_binary_attr.php',
-	'unserialize.php'
+	'unserialize.php',
+    'kiosk.php', // self service kiosk for password changing
 	);
 
 # Which script was invoked.

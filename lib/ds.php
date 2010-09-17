@@ -192,7 +192,7 @@ abstract class DS {
 	/**
 	 * Set the login details of the user logged into this datastore's connection method
 	 */
-	protected function setLogin($user,$pass,$method=null) {
+	public function setLogin($user,$pass,$method=null) {
 		if (DEBUG_ENABLED && (($fargs=func_get_args())||$fargs='NOARGS'))
 			debug_log('Entered (%%)',17,0,__FILE__,__LINE__,__METHOD__,$fargs);
 
@@ -221,7 +221,7 @@ abstract class DS {
 	/**
 	 * Get the login password of the user logged into this datastore's connection method
 	 */
-	protected function getPassword($method=null) {
+	public function getPassword($method=null) {
 		if (DEBUG_ENABLED && (($fargs=func_get_args())||$fargs='NOARGS'))
 			debug_log('Entered (%%)',17,0,__FILE__,__LINE__,__METHOD__,$fargs);
 

@@ -1611,7 +1611,7 @@ class Processor {
      * 
      * @return bool true on success
      */
-    private function removeGroupMembership($uid) {
+    private function removeGroupMembership($uid, $skip=array()) {
         global $request;
         
         // must have a user id
@@ -1625,25 +1625,32 @@ class Processor {
         // hunt for existing group membership and remove
         $group_attr = strtolower($this->cfg['group_attr']);
         
-//        if (strtolower($group_attr) != 'memberof') {
+        // calculate skips
+        $total_skips = array();
+        foreach ($skip as $membership) {
+            if (isset($this->group_mappings[$membership])) {
+                $total_skips = array_merge($total_skips, $this->group_mappings[$membership]);
+            }
+        }
+        $total_skips = array_unique($total_skips);
+        
         foreach ($this->total_groups as $group) {
+            if (in_array($group, $total_skips)) {
+                // the user is staying in this group - just check that the
+                // targets haven't changed
+//                echo "saved an update!<br/>";
+                continue;
+            }
             // check and delete from group
-            
-//            $query = $this->server->query(array('base' => $group, 'filter' => "($group_attr=$uid)"), 'user');
-//            if (!empty($query)) {
-//echo "check: $uid in group: $group\n";
-//var_dump($this->group_cache);
             if ($this->userInGroup($uid, $group)) {
                 // user exists in group
                 $values = $this->group_cache($group);
-//                $query = $this->server->query(array('base' => $group), 'user');
-//                // remove user from membership attribute and then save again
-//                $existing = array_shift($query);
-                $template = $this->createModifyTemplate($group);
-//                $attribute = $template->getAttribute($group_attr);
-//                $values = $existing[$group_attr];
+                
+                // remove user from membership attribute and then save again
                 $values = array_merge(preg_grep('/^'.$uid.'$/', $values, PREG_GREP_INVERT), array());
-//                $attribute->setValue($values);
+
+                // user was removed
+                $template = $this->createModifyTemplate($group);
                 
                 $this->modifyAttribute($template, $group_attr, $values);
                 // add a dummy objectclass attribute
@@ -1660,7 +1667,6 @@ class Processor {
                 // update the group cache
                 $this->group_cache[get_canonical_name($group)] = $values;
             }
-//            }
         }
         return true;
     }
@@ -1723,6 +1729,9 @@ class Processor {
                 }
             }
         }
+//        var_dump($this->total_groups);
+//        var_dump($this->group_mappings);
+//        exit(0);
         return true;
     }
     
@@ -1764,90 +1773,69 @@ class Processor {
         if (!$new_uid) {
             return $request['page']->error(_('No uid passed, so cannot alter membership: ').$user_dn, _('processing'));
         }
+        
+        $group_attr = strtolower($this->cfg['group_attr']);
+        $groups = array();
+        if ($group_membership) {
+            $groups = explode('#', $group_membership);
+        }
             
         // cache the groups to deal with
         $this->cacheGroups();
-                
+
+        // at this point, it would be good to calculate the delta of group membership
+        // if it hasn't changed then why bother carrying on
+        if ($old_uid != $new_uid) {
+            // definitely remove from groups
+            $this->removeGroupMembership($old_uid);
+        }
+        else {
+            // are there any that they nolonger belong to?
+            $this->removeGroupMembership($old_uid, $groups);
+        }
+
+        // no point in coninuing if the group membership is empty
+        if (empty($group_membership)) {
+            return true;
+        }
         
-        // hunt for existing group membership and remove
-        $this->removeGroupMembership($old_uid);
-
         // then re add memberships
-        $group_attr = strtolower($this->cfg['group_attr']);
-//        $memberof_groups = array();
-        if ($group_membership) {
-            $groups = explode('#', $group_membership);
-            foreach ($groups as $group) {
-                if (isset($this->group_mappings[$group])) {
-                    foreach($this->group_mappings[$group] as $mapping) {
-                        // insert mlepUsername in to the group from here
-                        $template = $this->createModifyTemplate($mapping);
-//                        $query = $this->server->query(array('base' => $mapping), 'user');
-//                        if (empty($query)) {
-                        $values = $this->group_cache($mapping);
-                        if ($values === false) {
-                            // group does not exist
-                            return $request['page']->error(_('Membership group does not exist: ').$mapping, _('processing'));
-                        }
+        foreach ($groups as $group) {
+            if (isset($this->group_mappings[$group])) {
+                foreach($this->group_mappings[$group] as $mapping) {
+                    // insert mlepUsername in to the group from here
+                    $template = $this->createModifyTemplate($mapping);
+                    $values = $this->group_cache($mapping);
+                    if ($values === false) {
+                        // group does not exist
+                        return $request['page']->error(_('Membership group does not exist: ').$mapping, _('processing'));
+                    }
 
-//                        // add back all the existing attribute values
-//                        $existing = array_shift($query);
-////                        // check for memberOf, as this goes on the user - not the group container
-////                        if (strtolower($group_attr) == 'memberof') {
-////                            $memberof_groups []= $existing['dn'];
-////                        }
-////                        else {
-//                        if (isset($existing[strtolower($group_attr)])) {
-//                            $values = $existing[strtolower($group_attr)];
-//                        }
-//                        else {
-//                            $values = array();
-//                        }
-                        // ensure that the uid is reduced to common terms
-                        
-                        // don't attempt to add them if they are allready there
-//                        if (!in_array($uid, $values)) {
-                        if (!$this->userInGroup($new_uid, $mapping)) {
-                            if ($group_attr != 'memberuid') {
-                                $values[] = $this->check_user_dn($new_uid);
-                            }
-                            else {
-                                $values[] = strtolower($new_uid);
-                            }
-//                            var_dump($values);
-                            $this->modifyAttribute($template, $group_attr, $values);
-                            // add a dummy objectclass attribute
-                            if (is_null($attribute = $template->getAttribute('objectClass'))) {
-                                $attribute = $template->addAttribute('objectClass',array('values'=> explode(';', $this->cfg['objectclasses'])));
-                            }
-                            
-                            # Perform the modification
-                            $this->addTreeItem($mapping);
-                            $result = $this->server->modify($mapping,$template->getLDAPmodify(), 'user');
-                            if (!$result) {
-                                return $request['page']->error(_('Could not add user to group: ').$new_uid.'/'.$mapping, _('processing'));
-                            }
-                            // update the group cache
-                            $this->group_cache[get_canonical_name($mapping)] = $values;
+                    // don't attempt to add them if they are allready there
+                    if (!$this->userInGroup($new_uid, $mapping)) {
+                        if ($group_attr != 'memberuid') {
+                            $values[] = $this->check_user_dn($new_uid);
                         }
-//                        }
+                        else {
+                            $values[] = strtolower($new_uid);
+                        }
+                        $this->modifyAttribute($template, $group_attr, $values);
+                        // add a dummy objectclass attribute
+                        if (is_null($attribute = $template->getAttribute('objectClass'))) {
+                            $attribute = $template->addAttribute('objectClass',array('values'=> explode(';', $this->cfg['objectclasses'])));
+                        }
+                        
+                        # Perform the modification
+                        $this->addTreeItem($mapping);
+                        $result = $this->server->modify($mapping,$template->getLDAPmodify(), 'user');
+                        if (!$result) {
+                            return $request['page']->error(_('Could not add user to group: ').$new_uid.'/'.$mapping, _('processing'));
+                        }
+                        // update the group cache
+                        $this->group_cache[get_canonical_name($mapping)] = $values;
                     }
                 }
             }
-//            // if this is controlled by memberOf - then update the user with the list of group DNs
-//            if (strtolower($group_attr) == 'memberof') {
-//                $template = new Template($this->server->getIndex(),null,null,'modify');
-//                $rdn = get_rdn($user_dn);
-//                $template->setDN($user_dn);
-//                $template->accept(false, 'user');
-//                $this->modifyAttribute($template, $group_attr, $memberof_groups);
-//                # Perform the modification
-//                $result = $this->server->modify($user_dn,$template->getLDAPmodify(), 'user');
-//                if (!$result) {
-//                    $request['page']->error(_('Could not update user groups: ').$user_dn.'/'.implode('|', $memberof_groups), _('processing'));
-//                }
-//                
-//            }
         }
         return true;
     }

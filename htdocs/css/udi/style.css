@@ -132,9 +132,21 @@ table.page td.body {
 
 /* Global Page - Main Body System Message */
 table.page table.sysmsg {
-	border-bottom: 2px solid #AAAACC;
+	/* border-bottom: 2px solid #AAAACC; */
 	width: 100%;
 }
+
+
+table.center-msg {
+    border: 1px;
+    border-spacing: 0px;
+    cell-padding: 0px;
+    cell-spacing: 0px;
+    border-bottom: 2px solid #AAAACC;
+    width: 100%;
+}
+
+
 
 table.page table.sysmsg td.head {
 	font-size: small;
@@ -986,17 +998,18 @@ table.item-list-config td {
     border-collapse: collapse;
 }
 
+
 /* Forms layout for UDI */
-.udiform .fitem {width:100%;overflow:hidden;margin-top:5px;margin-bottom:0px;clear:right; vertical-align: middle;}
-.udiform .fitem .fitemtitle {width:20%;text-align:right;float:left;}
-.udiform .fitem .fitemtitle_left {width:20%;text-align:left;float:left;}
-.udiform .fitem .fitemtitle_left_wide {width:25%;text-align:left;float:left;}
-.udiform .fitem .fitemtitle_free {text-align:right;float:left;}
-.udiform .fitem .fitemtitle div {display: inline;}
-.udiform .fitem .fitemtitle_left div {display: inline;}
-.udiform .fitem .felement {text-align: left;border-width: 0;width:100%;margin-left:21%; vertical-align: middle;}
-.udiform .fitem .felement_free {text-align: left;border-width: 0;width:80%;margin-left:21%; padding-right: 550px;}
-.udiform .required {color:#A00;}
+.fitem {width:100%;overflow:hidden;margin-top:5px;margin-bottom:0px;clear:right; vertical-align: middle;}
+.fitem .fitemtitle {width:20%;text-align:right;float:left;}
+.fitem .fitemtitle_left {width:20%;text-align:left;float:left;}
+.fitem .fitemtitle_left_wide {width:25%;text-align:left;float:left;}
+.fitem .fitemtitle_free {text-align:right;float:left;}
+.fitem .fitemtitle div {display: inline;}
+.fitem .fitemtitle_left div {display: inline;}
+.fitem .felement {text-align: left;border-width: 0;width:100%;margin-left:21%; vertical-align: middle;}
+.fitem .felement_free {text-align: left;border-width: 0;width:80%;margin-left:21%; padding-right: 550px;}
+.required {color:#A00;}
 .messages {text-align:center;}
 .messages .error {font-weigt:bold;color:red;}
 .messages .warning {font-weigt:bold;color:magenta;}
@@ -1024,6 +1037,7 @@ div.center {
     margin: 0 auto;
     width:100%;
 }
+
 div.udiform {width:80%;float:left;margin:0 auto;padding:0px;display:block;}
 div.udiform_full {width:100%;float:left;margin:0 auto;padding:0px;display:block;}
 div.udiform_small {width:65%;float:left;margin:0 auto;padding:0px;display:block;}
@@ -1077,6 +1091,18 @@ fieldset.config-block {
     margin-right: 50px;
     border: 1px solid #AAC;
 }
+
+fieldset.kiosk {
+    display: block;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    margin-right: 8px;
+    border: 1px solid #AAC;
+}
+
+
+div.kioskform {width:600px;float:middle;margin:0 auto;padding:0px;display:block;}
+
 
 table.udi-report-container {
     width: 100%;

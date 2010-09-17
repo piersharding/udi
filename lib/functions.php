@@ -188,7 +188,7 @@ function app_error_handler($errno,$errstr,$file,$lineno) {
  * Returns the application name.
  */
 function app_name() {
-	return 'phpLDAPadmin';
+	return 'UDI';
 }
 
 /**
@@ -352,6 +352,12 @@ function cmd_control_pane($type) {
 					'enable'=>true,
 					'link'=>sprintf('href="index.php" title="%s"',_('Home')),
 					'image'=>sprintf('<img src="%s/home-big.png" alt="%s" />',IMGDIR,_('Home'))),
+
+				'kiosk'=>array(
+					'title'=>_('Kiosk'),
+					'enable'=>true,
+					'link'=>sprintf('href="kiosk.php" title="%s"',_('Kiosk')),
+					'image'=>sprintf('<img src="%s/home-big.png" alt="%s" />',IMGDIR,_('Kiosk'))),
 
 				'purge'=>array(
 					'title'=>_('Purge caches'),

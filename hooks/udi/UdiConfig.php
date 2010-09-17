@@ -78,6 +78,9 @@ class UdiConfig {
                     'encrypt_passwd' => 'md5',
                     'passwd_algo' => 'passwd_alg_01_passwd_algorithm',
                     'passwd_parameters' => 'pass',
+                    'passwd_policy_algo' => 'passwd_alg_01_passwd_policy_algorithm',
+//                    'passwd_policy_parameters' => '~[[:cntrl:]]|[&<>"`\|\':\\\\/]~u',
+                    'passwd_policy_parameters' => '/^[a-zA-Z0-9\!\$\@\#\%\^\&\*\(\)\-\_\+\=\{\}\[\]\:\;\"\'\<\>\,\.\?\/\|]{3,}$/',
                     'search_bases' => '',
                     'next_seq_no' => 0,
                     'udi_version' => '1.2.0.5',
@@ -132,21 +135,22 @@ class UdiConfig {
         return $this->configbackupdn;        
     }
     
+    
     /**
      * Get the Config
      */
-    public function getConfig($force=false) {
+    public function getConfig($force=false, $method='user') {
         if (!$force && $this->config) {
             return $this->config;
         }
 
         $this->config = array();
-        $query = $this->server->query(array('base' => $this->configdn, 'attrs' => array('description')), 'user');
+        $query = $this->server->query(array('base' => $this->configdn, 'attrs' => array('description')), $method);
         $this->unpackConfig($query);
         return $this->config;
-    }
-    
+    }    
 
+    
     /**
      * Get the next sequential number
      */

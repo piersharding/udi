@@ -260,7 +260,7 @@ class page {
 		echo '</td>';
 	}
 
-	private function sysmsg() {
+	protected function sysmsg() {
 		if (defined('DEBUG_ENABLED') && DEBUG_ENABLED && (($fargs=func_get_args())||$fargs='NOARGS'))
 			debug_log('Entered (%%)',129,0,__FILE__,__LINE__,__METHOD__,$fargs);
 
@@ -298,7 +298,7 @@ class page {
 		}
 	}
 
-	private function body($raw=false) {
+	protected function body($raw=false) {
 		if (defined('DEBUG_ENABLED') && DEBUG_ENABLED && (($fargs=func_get_args())||$fargs='NOARGS'))
 			debug_log('Entered (%%)',129,0,__FILE__,__LINE__,__METHOD__,$fargs);
 

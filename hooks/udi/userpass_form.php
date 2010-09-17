@@ -20,6 +20,15 @@ if (!empty($result)) {
     }
 }                
 
+$result = udi_run_hook('passwd_policy_algorithm_label',array());
+$passwd_policy_algols = array();
+if (!empty($result)) {
+    foreach ($result as $algo) {
+        $passwd_policy_algols[$algo['name']]= htmlspecialchars($algo['title']);
+    }
+}                
+
+
 echo '<div class="center">';
 echo '<div class="help">';
 include 'userpass.help.php';
@@ -31,7 +40,7 @@ echo '<div class="udi_clear"></div>';
  * User Id and Password group
  */
 // Create In bucket for new accounts - must be one of the search bases
-echo '<fieldset class="config-block"><legend>'._('User Id control').'</legend>';
+echo '<fieldset class="config-block"><legend>'._('User Id Generation').'</legend>';
 // UserId generation algorithms - list of hooks, and parameters to pass to hooks
 // User Ids       
 $ignore_userids_opts = array('value' => 0, 'type' => 'checkbox');
@@ -59,7 +68,7 @@ echo $request['page']->configEntry('userid_parameters', _('User Id generation pa
 echo '</fieldset>';
 
 // Passwords
-echo '<fieldset class="config-block"><legend>'._('Passwords control').'</legend>';
+echo '<fieldset class="config-block"><legend>'._('Passwords Generation').'</legend>';
 $ignore_passwds_opts = array('value' => 0, 'type' => 'checkbox');
 $passwd_algo_opts = array('value' => 0, 'type' => 'checkbox');
 $passwd_parameters_opts = array('type' => 'text', 'value' => $cfg['passwd_parameters'], 'size' => 50);
@@ -91,6 +100,62 @@ else {
     echo $request['page']->configSelectEntryBasic('encrypt_passwd', _('Password ecryption:'), $enc_methods, $cfg['encrypt_passwd'], false);
 }
 echo '</fieldset>';
+
+
+
+
+// Password policy
+echo '<fieldset class="config-block"><legend>'._('Kiosk Password Policy').'</legend>';
+echo $request['page']->configSelectEntryBasic('passwd_policy_algo', _('Password policy algorithm:'), $passwd_policy_algols, $cfg['passwd_policy_algo'], false);
+echo $request['page']->configEntry('passwd_policy_parameters', _('Policy parameters:'), array('type' => 'text', 'value' => htmlspecialchars($cfg['passwd_policy_parameters'], ENT_QUOTES), 'size' => 75), true, false);
+
+//$ignore_passwds_opts = array('value' => 0, 'type' => 'checkbox');
+//$passwd_algo_opts = array('value' => 0, 'type' => 'checkbox');
+//$passwd_parameters_opts = array('type' => 'text', 'value' => $cfg['passwd_parameters'], 'size' => 50);
+//if (isset($cfg['ignore_passwds']) && $cfg['ignore_passwds'] == 'checked') {
+//    $ignore_passwds_opts['checked'] = 'checked';
+//    $ignore_passwds_opts['value'] = 1;
+//    $passwd_algo_opts['disabled'] = 'disabled';
+//    $passwd_parameters_opts['disabled'] = 'disabled';
+//}
+//echo $request['page']->configEntry('ignore_passwds', _('No password processing:'), $ignore_passwds_opts, true, false);    
+//if (isset($passwd_algo_opts['disabled'])) {
+//    echo $request['page']->configEntry('passwd_algo', _('Password algorithm:'), array('type' => 'text', 'value' => $passwd_algols[$cfg['passwd_algo']], 'size' => 25, 'disabled' => 'disabled'), true, false);
+//    echo $request['page']->configEntry('passwd_algo', '', array('type' => 'hidden', 'value' => $cfg['passwd_algo']), false);
+//    echo $request['page']->configEntry('passwd_parameters', '', array('type' => 'hidden', 'value' => $cfg['passwd_parameters']), false);
+//}
+//else {
+//    // select algorythm
+//    echo $request['page']->configSelectEntryBasic('passwd_algo', _('Password algorithm:'), $passwd_algols, $cfg['passwd_algo'], false);
+//}
+//echo $request['page']->configEntry('passwd_parameters', _('Password generation parameters:'), $passwd_parameters_opts, true, false);
+//// how to encrypt the passwd value
+//$enc_methods = password_types();
+//if (isset($passwd_algo_opts['disabled'])) {
+//    echo $request['page']->configEntry('encrypt_passwd', _('Password ecryption:'), array('type' => 'text', 'value' => $cfg['encrypt_passwd'], 'size' => 5, 'disabled' => 'disabled'), true, false);
+//    echo $request['page']->configEntry('encrypt_passwd', '', array('type' => 'hidden', 'value' => $cfg['encrypt_passwd']), false);
+//}
+//else {
+//    // select algorythm
+//    echo $request['page']->configSelectEntryBasic('encrypt_passwd', _('Password ecryption:'), $enc_methods, $cfg['encrypt_passwd'], false);
+//}
+echo '</fieldset>';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // page save button
 echo $request['page']->configEntry('submitbutton', '', array('type' => 'submit', 'value' => _('Save')), false);

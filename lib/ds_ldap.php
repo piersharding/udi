@@ -126,7 +126,7 @@ class ldap extends DS {
 	 * @param string Which connection method resource to use
 	 * @return resource|null Connection resource if successful, null if not.
 	 */
-	protected function connect($method,$debug=false,$new=false) {
+	public function connect($method,$debug=false,$new=false) {
 		if (DEBUG_ENABLED && (($fargs=func_get_args())||$fargs='NOARGS'))
 			debug_log('Entered (%%)',17,0,__FILE__,__LINE__,__METHOD__,$fargs);
 
@@ -197,8 +197,10 @@ class ldap extends DS {
 			$bind['result'] = $this->startSASL($resource,$method);
 
 		# Normal bind...
-		else
+		else {
 			$bind['result'] = @ldap_bind($resource,$bind['id'],$bind['pass']);
+//			var_dump($bind);
+		}
 
 		if ($debug)
 			debug_dump(array('method'=>$method,'bind'=>$bind,'USER'=>$_SESSION['USER']));
