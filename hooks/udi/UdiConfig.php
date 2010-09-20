@@ -44,6 +44,8 @@ class UdiConfig {
                     'encrypt_passwd' => 'md5',
                     'passwd_algo' => 'passwd_alg_01_passwd_algorithm',
                     'passwd_parameters' => 'pass',
+                    'passwd_policy_algo' => 'passwd_alg_01_passwd_policy_algorithm',
+                    'passwd_policy_parameters' => '/^[a-zA-Z0-9\!\$\@\#\%\^\&\*\(\)\-\_\+\=\{\}\[\]\:\;\"\'\<\>\,\.\?\/\|]{3,}$/',
                     'search_bases' => '',
                     'next_seq_no' => 0,
                     'udi_version' => '1.2.0.5',
@@ -97,7 +99,7 @@ class UdiConfig {
 	# Config DN
     protected $configouname = 'OU=UDIConfig';
     protected $configdnname = 'cn=UDIConfig';
-    protected $configbackupdnname = 'cn=UDIConfig.backup';
+    protected $configbackupdnname = 'UDIConfig.backup';
     protected $configou;
     protected $configdn;
     protected $configbackupdn;
@@ -110,7 +112,7 @@ class UdiConfig {
         $base = $this->server->getBaseDN();
         $this->base = $base[0];
         $this->configdn = $this->configdnname.','.$this->configouname.','.$this->base;
-        $this->configbackupdn = $this->configbackupdnname.','.$this->configouname.','.$this->base;
+        $this->configbackupdn = 'cn='.$this->configbackupdnname.','.$this->configouname.','.$this->base;
         $this->configou = $this->configouname.','.$this->base;
     }
 
@@ -522,7 +524,7 @@ class UdiConfig {
     /**
      * Create a config DN node
      */
-    private function createConfigDn($dn) {
+    private function createConfigDn($dn, $name='UDIConfig') {
 
         // check that the backup DN exists
         $query = $this->server->query(array('base' => $dn, 'attrs' => array('description')), 'user');
@@ -540,7 +542,7 @@ class UdiConfig {
             }
             // check if this server is an Active Directory
             $this->serverType();
-            if (!$this->server->add($dn, array('objectClass' => array('document'), 'cn' => array('UDIConfig'), 'documentIdentifier' => array('UDIConfig')))) {
+            if (!$this->server->add($dn, array('objectClass' => array('document'), 'cn' => array($name), 'documentIdentifier' => array('UDIConfig')))) {
                 system_message(array(
                              'title'=>_('UDI Configuration backup Failed'),
                                         'body'=> _('Failed to create configuration node: '.$dn.' - check server write permissions'),
@@ -577,7 +579,7 @@ class UdiConfig {
     public function backupConfig() {
 
         // check that the backup DN exists
-        if (!$this->createConfigDn($this->configbackupdn)) {
+        if (!$this->createConfigDn($this->configbackupdn, $this->configbackupdnname)) {
             return false;
         }
 

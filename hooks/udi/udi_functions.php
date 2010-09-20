@@ -772,7 +772,8 @@ class Processor {
         // run through all the search bases
         foreach ($bases as $base) {
             // ensure that accounts inspected have the mlepPerson object class
-            $query = $this->server->query(array('base' => $base, 'filter' => "(&(objectclass=mlepperson)($id=*))"), 'user');
+            //$query = $this->server->query(array('base' => $base, 'filter' => "(&(objectclass=mlepperson)($id=*))"), 'user');
+            $query = $this->server->query(array('base' => $base, 'filter' => "(&(|(objectclass=user)(objectclass=inetorgperson)(objectclass=mlepperson))($id=*))"), 'user');
             if (empty($query)) {
                 // base does not exist
                 $request['page']->warning(_('No user accounts found in search base: ').$base, _('processing'));
@@ -1461,7 +1462,8 @@ class Processor {
             // check object classes
             if (count($existing_account['objectclass']) < $user_total_classes) {
                 // update user object classes
-                $this->modifyAttribute($template, 'objectclass', $user_total_classes);
+                $classes = $this->cfg['server_type'] == 'ad' ? $objectclass : $user_total_classes;
+                $this->modifyAttribute($template, 'objectclass', $classes);
             }
             
             $group_membership = false;
@@ -1549,10 +1551,10 @@ class Processor {
 
             // make sure item exists in the tree
             $this->addTreeItem($dn);
-//            var_dump($template->getLDAPmodify());
 
-            // if ! changed the skip XXX
+            // if ! changed then skip XXX
             if ($changed) {
+//                var_dump($template->getLDAPmodify());
                 $result = $this->server->modify($dn, $template->getLDAPmodify(), 'user');
                 if (!$result) {
                     $request['page']->error(_('Could not update: ').$dn, _('processing'));
