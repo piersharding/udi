@@ -267,8 +267,10 @@ abstract class xmlTemplate {
 	protected $filename;
 	# The TEMPLATE attributes as per the template definition, or the DN entry
 	protected $attributes = array();
+	# indicate batch processing
+	protected $batch_mode;
 
-	public function __construct($server_id,$name=null,$filename=null,$type=null,$id=null) {
+	public function __construct($server_id,$name=null,$filename=null,$type=null,$id=null,$batch_mode=null) {
 		if (DEBUG_ENABLED && (($fargs=func_get_args())||$fargs='NOARGS'))
 			debug_log('Entered (%%)',5,0,__FILE__,__LINE__,__METHOD__,$fargs);
 
@@ -278,7 +280,8 @@ abstract class xmlTemplate {
 		$this->filename = $filename;
 		$this->readtime = time();
 		$this->id = $id;
-
+        $this->batch_mode = $batch_mode;
+		
 		# If there is no filename, then this template is a default template.
 		if (is_null($filename))
 			return;
@@ -443,8 +446,12 @@ abstract class xmlTemplate {
 		else
 			debug_dump_backtrace(sprintf('There was a request to add an attribute (%s), but it was already defined? (%s)',$attrid,__METHOD__),true);
 
-		if ($this->getID() == 'none')
-			usort($this->attributes,'sortAttrs');
+		// no need to sort if this is in the back ground, until they have all
+		// been added
+		if (!$this->batch_mode) {
+    		if ($this->getID() == 'none')
+    			usort($this->attributes,'sortAttrs');
+		}
 
 		return $attribute;
 	}

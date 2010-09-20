@@ -27,6 +27,7 @@ function passwd_alg_01_passwd_policy_algorithm_label() {
 	$args = func_get_args();
 
     return array('name' => 'passwd_alg_01_passwd_policy_algorithm', 'title' => _('Check against regular expression'),
+                 'kiosk_label' => 'Password must be atleast 3 characters, and may be made up of any <br/>visible keyboard character',
                  'description' => 'uses the input parameter as a regular expression for testing the validity of a new password.
                   The regular expression is for matching characters that are allowed.<br/>
                   The default policy parameter regular expression requires a minimum of 3 characters, and allows most visible key board characters.');

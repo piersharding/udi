@@ -18,7 +18,7 @@ sudo ldapadd -c -Y EXTERNAL -H ldapi:/// -f ldap/base.ldif
 echo "installed base ..."
 sudo ldapadd -c -Y EXTERNAL -H ldapi:/// -f ldap/config.ldif
 echo "installed config ..."
-sudo ldapadd -c -Y EXTERNAL -H ldapi:/// -f ldap/acl.ldif
+ldapmodify -x -D cn=admin,cn=config -w letmein -f ldap/acl.ldif 
 echo "installed acl ..."
 ldapadd -c -D cn=admin,cn=config -w letmein -f ldap/misc.ldif
 ldapadd -c -D cn=admin,cn=config -w letmein -f ldap/cosine.ldif

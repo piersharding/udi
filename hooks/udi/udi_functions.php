@@ -792,7 +792,8 @@ class Processor {
                         return false;
                     }
                     $accounts[$uid] = $user;
-                    $this->dn_cache[get_canonical_name($dn)] = $user['dn'];
+//                    $this->dn_cache[get_canonical_name($dn)] = $user['dn'];
+                    $this->dn_cache[get_canonical_name($dn)] = $user;
                 }
             }
         }
@@ -1134,7 +1135,7 @@ class Processor {
             $account['objectclass'] = $this->udiconfig->getObjectClasses();
 
             // start building up the creation template
-            $template = new Template($this->server->getIndex(),null,null,'add');
+            $template = new Template($this->server->getIndex(),null,null,'add', null, true);
             
             // sort out the common name
             $cn = '';
@@ -1329,7 +1330,8 @@ class Processor {
             }
             else {
                 // stash in the dn cache
-                $this->dn_cache[get_canonical_name($dn)] = $dn;
+//                $this->dn_cache[get_canonical_name($dn)] = $dn;
+                $this->dn_cache[get_canonical_name($dn)] = array('dn' => $dn);
                 
                 // need to set the group membership
                 // need to find all existing groups, and then delete those memberships first
@@ -1368,7 +1370,31 @@ class Processor {
             $tree->addEntry($dn);
         }
     }
-   
+
+    /**
+     * Check for changes in LDAP values
+     * 
+     * @param array $old
+     * @param array $new
+     */
+    public function changedValue($old, $new) {
+
+        sort($old);
+        sort($new);
+        $diff = array_diff($old, $new);
+        if (empty($diff)) {
+            $diff = array_diff($new, $old);
+            if (empty($diff)) {
+                return false;
+            }
+            else {
+                return true;
+            }
+        }
+        else {
+            return true;
+        }
+    }
     
     /**
      * Process user update records
@@ -1402,8 +1428,9 @@ class Processor {
             
 //            var_dump($dn);
             // find the existing one
-            $query = $this->server->query(array('base' => $dn), 'user');
-            $existing_account = array_shift($query);
+//            $query = $this->server->query(array('base' => $dn), 'user');
+//            $existing_account = array_shift($query);
+            $existing_account = $this->check_user_dn($dn);
             $user_total_classes = array_unique(array_merge($existing_account['objectclass'], $objectclass));
             $old_uid = false;
             if (isset($existing_account['uid']) && !empty($existing_account['uid'][0])) {
@@ -1414,7 +1441,7 @@ class Processor {
             }
             
             // start building up the modification template
-            $template = new Template($this->server->getIndex(),null,null,'modify');
+            $template = new Template($this->server->getIndex(),null,null,'modify', null, true);
             
             $rdn = get_rdn($dn);
             $template->setDN($dn);
@@ -1441,6 +1468,10 @@ class Processor {
             $uid = false;
             $mlepusername = false;
 //            var_dump($account);
+
+            // count and compare the changes against the dn_cache
+            // if there are none then don't do an update XXX
+            $changed = false;
             foreach ($account as $attr => $value) {
                 // ignore the dn
                 if ($attr == 'dn') {
@@ -1468,64 +1499,95 @@ class Processor {
                     $value = array_unique($value);
                 }
                 
+                // ignore empty values
+//                if (empty($value)) {
+//                    continue;
+//                }
+                
                 // map attributes here
+                if (!is_array($value)) {
+                    $value = !empty($value) ? array($value) : array(); 
+                }
                 if (isset($field_mappings[$attr])) {
                     foreach ($field_mappings[$attr] as $target) {
                         // check ignore attrs
                         if (isset($ignore_attrs[strtolower($target)])) {
                             continue;
                         }
-                        if (isset($existing_account[strtolower($attr)]) || !empty($value)) {
+                        if (isset($existing_account[strtolower($attr)])) {
+                            // check for change
+                            if ($this->changedValue($existing_account[strtolower($attr)], $value)) {
+                                $this->modifyAttribute($template, $target, $value);
+                                $changed = true;
+                            }
+                        }
+                        // a new attribute
+                        else if (!empty($value)) {
                             $this->modifyAttribute($template, $target, $value);
+                            $changed = true;
                         }
                     }
                 }
                 else {
                     // check ignore attrs
                     if (!isset($ignore_attrs[strtolower($attr)])) {
-                        if (isset($existing_account[strtolower($attr)]) || !empty($value)) {
+                        if (isset($existing_account[strtolower($attr)])) {
+                            // check for change
+                            if ($this->changedValue($existing_account[strtolower($attr)], $value)) {
+                                $this->modifyAttribute($template, $attr, $value);
+                                $changed = true;
+                            }
+                        }
+                        // a new attribute
+                        else if (!empty($value)) {
                             $this->modifyAttribute($template, $attr, $value);
+                            $changed = true;
                         }
                     }
                 }
             }
+
             // make sure item exists in the tree
             $this->addTreeItem($dn);
 //            var_dump($template->getLDAPmodify());
-            $result = $this->server->modify($dn, $template->getLDAPmodify(), 'user');
-            if (!$result) {
-                $request['page']->error(_('Could not update: ').$dn, _('processing'));
-                return $result;
+
+            // if ! changed the skip XXX
+            if ($changed) {
+                $result = $this->server->modify($dn, $template->getLDAPmodify(), 'user');
+                if (!$result) {
+                    $request['page']->error(_('Could not update: ').$dn, _('processing'));
+                    return $result;
+                }
+            }
+
+            // need to set the group membership
+            // need to find all existing groups, and then delete those memberships first
+            $new_uid = false;
+            if (strtolower($this->cfg['group_attr']) == 'memberuid') {
+                if ($uid) {
+                    $new_uid = $uid;
+                }
+                else if ($mlepusername) {
+                    $new_uid = $mlepusername;
+                }
+                // need to cover the cases of where a userid is generated
+                // so it is never passed, and therefore should never be updated
+                if (empty($new_uid)) {
+                    $new_uid = $old_uid;
+                }
             }
             else {
-                // need to set the group membership
-                // need to find all existing groups, and then delete those memberships first
-                $new_uid = false;
-                if (strtolower($this->cfg['group_attr']) == 'memberuid') {
-                    if ($uid) {
-                        $new_uid = $uid;
-                    }
-                    else if ($mlepusername) {
-                        $new_uid = $mlepusername;
-                    }
-                    // need to cover the cases of where a userid is generated
-                    // so it is never passed, and therefore should never be updated
-                    if (empty($new_uid)) {
-                        $new_uid = $old_uid;
-                    }
-                }
-                else {
-                    // it must a member style DN group - CN can't change so old == new
-                    $new_uid = $dn; 
-                    $old_uid = $new_uid;
-                }
-                if (!$this->replaceGroupMembership($old_uid, $new_uid, $group_membership, $dn)) {
-                    return false;
-                }
+                // it must a member style DN group - CN can't change so old == new
+                $new_uid = $dn; 
+                $old_uid = $new_uid;
+            }
+            if (!$this->replaceGroupMembership($old_uid, $new_uid, $group_membership, $dn)) {
+                return false;
             }
             // now access for reporting, or user created callbacks
             udi_run_hook('account_update_after', array($this->server, $this->udiconfig, $account));
         }
+        
         return true;
     }
     
@@ -1750,7 +1812,8 @@ class Processor {
             }
             else {
                 $query = array_shift($query);
-                $this->dn_cache[$dn] = $query['dn'];
+//                $this->dn_cache[$dn] = $query['dn'];
+                $this->dn_cache[$dn] = $query;
             }
         }
         return $this->dn_cache[$dn];
@@ -1814,7 +1877,9 @@ class Processor {
                     // don't attempt to add them if they are allready there
                     if (!$this->userInGroup($new_uid, $mapping)) {
                         if ($group_attr != 'memberuid') {
-                            $values[] = $this->check_user_dn($new_uid);
+//                            $values[] = $this->check_user_dn($new_uid);
+                            $entry = $this->check_user_dn($new_uid);
+                            $values[] = $entry['dn']; 
                         }
                         else {
                             $values[] = strtolower($new_uid);
@@ -1943,7 +2008,7 @@ class Processor {
                     $labeleduri = preg_grep('/^udi_deactivated:/', $account['labeleduri'], PREG_GREP_INVERT);
                     
                     // do the move
-                    $template = new Template($this->server->getIndex(),null,null,'modrdn');
+                    $template = new Template($this->server->getIndex(),null,null,'modrdn', null, true);
                     $rdn = get_rdn($old_dn);
                     $template->setDN($deactive_dn);
                     $template->accept(false, 'user');
@@ -1960,7 +2025,7 @@ class Processor {
                     }
                     
                     // sort out the label
-                    $template = new Template($this->server->getIndex(),null,null,'modify');
+                    $template = new Template($this->server->getIndex(),null,null,'modify', null, true);
                     $rdn = get_rdn($old_dn);
                     $template->setDN($old_dn);
                     $template->accept(false, 'user');
@@ -2087,7 +2152,7 @@ class Processor {
             
             // First flag accounts where they come from - accounts can be 
             // resurected with this later
-            $template = new Template($this->server->getIndex(),null,null,'modify');
+            $template = new Template($this->server->getIndex(),null,null,'modify', null, true);
             $rdn = get_rdn($dn);
             $template->setDN($dn);
             $template->accept(false, 'user');
@@ -2110,7 +2175,7 @@ class Processor {
             }
             
             // start building up the move template
-            $template = new Template($this->server->getIndex(),null,null,'modrdn');
+            $template = new Template($this->server->getIndex(),null,null,'modrdn', null, true);
             $rdn = get_rdn($dn);
             $template->setDN($dn);
             $template->accept(false, 'user');
@@ -2165,7 +2230,7 @@ class Processor {
      * @return object Template object
      */    
     private function createModifyTemplate($dn) {
-        $template = new Template($this->server->getIndex(),null,null,'modify');
+        $template = new Template($this->server->getIndex(),null,null,'modify', null, true);
         $rdn = get_rdn($dn);
         $container = $this->server->getContainer($dn);
         $template->setDN($dn);

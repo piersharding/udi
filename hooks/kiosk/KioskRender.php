@@ -59,41 +59,13 @@ class KioskRender extends PageRender {
 		if (DEBUGTMP) printf('<font size=-2>%s:%s</font><br />',time(),__METHOD__);
 		if (DEBUGTMP||DEBUGTMPSUB) printf('<font size=-2>* %s [Visit-Start:%s]</font><br />',__METHOD__,get_class($this));
 
-		$tree = get_cached_item($this->server_id,'tree');
-		if (! $tree)
-			$tree = Tree::getInstance($this->server_id);
-
-		$treeitem = $tree->getEntry($this->dn);
-
-		// If we have a DN, and no template_id, see if the tree has one from last time
-		if ($this->dn && is_null($this->template_id) && $treeitem && $treeitem->getTemplate())
-			$this->template_id = $treeitem->getTemplate();
-
-		// Check that we have a valid template, or present a selection
-		// @todo change this so that the modification templates rendered are the ones for the objectclass of the dn.
-		if (! $this->template_id)
-			$this->template_id = $this->getTemplateChoice();
-
-		if ($treeitem)
-			$treeitem->setTemplate($this->template_id);
-
 		$this->page = get_request('page','REQUEST',false,1);
 
-		if ($this->template_id) {
-			parent::accept();
-
-			$this->url_base = sprintf('server_id=%s&', $this->getServerID());
-			//$this->url_base = sprintf('server_id=%s&dn=%s',
-		//		$this->getServerID(),rawurlencode($this->template->getDN()));
-			$this->layout['hint'] = sprintf('<td class="icon"><img src="%s/light.png" alt="%s" /></td><td colspan="3"><span class="hint">%%s</span></td>',
-				IMGDIR,_('Hint'));
-			$this->layout['action'] = '<td class="icon"><img src="%s/%s" alt="%s" /></td><td><a href="cmd.php?%s" title="%s">%s</a></td>';
-			$this->layout['actionajax'] = '<td class="icon"><img src="%s/%s" alt="%s" /></td><td><a href="cmd.php?%s" title="%s" onclick="return ajDISPLAY(\'BODY\',\'%s\',\'%s\');">%s</a></td>';
-			
-			// If we dont want to render this template automatically, we'll return here.
-			if ($norender)
-				return;
-		}
+		$this->url_base = sprintf('server_id=%s&', $this->getServerID());
+		$this->layout['hint'] = sprintf('<td class="icon"><img src="%s/light.png" alt="%s" /></td><td colspan="3"><span class="hint">%%s</span></td>',
+			IMGDIR,_('Hint'));
+		$this->layout['action'] = '<td class="icon"><img src="%s/%s" alt="%s" /></td><td><a href="cmd.php?%s" title="%s">%s</a></td>';
+		$this->layout['actionajax'] = '<td class="icon"><img src="%s/%s" alt="%s" /></td><td><a href="cmd.php?%s" title="%s" onclick="return ajDISPLAY(\'BODY\',\'%s\',\'%s\');">%s</a></td>';
 	}
 
 
@@ -206,7 +178,7 @@ class KioskRender extends PageRender {
         $this->messages[]= array('type' => 'info', 'message' => $msg);
         $this->log_to_file('info', $msg);
         system_message(array(
-                     'title'=>_('UDI '.$action),
+                     'title'=>_($action),
                                 'body'=> $msg,
                                 'type'=>'info',
                 sprintf('cmd.php?cmd=udi_form&udi_nav=%s&server_id=%s',
@@ -218,7 +190,7 @@ class KioskRender extends PageRender {
         $this->messages[]= array('type' => 'warning', 'message' => $msg);
         $this->log_to_file('warning', $msg);
         system_message(array(
-                     'title'=>_('UDI '.$action),
+                     'title'=>_($action),
                                 'body'=> $msg,
                                 'type'=>'warn',
                 sprintf('cmd.php?cmd=udi_form&udi_nav=%s&server_id=%s',
@@ -230,7 +202,7 @@ class KioskRender extends PageRender {
         $this->messages[]= array('type' => 'error', 'message' => $msg);
         $this->log_to_file('error', $msg);
         system_message(array(
-                     'title'=>_('UDI '.$action),
+                     'title'=>_($action),
                                 'body'=> $msg,
                                 'type'=>'error',
                 sprintf('cmd.php?cmd=udi_form&udi_nav=%s&server_id=%s',

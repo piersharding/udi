@@ -56,8 +56,8 @@ class Template extends xmlTemplate {
 	# Template RDN attributes
 	private $rdn;
 
-	public function __construct($server_id,$name=null,$filename=null,$type=null,$id=null) {
-		parent::__construct($server_id,$name,$filename,$type,$id);
+	public function __construct($server_id,$name=null,$filename=null,$type=null,$id=null,$batch_mode=null) {
+		parent::__construct($server_id,$name,$filename,$type,$id,$batch_mode);
 
 		# If this is the default template, we might disable leafs by default.
 		if (is_null($filename))
@@ -903,7 +903,14 @@ class Template extends xmlTemplate {
 	public function getAttributes($optional=false) {
 		if (DEBUG_ENABLED && (($fargs=func_get_args())||$fargs='NOARGS'))
 			debug_log('Entered (%%)',5,0,__FILE__,__LINE__,__METHOD__,$fargs);
-
+	
+        // because we suppress the sort on each attribute add, we now 
+        // bulk sort them
+        if ($this->batch_mode) {
+            if ($this->getID() == 'none')
+                usort($this->attributes,'sortAttrs');
+        }
+                
 		if ($optional)
 			return $this->attributes;
 

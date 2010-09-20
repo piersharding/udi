@@ -9,12 +9,12 @@ fi
 
 export UDI_LOG=1
 cd unit_tests
-if [ -d /tmp ]; then
-    if [ -f /tmp/phpldapadmin.log ]; then
-        sudo rm -f /tmp/phpldapadmin.log
-    fi 
+#if [ -d /tmp ]; then
+#    if [ -f /tmp/phpldapadmin.log ]; then
+#        sudo rm -f /tmp/phpldapadmin.log
+#    fi 
+#    sudo phpunit "RunAllTests"
+# else
     sudo phpunit "RunAllTests"
- else
-    sudo phpunit "RunAllTests"
- fi
+# fi
 

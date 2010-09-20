@@ -49,6 +49,7 @@ function kiosk_change_passwd($username, $oldpassword, $newpassword, $confirm) {
     if (empty($query)) {
         return $request['page']->error(_('User could not be found'), 'Password Change');
     }
+    // stash the DN for the actual update
     $query = array_shift($query);
     $dn = $query['dn'];
     
@@ -67,8 +68,12 @@ function kiosk_change_passwd($username, $oldpassword, $newpassword, $confirm) {
     // must be able to bind
     $app['server']->setLogin($dn, $oldpassword, 'user');
     $result = $app['server']->connect('user');
+
+    // immediately logout because of subsequent error checking
+    $app['server']->logout('user');
 //    $app['server']->setLogin($suser, $spass, 'user');
     if ($result == null) {
+        $_SESSION['sysmsg'] = array();
         return $request['page']->error(_('Invalid password'), 'Password Change');
     }
     // may need to logout again afterwards
@@ -84,6 +89,11 @@ function kiosk_change_passwd($username, $oldpassword, $newpassword, $confirm) {
         return $request['page']->error(_('Please ensure that you confirm your new password , and the password is valid'), 'Password Change');    
     }
     
+    // new must be different to old
+    if ($newpassword == $oldpassword) {
+        return $request['page']->error(_('Please ensure that your new password is different from the old'), 'Password Change');    
+    }
+    
     // does the password pass the password checker?
     $result = udi_run_hook('passwd_policy_algorithm',array($app['server'], $udiconfig, $newpassword, $cfg['passwd_policy_parameters']), $cfg['passwd_policy_algo']);
     if ($result === false || $result[0] !== true) {
@@ -91,7 +101,42 @@ function kiosk_change_passwd($username, $oldpassword, $newpassword, $confirm) {
     }
     
     // all good to go - now change it
+    $app['server']->connect('user');
+    $template = new Template($app['server']->getIndex(),null,null,'modify', null, true);
+    $rdn = get_rdn($dn);
+    $template->setDN($dn);
+    $template->accept(false, 'user');
     
+    if ($cfg['server_type'] == 'ad') {
+        // need to do something quite different for AD
+        $attr = 'unicodePwd';
+        $value = array(mb_convert_encoding('"' . $newpassword . '"', 'UCS-2LE', 'UTF-8'));
+    }
+    else {
+        // update userPassword
+        $attr = 'userPassword';
+        $value = array(password_hash($newpassword, $cfg['encrypt_passwd']));
+    }
+    // set the attribute value for password
+    if (is_null($attribute = $template->getAttribute(strtolower($attr)))) {
+        $attribute = $template->addAttribute(strtolower($attr),array('values'=> $value));
+        $attribute->justModified();
+    }
+    else {
+        $attribute->clearValue();
+        $attribute->setValue($value);
+    }
+    // do the actual update
+    $result = $app['server']->modify($dn, $template->getLDAPmodify(), 'user');
+    // final logout
+    $app['server']->logout('user');
     
+    // did it actually work ?
+    if (!$result) {
+        $request['page']->error(_('Could not update user: ').$username, _('Password Change'));
+    }
+    else {
+        $request['page']->info(_('password changed for user: ').$username, _('Password Change'));
+    }
 }
 ?>
