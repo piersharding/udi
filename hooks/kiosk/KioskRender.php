@@ -96,7 +96,7 @@ class KioskRender extends PageRender {
         $menus = array(
                 array('name' => 'changepasswd', 'text' => _('Change Password'), 'title' => _('Change Password'), 'image' => 'key.png', 'imagetext' => _('Password'),),
                 array('name' => 'recoverpasswd', 'text' => _('Recover Password'), 'title' => _('Recover Password'), 'image' => 'light.png', 'imagetext' => _('Password'),), 
-                array('name' => 'recoveruser', 'text' => _('Recover User'), 'title' => _('Recover User'), 'image' => 'user.png', 'imagetext' => _('User'),), 
+                array('name' => 'resetpasswd', 'text' => _('Reset Password'), 'title' => _('Reset Password'), 'image' => 'user.png', 'imagetext' => _('User'),), 
                 array('name' => 'help', 'text' => _('Help'), 'title' => _('Kiosk Help'), 'image' => 'help-small.png', 'imagetext' => _('Help'),),
                 );
         
@@ -299,5 +299,108 @@ class KioskRender extends PageRender {
         return $out;
     }
     
+    /**
+     * email out password reset request token
+     * 
+     * @param String $to
+     * @param String $for
+     * @param String $token
+     */
+    public function email_reset_token($to, $for, $token) {
+        global $udiconfig;
+        $cfg = $udiconfig->getConfig();
+//        $to = $cfg['reportemail'].', '.$to; 
+        $method = "http";
+        if ( $_SERVER['HTTPS'] ) { $method .= "s"; }
+        $server_name = $_SERVER['SERVER_NAME'];
+        $script_name = $_SERVER['SCRIPT_NAME'];
+        $reset_url = $method."://".$server_name.$script_name."?cmd=recoverpasswd&token=".$token;
+        
+        $subject = _('Password Reset'); 
+        $random_hash = md5(date('r', time())); 
+        $headers = "From: udi@localhost\r\nReply-To: noreply@localhost"; 
+        $headers .= "\r\nContent-Type: multipart/mixed; boundary=\"PHP-mixed-".$random_hash."\"";
+        $body = "
+--PHP-mixed-$random_hash
+Content-Type: multipart/alternative; boundary=\"PHP-alt-$random_hash\"
+
+--PHP-alt-$random_hash
+Content-Type: text/plain; charset=\"iso-8859-1\" 
+Content-Transfer-Encoding: 7bit
+
+A request to reset the password for user $for, has been received. 
+To reset your password, please follow the link:
+$reset_url
+
+--PHP-alt-$random_hash
+Content-Type: text/html; charset=\"iso-8859-1\"
+Content-Transfer-Encoding: 7bit
+
+<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">
+<html>
+<head>
+    <title>$subject</title>
+<meta http-equiv=\"Content-Type\" content=\"text/html; charset=iso-8859-1\">
+</head>
+<body>
+<h2$subject</h2> 
+<p>
+A request to reset the password for user $for has been received.  To reset the password, 
+please follow the link <a href='$reset_url'>$reset_url</a>.
+</p>
+</body>
+</html>
+--PHP-alt-$random_hash-- 
+
+"; 
+        @mail( $to, $subject, $body, $headers );
+
+        $client_ip = $_SERVER['REMOTE_ADDR'];
+        $time = date('r', time());
+        
+        // now email the attempt to the admin
+        $body = "
+--PHP-mixed-$random_hash
+Content-Type: multipart/alternative; boundary=\"PHP-alt-$random_hash\"
+
+--PHP-alt-$random_hash
+Content-Type: text/plain; charset=\"iso-8859-1\" 
+Content-Transfer-Encoding: 7bit
+
+A request to reset the password for user $for, has been received. 
+To reset your password, please follow the link:
+$reset_url
+
+Client IP: $client_ip
+When:      $time
+
+--PHP-alt-$random_hash
+Content-Type: text/html; charset=\"iso-8859-1\"
+Content-Transfer-Encoding: 7bit
+
+<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">
+<html>
+<head>
+    <title>$subject</title>
+<meta http-equiv=\"Content-Type\" content=\"text/html; charset=iso-8859-1\">
+</head>
+<body>
+<h2$subject</h2> 
+<p>
+A request to reset the password for user $for has been received.  To reset the password, 
+please follow the link <a href='$reset_url'>$reset_url</a>.
+</p>
+Client IP: $client_ip <br/>
+When:      $time
+<p>
+</p>
+</body>
+</html>
+--PHP-alt-$random_hash-- 
+
+"; 
+        @mail( $cfg['reportemail'], $subject.": ".$for, $body, $headers );
+        return true;
+    }    
 }
 ?>

@@ -128,6 +128,7 @@ class kiosk_page extends page {
             echo '<table class="sysmsg">';
             $this->sysmsg();
             echo '</table>';
+            echo "<br/>";
             echo '</td><td width="30%"></td></tr></table>';
             echo "\n";
         }
@@ -208,7 +209,7 @@ $www['page'] = new kiosk_page($app['server']->getIndex());
 
 # See if we can render the command
 $www['cmd'] = trim($www['cmd']);
-if (!in_array($www['cmd'], array('changepasswd', 'recoverpasswd', 'recoveruser', 'help'))) {
+if (!in_array($www['cmd'], array('changepasswd', 'recoverpasswd', 'resetpasswd', 'help'))) {
     $www['cmd'] = 'changepasswd';
 }    
 
@@ -231,7 +232,7 @@ $udiconfigdn = $udiconfig->getBaseDN();
 
 // get the specific action for this panel, if it was POSTed
 //var_dump($_SERVER['REQUEST_METHOD']); var_dump($_GET); var_dump($_POST); exit(0);
-if ($_SERVER['REQUEST_METHOD'] == 'POST' || get_request('udi_decoration', 'REQUEST') == 'none') {
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     require_once HOOKSDIR.'kiosk/'.$www['cmd'].'_action.php';
 }
 

@@ -530,6 +530,15 @@ class Datastore {
 		$this->default->custom['pages_prefix'] = array(
 			'desc'=>'Prefix name for custom pages',
 			'default'=>'custom_');
+
+        $this->default->login['kiosk_bind_id'] = array(
+            'desc'=>'User Login ID to bind to this DS for Kiosk Password change',
+            'default'=>null);
+
+        $this->default->login['kiosk_bind_pass'] = array(
+            'desc'=>'User Login Password to bind to this DS for Kiosk Password change',
+            'default'=>null);
+		
 	}
 
 	/**
