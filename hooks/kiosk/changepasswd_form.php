@@ -18,7 +18,7 @@ echo '<div class="kioskform">';
 
     // change password fields
     echo $request['page']->configEntry('username', _('Username:'), array('type' => 'text', 'size' => 30, 'value' => get_request('username')), true);
-    echo $request['page']->configEntry('oldpassword', _('Old Password:'), array('type' => 'password', 'value' => get_request('oldpassword')), true);
+    echo $request['page']->configEntry('oldpassword', _('Old Password:'), array('type' => 'password', 'value' => ''), true);
     echo $request['page']->configEntry('newpassword', _('New Password:'), array('type' => 'password', 'value' => ''), true);
     echo $request['page']->configEntry('confirm', _('Confirm:'), array('type' => 'password', 'value' => ''), true);
     $policy = '';

@@ -66,6 +66,10 @@ function kiosk_change_passwd($username, $oldpassword, $newpassword, $confirm, $a
         // just set the admin user/pass
         $app['server']->setLogin($adminuser, $adminpass, 'user');
         $result = $app['server']->connect('user');
+        if (!$result) {
+            $_SESSION['sysmsg'] = array();
+            return $request['page']->error(_('Invalid login for Administrator account'), 'Password Change');
+        }
     }
     else {
         if (empty($oldpassword)) {
@@ -152,6 +156,37 @@ function kiosk_change_passwd($username, $oldpassword, $newpassword, $confirm, $a
     return true;
 }
 
+
+/**
+ * generate a new token for the recovery process
+ * 
+ * @param String $username
+ * @param int $server_id
+ * @return String token
+ */
+function kiosk_generate_token($username, $server_id) {
+    // store the old session data
+    $old_id = session_id();
+    $old_name = session_name();
+    session_write_close();
+    
+    // generate a new session to store the token
+    session_name("uditoken");
+    session_id(sha1(mt_rand()));
+    $token = session_id();
+    session_start();
+    $_SESSION['username'] = $username;
+    $_SESSION['server_id'] = $server_id;
+    session_write_close();
+    
+    // resurect the old session
+    session_id($old_id);
+    session_name($old_name);
+    session_start();
+
+    return $token;
+}
+
 /**
  * Start the password recovery process
  * check username and emailaddress
@@ -192,26 +227,7 @@ function kiosk_recover_passwd($username, $email) {
     }
     
     // now, create and send a recovery token
-    
-    // store the old session data
-    $old_id = session_id();
-    $old_name = session_name();
-    session_write_close();
-    
-    // generate a new session to store the token
-    session_name("uditoken");
-    session_id(sha1(mt_rand()));
-    $token = session_id();
-//    var_dump($token);
-    session_start();
-    $_SESSION['username'] = $username;
-    $_SESSION['server_id'] = $app['server']->getIndex();
-    session_write_close();
-    
-    // resurect the old session
-    session_id($old_id);
-    session_name($old_name);
-    session_start();
+    $token = kiosk_generate_token($username, $app['server']->getIndex());
     
     // now - email out the recovery token
     if ($request['page']->email_reset_token($email, $username, $token)) {
@@ -228,7 +244,7 @@ function kiosk_recover_passwd($username, $email) {
  * @param String $token
  * @return false of array of reset values
  */
-function kiosk_verify_token($token, $destroy=false) {
+function kiosk_verify_token($token, $destroy=false, $regen=false) {
     global $request, $udiconfig, $app;
     
     // bail if there is no token
@@ -256,7 +272,7 @@ function kiosk_verify_token($token, $destroy=false) {
     $username = isset($_SESSION['username']) ? $_SESSION['username'] : '';
     $server_id = isset($_SESSION['server_id']) ? $_SESSION['server_id'] : null;
     // wipeout the session data, so that this token cannot be used again
-    if ($destroy) {
+    if ($destroy || $regen) {
         unset($_SESSION['username']);
         unset($_SESSION['server_id']);
     }
@@ -268,10 +284,17 @@ function kiosk_verify_token($token, $destroy=false) {
     session_start();
     
     if (empty($username) || empty($server_id)) {
-        return $request['page']->error(_('Authentication token invalid - please resubmit request'), 'Password Recovery');    
+        return $request['page']->error(_('Authentication token expired - please resubmit request'), 'Password Recovery');    
     }
     
-    return array('server_id' => $server_id, 'username' => $username);
+    if ($regen) {
+        $token = kiosk_generate_token($username, $server_id);
+    }
+    else {
+        $token = null;
+    }
+    
+    return array('server_id' => $server_id, 'username' => $username, 'token' => $token);
 }
 
 ?>

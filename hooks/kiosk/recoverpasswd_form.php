@@ -5,7 +5,7 @@ echo '<div class="kioskform">';
     echo '<fieldset class="kiosk"><legend>'._('Recover Password').'</legend>';
 
     $token = get_request('token', 'REQUEST');
-    $request_user = kiosk_verify_token($token);
+    $request_user = kiosk_verify_token($token, false, true);
     if (empty($request_user)) {
         // display the server selector
         if (count(array_keys($_SESSION[APPCONFIG]->getServerList())) > 1) {
@@ -27,7 +27,7 @@ echo '<div class="kioskform">';
     else {
         // confirm the token and get the new password
         echo $request['page']->configEntry('server_id', '', array('type' => 'hidden', 'value' => $request_user['server_id']), false);
-        echo $request['page']->configEntry('token', '', array('type' => 'hidden', 'value' => $token), false);
+        echo $request['page']->configEntry('token', '', array('type' => 'hidden', 'value' => $request_user['token']), false);
         echo $request['page']->configEntry('username', _('Username:'), array('type' => 'text', 'size' => 30, 'value' => $request_user['username'], 'disabled' => 'disabled'), true, false);
         echo $request['page']->configEntry('username', '', array('type' => 'hidden', 'value' => $request_user['username']), false);
         echo $request['page']->configEntry('newpassword', _('New Password:'), array('type' => 'password', 'value' => ''), true);

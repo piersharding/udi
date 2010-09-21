@@ -18,7 +18,7 @@ echo '<div class="kioskform">';
 
     // change password fields
     echo $request['page']->configEntry('adminusername', _('Admin User:'), array('type' => 'text', 'size' => 30, 'value' => get_request('adminusername')), true);
-    echo $request['page']->configEntry('adminpassword', _('Admin Password:'), array('type' => 'password', 'value' => get_request('adminpassword')), true);
+    echo $request['page']->configEntry('adminpassword', _('Admin Password:'), array('type' => 'password', 'value' => ''), true);
     echo "<br/>";
     echo $request['page']->configEntry('username', _('Username:'), array('type' => 'text', 'size' => 30, 'value' => get_request('username')), true);
     echo $request['page']->configEntry('newpassword', _('New Password:'), array('type' => 'password', 'value' => ''), true);
