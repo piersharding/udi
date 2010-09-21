@@ -124,6 +124,16 @@ function kiosk_change_passwd($username, $oldpassword, $newpassword, $confirm, $a
     
     if ($cfg['server_type'] == 'ad') {
         // need to do something quite different for AD
+        // first ensure that the account is enabled
+        if (is_null($attribute = $template->getAttribute('useraccountcontrol'))) {
+            $attribute = $template->addAttribute('useraccountcontrol',array('values'=> array(512)));
+            $attribute->justModified();
+        }
+        else {
+            $attribute->clearValue();
+            $attribute->setValue(array(512));
+        }
+        // now build the unicodePwd value        
         $attr = 'unicodePwd';
         $value = array(mb_convert_encoding('"' . $newpassword . '"', 'UCS-2LE', 'UTF-8'));
     }
