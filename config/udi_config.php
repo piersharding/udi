@@ -46,32 +46,10 @@ $servers->setValue('server','name','UDI LDAP Server');
 /* Your LDAP password. If you specified an empty bind_id above, this MUST also
    be blank. */
  $servers->setValue('login','bind_pass','');
-//  $servers->setValue('login','bind_pass','letmein');
+
+// Kiosk admin user for password change 
+ $servers->setValue('login','kiosk_bind_id','cn=admin,dc=example,dc=com');
+ $servers->setValue('login','kiosk_bind_pass','letmein');
 //  $servers->setValue('server','tls',true);
 
 
- 
- 
-  // second server definition
-  $servers->newServer('ldap_pla');
-  $servers->setValue('server','name','Kapiti College LDAP Server');
-  $servers->setValue('server','host','192.168.56.10');
-  $servers->setValue('server','port',389);
-  $servers->setValue('server','base',array('dc=kapiticollege,dc=local'));
-  $servers->setValue('login','auth_type','session');
-  $servers->setValue('login','bind_id','kapiticollege\\administrator');
-  $servers->setValue('login','bind_pass','');
-
-
-  // third server definition
-  $servers->newServer('ldap_pla');
-  $servers->setValue('server','name','Bee LDAP Server');
-  $servers->setValue('server','host','bee.local.net');
-  $servers->setValue('server','port',389);
-  $servers->setValue('server','base',array('dc=example,dc=com'));
-  $servers->setValue('login','auth_type','session');
-  $servers->setValue('login','bind_id','cn=admin,dc=example,dc=com');
-  $servers->setValue('login','bind_pass','');
-  
-  
- 
