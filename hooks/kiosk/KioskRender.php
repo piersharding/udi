@@ -355,6 +355,12 @@ please follow the link <a href='$reset_url'>$reset_url</a>.
 "; 
         @mail( $to, $subject, $body, $headers );
 
+                
+        // no point if there is no admin email address
+        if (empty($cfg['reportemail'])) {
+            return true;
+        }
+        
         $client_ip = $_SERVER['REMOTE_ADDR'];
         $time = date('r', time());
         
@@ -402,5 +408,72 @@ When:      $time
         @mail( $cfg['reportemail'], $subject.": ".$for, $body, $headers );
         return true;
     }    
+
+    
+    /**
+     * email out password change notification
+     * 
+     * @param String $username
+     * @param String $adminuser
+     */
+    public function email_passwd_change($username, $adminuser) {
+        global $udiconfig;
+        $cfg = $udiconfig->getConfig();
+        
+        // no point if there is no admin email address
+        if (empty($cfg['reportemail'])) {
+            return;
+        }
+        
+        $subject = _('Password Change'); 
+        $random_hash = md5(date('r', time())); 
+        $headers = "From: udi@localhost\r\nReply-To: noreply@localhost"; 
+        $headers .= "\r\nContent-Type: multipart/mixed; boundary=\"PHP-mixed-".$random_hash."\"";
+        $client_ip = $_SERVER['REMOTE_ADDR'];
+        $time = date('r', time());
+        
+        // now email the attempt to the admin
+        $body = "
+--PHP-mixed-$random_hash
+Content-Type: multipart/alternative; boundary=\"PHP-alt-$random_hash\"
+
+--PHP-alt-$random_hash
+Content-Type: text/plain; charset=\"iso-8859-1\" 
+Content-Transfer-Encoding: 7bit
+
+Password has been changed for user: $username
+Client IP: $client_ip
+When:      $time
+By:        $adminuser
+
+--PHP-alt-$random_hash
+Content-Type: text/html; charset=\"iso-8859-1\"
+Content-Transfer-Encoding: 7bit
+
+<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">
+<html>
+<head>
+    <title>$subject</title>
+<meta http-equiv=\"Content-Type\" content=\"text/html; charset=iso-8859-1\">
+</head>
+<body>
+<h2$subject</h2> 
+<p>
+Password has been changed for user: $username
+</p>
+Client IP: $client_ip <br/>
+When:      $time <br/>
+By:        $adminuser
+<p>
+</p>
+</body>
+</html>
+--PHP-alt-$random_hash-- 
+
+"; 
+        @mail( $cfg['reportemail'], $subject.": ".$username, $body, $headers );
+        return true;
+    }    
+
 }
 ?>

@@ -153,6 +153,9 @@ function kiosk_change_passwd($username, $oldpassword, $newpassword, $confirm, $a
     else {
         $request['page']->info(_('password changed for user: ').$username, _('Password Change'));
     }
+    
+    // now send out notifications
+    $request['page']->email_passwd_change($username, $adminuser);
     return true;
 }
 
