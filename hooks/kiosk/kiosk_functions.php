@@ -31,6 +31,8 @@ function kiosk_clean_value($value, $user=false) {
  * @param String $oldpassword old password
  * @param String $newpassword new password
  * @param String $confirm confirmation of the new password
+ * @param String $adminuser Administration user DN
+ * @param String $adminpass Adminstration user password
  * 
  * @return bool true on success
  */
@@ -124,15 +126,15 @@ function kiosk_change_passwd($username, $oldpassword, $newpassword, $confirm, $a
     
     if ($cfg['server_type'] == 'ad') {
         // need to do something quite different for AD
-        // first ensure that the account is enabled
-        if (is_null($attribute = $template->getAttribute('useraccountcontrol'))) {
-            $attribute = $template->addAttribute('useraccountcontrol',array('values'=> array(512)));
-            $attribute->justModified();
-        }
-        else {
-            $attribute->clearValue();
-            $attribute->setValue(array(512));
-        }
+//        // first ensure that the account is enabled
+//        if (is_null($attribute = $template->getAttribute('useraccountcontrol'))) {
+//            $attribute = $template->addAttribute('useraccountcontrol',array('values'=> array(512)));
+//            $attribute->justModified();
+//        }
+//        else {
+//            $attribute->clearValue();
+//            $attribute->setValue(array(512));
+//        }
         // now build the unicodePwd value        
         $attr = 'unicodePwd';
         $value = array(mb_convert_encoding('"' . $newpassword . '"', 'UCS-2LE', 'UTF-8'));
@@ -308,6 +310,130 @@ function kiosk_verify_token($token, $destroy=false, $regen=false) {
     }
     
     return array('server_id' => $server_id, 'username' => $username, 'token' => $token);
+}
+
+
+/**
+ * Handle a change password request
+ * 
+ * @param String $dn the user DN
+ * @param String $adminuser Administration user DN
+ * @param String $adminpass Adminstration user password
+ * @param String $action is this a deactivate or reaactivate
+ * 
+ * @return bool true on success
+ */
+function kiosk_toggle_user($dn, $adminuser, $adminpass, $action) {
+    global $request, $udiconfig, $app;
+    $cfg = $udiconfig->getConfig();
+    
+    // ensure that this is not an existing logged in account
+    if ($app['server']->isLoggedIn('user')) {
+        $app['server']->logout('user');
+    }
+    
+    // just set the admin user/pass
+    $app['server']->setLogin($adminuser, $adminpass, 'user');
+    $result = $app['server']->connect('user');
+    if (!$result) {
+        $_SESSION['sysmsg'] = array();
+        return $request['page']->error(_('Invalid login for Administrator account'), 'Un/Lock Account');
+    }
+    // initialise the cache
+    $tree = Tree::getInstance($app['server']->getIndex());
+    set_cached_item($app['server']->getIndex(),'tree','null',$tree);
+
+    $processor = new Processor($app['server']);
+    if ($action == 'reactivate') {
+        if ($processor->reactivate($dn)) {
+            $request['page']->info(_('User account reactivated'));
+        }
+        else {
+            $request['page']->error(_('Account not reactivated'));
+        }
+    }
+    else if ($action == 'deactivate') {
+        $processor->to_be_deactivated = $app['server']->query(array('base' => $dn), 'user');
+        if (count($processor->to_be_deactivated) ==  1) {
+            if ($processor->processDeactivations()) {
+                $request['page']->info(_('User account deactivated'));
+            }
+            else {
+                $request['page']->error(_('Account not deactivated'));
+            }
+        }
+        else {
+            $request['page']->error(_('Account not found'));
+        }
+    }
+    
+    // final logout
+    $app['server']->logout('user');
+    
+//    $request['page']->email_passwd_change($username, $adminuser);
+    return true;
+}
+
+/**
+ * Check that an administrator user is valid
+ * 
+ * @param string $adminuser administrator user name
+ * @return String Admin user DN
+ */
+function kiosk_check_admin($adminuser) {
+    global $app, $request, $udiconfig;
+
+    $adminuser = kiosk_clean_value($adminuser, true);
+    $query = $app['server']->query(array('base' => $udiconfig->getBaseDN(), 'filter' => "(|(mlepUsername=".$adminuser.")(uid=".$adminuser.")(sAMAccountName=".$adminuser."))"), 'anon');
+    if (empty($query)) {
+        return $request['page']->error(_('Administration User could not be found'), 'Un/Lock Account');
+    }
+    else {
+        // stash the DN for the actual update
+        $query = array_shift($query);
+        $admindn = $query['dn'];
+        return $admindn;       
+    }
+}
+
+
+/**
+ * Check that a user is valid
+ * 
+ * @param string $username administrator user name
+ * @return array user
+ */
+function kiosk_check_user_active($username) {
+    global $app, $request, $udiconfig;
+    
+    $username = kiosk_clean_value($username, true);
+    $cfg = $udiconfig->getConfig();
+
+    // check deactivated first
+    $query = $app['server']->query(array('base' => $cfg['move_to'], 'filter' => "(|(mlepUsername=".$username.")(uid=".$username.")(sAMAccountName=".$username."))"), 'anon');
+    if (!empty($query)) {
+        $result = array_shift($query);
+        $result['deactive'] = true;
+        return $result;
+    }
+    
+    $bases = explode(';', $cfg['search_bases']);
+    $bases []= 'ou=people,dc=example,dc=com';
+    $result = false;
+    // run through all the search bases
+    foreach ($bases as $base) {
+        // ensure that accounts inspected have the mlepPerson object class
+        $query = $app['server']->query(array('base' => $base, 'filter' => "(|(mlepUsername=".$username.")(uid=".$username.")(sAMAccountName=".$username."))"), 'anon');
+        if (!empty($query)) {
+            $result = array_shift($query);
+            $result['deactive'] = false;
+            break;
+        }
+    }
+    if (!$result) {
+        return $request['page']->error(_('User could not be found'), 'Un/Lock Account');
+    }
+    return $result;
 }
 
 ?>

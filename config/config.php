@@ -144,6 +144,7 @@ $config->custom->commands['script'] = array(
     'deactivate_form' => true, //PXH new
     'reactivate' => true, //PXH new
     'reactivate_form' => true, //PXH new
+    'kiosk' => true, //PXH new
 );
 
 // XXX P.X.Harding

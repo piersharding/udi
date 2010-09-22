@@ -139,7 +139,6 @@ class kiosk_page extends page {
     }
 }
 
-
 # If our config file fails the sanity check, then stop now.
 if (! $config = check_config($app['config_file'])) {
     $www['page'] = new page();
@@ -152,6 +151,7 @@ if (! $config = check_config($app['config_file'])) {
     app_session_start();
     $_SESSION[APPCONFIG] = $config;
 }
+
 
 if ($uri = get_request('URI','GET'))
     header(sprintf('Location: cmd.php?%s',base64_decode($uri)));
@@ -181,6 +181,13 @@ if (! preg_match('/^([0-9]+\.?)+/',app_version())) {
 
 require_once './common.php';
 
+// is this activated
+$kiosk = isset($_SESSION[APPCONFIG]) ? $_SESSION[APPCONFIG]->isCommandAvailable('script','kiosk') : false;
+if (!$kiosk) {
+    // we are out of here
+    header("Location: index.php");
+    die();
+}
 $www = array();
 $www['cmd'] = get_request('cmd','REQUEST');
 $www['meth'] = get_request('meth','REQUEST');
@@ -207,11 +214,6 @@ if (DEBUG_ENABLED)
 # Set the index so that we render the right server tree.
 $www['page'] = new kiosk_page($app['server']->getIndex());
 
-# See if we can render the command
-$www['cmd'] = trim($www['cmd']);
-if (!in_array($www['cmd'], array('changepasswd', 'recoverpasswd', 'resetpasswd', 'help'))) {
-    $www['cmd'] = 'changepasswd';
-}    
 
 // kiosk common stuff
 require_once './common.php';
@@ -228,7 +230,19 @@ $udiconfig = new UdiConfig($app['server']);
 $config = $udiconfig->getConfig(false, 'anon');
 $udiconfigdn = $udiconfig->getBaseDN();
 
+// sort out available commands
+$cmdlist = array('changepasswd', 'resetpasswd', 'lockaccount', 'help');
+if (isset($config['enable_kiosk_recover']) && $config['enable_kiosk_recover'] == 'checked') {
+    $cmdlist []= 'recoverpasswd';
+}
+# See if we can render the command
+$www['cmd'] = trim($www['cmd']);
+if (!in_array($www['cmd'], $cmdlist)) {
+    $www['cmd'] = 'changepasswd';
+}    
 //var_dump($config);
+
+$confirmnow = false;
 
 // get the specific action for this panel, if it was POSTed
 //var_dump($_SERVER['REQUEST_METHOD']); var_dump($_GET); var_dump($_POST); exit(0);

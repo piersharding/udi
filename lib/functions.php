@@ -355,7 +355,7 @@ function cmd_control_pane($type) {
 
 				'kiosk'=>array(
 					'title'=>_('Kiosk'),
-					'enable'=>true,
+					'enable'=> isset($_SESSION[APPCONFIG]) ? $_SESSION[APPCONFIG]->isCommandAvailable('script','kiosk') : false,
 					'link'=>sprintf('href="kiosk.php" title="%s"',_('Kiosk')),
 					'image'=>sprintf('<img src="%s/home-big.png" alt="%s" />',IMGDIR,_('Kiosk'))),
 

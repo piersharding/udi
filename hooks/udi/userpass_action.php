@@ -8,11 +8,11 @@ default:
     // get the config values posted
     $update = true;
     foreach (array('ignore_passwds', 'passwd_algo', 
-                   'passwd_parameters', 'ignore_userids', 'userid_algo', 'userid_parameters', 'encrypt_passwd') as $config) {
+                   'passwd_parameters', 'ignore_userids', 'userid_algo', 
+                   'userid_parameters', 'encrypt_passwd', 'enable_kiosk_recover', 'enable_kiosk') as $config) {
         $cfg[$config] = get_request($config);
         // enabled is a checkbox
-        if ($config == 'ignore_userids' || 
-            $config == 'ignore_passwds') {
+        if (preg_match('/ignore_userids|ignore_passwds|enable_kiosk|enable_kiosk_recover/', $config)) {
             $udiconfig->setConfigCheckBox($config, $cfg[$config]);
         }
         else {

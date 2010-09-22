@@ -91,15 +91,21 @@ class KioskRender extends PageRender {
 	}
 
     public function getMenu($active) {
+        global $udiconfig;
+        $cfg = $udiconfig->getConfig();
+        
         $menu = "<div id='udi-menu' class='ui-tabs ui-widget ui-widget-content ui-corner-all'>";
         $menu .= '<ul class="tabset_tabs ui-tabs-nav ui-helper-reset ui-helper-clearfix ui-widget-header ui-corner-all">';
         $menus = array(
-                array('name' => 'changepasswd', 'text' => _('Change Password'), 'title' => _('Change Password'), 'image' => 'key.png', 'imagetext' => _('Password'),),
-                array('name' => 'recoverpasswd', 'text' => _('Recover Password'), 'title' => _('Recover Password'), 'image' => 'light.png', 'imagetext' => _('Password'),), 
-                array('name' => 'resetpasswd', 'text' => _('Reset Password'), 'title' => _('Reset Password'), 'image' => 'user.png', 'imagetext' => _('User'),), 
-                array('name' => 'help', 'text' => _('Help'), 'title' => _('Kiosk Help'), 'image' => 'help-small.png', 'imagetext' => _('Help'),),
+               'changepasswd' => array('name' => 'changepasswd', 'text' => _('Change Password'), 'title' => _('Change Password'), 'image' => 'key.png', 'imagetext' => _('Password'),),
+               'recoverpasswd' => array('name' => 'recoverpasswd', 'text' => _('Recover Password'), 'title' => _('Recover Password'), 'image' => 'light.png', 'imagetext' => _('Password'),), 
+               'resetpasswd' => array('name' => 'resetpasswd', 'text' => _('Reset Password'), 'title' => _('Reset Password'), 'image' => 'user.png', 'imagetext' => _('User'),), 
+               'lockaccount' => array('name' => 'lockaccount', 'text' => _('Un/Lock Account'), 'title' => _('Un/Lock Account'), 'image' => 'key.png', 'imagetext' => _('Key'),), 
+               'help' => array('name' => 'help', 'text' => _('Help'), 'title' => _('Kiosk Help'), 'image' => 'help-small.png', 'imagetext' => _('Help'),),
                 );
-        
+        if (!isset($cfg['enable_kiosk_recover']) || $cfg['enable_kiosk_recover'] != 'checked') {
+            unset($menus['recoverpasswd']);
+        }
         foreach ($menus as $item) {
             $menu .= $this->getMenuItem($item, ($active == $item['name'] ? true : false));
         }
@@ -276,7 +282,7 @@ class KioskRender extends PageRender {
         $out .=  '<td width"10%">&nbsp;</td>';
         $out .=  '<td>';
         $out .=  '<table><tr><td>';
-        $out .=  '<form action="cmd.php" method="post">';
+        $out .=  '<form action="kiosk.php" method="post">';
         $out .= sprintf('<input type="hidden" name="server_id" value="%s" />', $app['server']->getIndex());
         foreach ($params as $k => $v) {
             $out .= sprintf('<input type="hidden" name="%s" value="%s" />', $k, $v);
@@ -285,7 +291,7 @@ class KioskRender extends PageRender {
         $out .= sprintf('<input type="submit" name="submit" value="%s" />', $action);
         $out .=  '</form>';
         $out .=  '</td><td>';
-        $out .=  '<form action="cmd.php" method="post">';
+        $out .=  '<form action="kiosk.php" method="post">';
         foreach ($params as $k => $v) {
             $out .= sprintf('<input type="hidden" name="%s" value="%s" />', $k, $v);
         }
