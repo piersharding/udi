@@ -343,9 +343,12 @@ function kiosk_toggle_user($dn, $adminuser, $adminpass, $action) {
     $tree = Tree::getInstance($app['server']->getIndex());
     set_cached_item($app['server']->getIndex(),'tree','null',$tree);
 
+    
+    
     $processor = new Processor($app['server']);
     if ($action == 'reactivate') {
         if ($processor->reactivate($dn)) {
+            $_SESSION['sysmsg'] = array();
             $request['page']->info(_('User account reactivated'));
         }
         else {
@@ -356,6 +359,7 @@ function kiosk_toggle_user($dn, $adminuser, $adminpass, $action) {
         $processor->to_be_deactivated = $app['server']->query(array('base' => $dn), 'user');
         if (count($processor->to_be_deactivated) ==  1) {
             if ($processor->processDeactivations()) {
+                $_SESSION['sysmsg'] = array();
                 $request['page']->info(_('User account deactivated'));
             }
             else {
@@ -403,17 +407,34 @@ function kiosk_check_admin($adminuser) {
  * @param string $username administrator user name
  * @return array user
  */
-function kiosk_check_user_active($username) {
+function kiosk_check_user_active($username, $adminuser, $adminpass) {
     global $app, $request, $udiconfig;
     
     $username = kiosk_clean_value($username, true);
-    $cfg = $udiconfig->getConfig();
-
+    
+    // ensure that this is not an existing logged in account
+    if ($app['server']->isLoggedIn('user')) {
+        $app['server']->logout('user');
+    }
+    
+    // use the adminuser
+    $app['server']->setLogin($adminuser, $adminpass, 'user');
+    $result = $app['server']->connect('user');
+    if (!$result) {
+        $_SESSION['sysmsg'] = array();
+        return $request['page']->error(_('Invalid login for Administrator account'), 'Un/Lock Account');
+    }
+    
+    // get the config now that we have a logged in user
+    $cfg = $udiconfig->getConfig(true);
+    
     // check deactivated first
-    $query = $app['server']->query(array('base' => $cfg['move_to'], 'filter' => "(|(mlepUsername=".$username.")(uid=".$username.")(sAMAccountName=".$username."))"), 'anon');
+    $query = $app['server']->query(array('base' => $cfg['move_to'], 'filter' => "(|(mlepUsername=".$username.")(uid=".$username.")(sAMAccountName=".$username."))"), 'user');
+    
     if (!empty($query)) {
         $result = array_shift($query);
         $result['deactive'] = true;
+        $app['server']->logout('user');
         return $result;
     }
     
@@ -423,13 +444,14 @@ function kiosk_check_user_active($username) {
     // run through all the search bases
     foreach ($bases as $base) {
         // ensure that accounts inspected have the mlepPerson object class
-        $query = $app['server']->query(array('base' => $base, 'filter' => "(|(mlepUsername=".$username.")(uid=".$username.")(sAMAccountName=".$username."))"), 'anon');
+        $query = $app['server']->query(array('base' => $base, 'filter' => "(|(mlepUsername=".$username.")(uid=".$username.")(sAMAccountName=".$username."))"), 'user');
         if (!empty($query)) {
             $result = array_shift($query);
             $result['deactive'] = false;
             break;
         }
     }
+    $app['server']->logout('user');
     if (!$result) {
         return $request['page']->error(_('User could not be found'), 'Un/Lock Account');
     }

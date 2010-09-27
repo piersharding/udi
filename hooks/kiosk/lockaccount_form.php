@@ -14,7 +14,7 @@ echo '<div class="kioskform">';
                 }
                 if (count($_SESSION[APPCONFIG]->getServerList()) > 1) {
                     echo $request['page']->configRow($request['page']->configFieldLabel('server_id', _('Select Directory')), 
-                                                     '<div class="felement ftext">'.server_select_list($index,false,'server_id',true, "onchange=\"switch_servers('get', this, 'changepasswd')\"").'</div>');
+                                                     '<div class="felement ftext">'.server_select_list($index,false,'server_id',true, "onchange=\"switch_servers('get', this, 'lockaccount')\"").'</div>');
                 }
             }
             // change password fields

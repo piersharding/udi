@@ -225,6 +225,11 @@ require_once HOOKSDIR.'udi/UdiConfig.php';
 // setup the page renderer
 $request['page'] = new KioskRender($app['server']->getIndex(),get_request('template','REQUEST',false,'none'));
 
+// ensure that this is not an existing logged in account
+if ($app['server']->isLoggedIn('user')) {
+    $app['server']->logout('user');
+}
+
 // get the UDI config
 $udiconfig = new UdiConfig($app['server']);
 $config = $udiconfig->getConfig(false, 'anon');
@@ -241,6 +246,9 @@ if (!in_array($www['cmd'], $cmdlist)) {
     $www['cmd'] = 'changepasswd';
 }    
 //var_dump($config);
+
+$_SESSION['sysmsg'] = array();
+
 
 $confirmnow = false;
 

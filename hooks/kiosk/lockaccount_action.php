@@ -11,7 +11,6 @@ if (!in_array($action, array('deactivate', 'reactivate'))) {
     $action = null;
 }
 
-
 if ($confirm) {
     if ($confirm == 'yes') {
         // do the toggle
@@ -22,6 +21,10 @@ if ($confirm) {
             $adminpassword = $_SESSION['kioskadminpass'];
             unset($_SESSION['kioskadminpass']);
             $admindn = kiosk_check_admin($adminuser);
+            if (empty($admindn)) {
+                $_SESSION['sysmsg'] = array();
+                $admindn = $adminuser;
+            }
             if (empty($admindn) || empty($adminpassword) || empty($dn)) {
                 $request['page']->error(_('Invalid request'));
             }
@@ -39,7 +42,11 @@ else {
     // this is the first post
     // admin user must exist
     $admindn = kiosk_check_admin($adminuser);
-    $user = kiosk_check_user_active($username);
+    if (empty($admindn)) {
+        $_SESSION['sysmsg'] = array();
+        $admindn = $adminuser;
+    }
+    $user = kiosk_check_user_active($username, $admindn, $adminpassword);
     if (!empty($admindn) && !empty($user)) {
         $dn = $user['dn'];
         // stash the password
