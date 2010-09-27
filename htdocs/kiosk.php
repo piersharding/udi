@@ -260,9 +260,6 @@ if (!in_array($www['cmd'], $cmdlist)) {
     $www['cmd'] = 'changepasswd';
 }    
 
-$_SESSION['sysmsg'] = array();
-
-
 $confirmnow = false;
 
 // get the specific action for this panel, if it was POSTed

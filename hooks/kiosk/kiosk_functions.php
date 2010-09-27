@@ -149,7 +149,6 @@ function kiosk_change_passwd($username, $oldpassword, $newpassword, $confirm, $a
         if (is_null($attribute = $template->getAttribute('objectclass'))) {
             $attribute = $template->addAttribute('objectclass', $udiconfig->getObjectClasses());
         }
-        $this->modifyAttribute($template, 'objectclass', $user_total_classes);
         $attr = 'userPassword';
         $value = array(password_hash($newpassword, $cfg['encrypt_passwd']));
     }
@@ -236,8 +235,23 @@ function kiosk_recover_passwd($username, $email) {
         return $request['page']->error(_('Please enter your email address'), 'Password Recovery');    
     }
     
+    // ensure that this is not an existing logged in account
+    if ($app['server']->isLoggedIn('user')) {
+        $app['server']->logout('user');
+    }
+    $adminuser = $app['server']->getValue('login','kiosk_bind_id');
+    $adminpass = $app['server']->getValue('login','kiosk_bind_pass');
+    if (!empty($adminuser) && !empty($adminpass)) {
+        $app['server']->setLogin($adminuser, $adminpass, 'user');
+        $result = $app['server']->connect('user');
+        if (!$result) {
+            $_SESSION['sysmsg'] = array();
+            $request['page']->error(_('Invalid login for Kiosk Administrator account'), 'Kiosk');
+        }
+    }
+    
     // user must exist
-    $query = $app['server']->query(array('base' => $udiconfig->getBaseDN(), 'filter' => "(|(mlepUsername=".$username.")(uid=".$username.")(sAMAccountName=".$username."))"), 'anon');
+    $query = $app['server']->query(array('base' => $udiconfig->getBaseDN(), 'filter' => "(|(mlepUsername=".$username.")(uid=".$username.")(sAMAccountName=".$username."))"), 'user');
     if (empty($query)) {
         return $request['page']->error(_('User could not be found'), 'Password Recovery');
     }
