@@ -4,6 +4,7 @@ $newpassword = get_request('newpassword');
 $confirm = get_request('confirm');
 $token = get_request('token');
 $server_id = get_request('server_id');
+$username = kiosk_clean_value($username, true);
 
 // we have gone for the password change
 if (!empty($token)) {

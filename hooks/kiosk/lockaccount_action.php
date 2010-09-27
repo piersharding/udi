@@ -5,6 +5,8 @@ $adminuser = get_request('adminusername');
 $adminpassword = get_request('adminpassword');
 $username = get_request('username');
 $dn = get_request('dn');
+$username = kiosk_clean_value($username, true);
+$adminuser = kiosk_clean_value($adminuser, true);
 
 // must be a valid action
 if (!in_array($action, array('deactivate', 'reactivate'))) {

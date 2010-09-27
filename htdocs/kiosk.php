@@ -230,10 +230,24 @@ if ($app['server']->isLoggedIn('user')) {
     $app['server']->logout('user');
 }
 
+$adminuser = $app['server']->getValue('login','kiosk_bind_id');
+$adminpass = $app['server']->getValue('login','kiosk_bind_pass');
+if (!empty($adminuser) && !empty($adminpass)) {
+    $app['server']->setLogin($adminuser, $adminpass, 'user');
+    $result = $app['server']->connect('user');
+    if (!$result) {
+        $_SESSION['sysmsg'] = array();
+        $request['page']->error(_('Invalid login for Kiosk Administrator account'), 'Kiosk');
+    }
+}
+
 // get the UDI config
 $udiconfig = new UdiConfig($app['server']);
-$config = $udiconfig->getConfig(false, 'anon');
+$config = $udiconfig->getConfig(false, 'user');
 $udiconfigdn = $udiconfig->getBaseDN();
+if ($app['server']->isLoggedIn('user')) {
+    $app['server']->logout('user');
+}
 
 // sort out available commands
 $cmdlist = array('changepasswd', 'resetpasswd', 'lockaccount', 'help');
@@ -245,7 +259,6 @@ $www['cmd'] = trim($www['cmd']);
 if (!in_array($www['cmd'], $cmdlist)) {
     $www['cmd'] = 'changepasswd';
 }    
-//var_dump($config);
 
 $_SESSION['sysmsg'] = array();
 

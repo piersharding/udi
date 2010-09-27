@@ -38,7 +38,6 @@ function kiosk_clean_value($value, $user=false) {
  */
 function kiosk_change_passwd($username, $oldpassword, $newpassword, $confirm, $adminuser=false, $adminpass=false) {
     global $request, $udiconfig, $app;
-    $cfg = $udiconfig->getConfig();
     
     // must have a user
     $username = kiosk_clean_value($username, true);
@@ -46,8 +45,19 @@ function kiosk_change_passwd($username, $oldpassword, $newpassword, $confirm, $a
         return $request['page']->error(_('Please enter your user name'), 'Password Change');    
     }
     
+    if (!empty($adminuser) && !empty($adminpass)) {
+        $app['server']->setLogin($adminuser, $adminpass, 'user');
+        $result = $app['server']->connect('user');
+        if (!$result) {
+            $_SESSION['sysmsg'] = array();
+            return $request['page']->error(_('Invalid login for Kiosk Administrator account'), 'Kiosk');
+        }
+    }
+    // must get the real values now that we should be a logged in user
+    $cfg = $udiconfig->getConfig(true);
+    
     // user must exist
-    $query = $app['server']->query(array('base' => $udiconfig->getBaseDN(), 'filter' => "(|(mlepUsername=".$username.")(uid=".$username.")(sAMAccountName=".$username."))"), 'anon');
+    $query = $app['server']->query(array('base' => $udiconfig->getBaseDN(), 'filter' => "(|(mlepUsername=".$username.")(uid=".$username.")(sAMAccountName=".$username."))"), 'user');
     if (empty($query)) {
         return $request['page']->error(_('User could not be found'), 'Password Change');
     }
@@ -125,22 +135,21 @@ function kiosk_change_passwd($username, $oldpassword, $newpassword, $confirm, $a
     $template->accept(false, 'user');
     
     if ($cfg['server_type'] == 'ad') {
-        // need to do something quite different for AD
-//        // first ensure that the account is enabled
-//        if (is_null($attribute = $template->getAttribute('useraccountcontrol'))) {
-//            $attribute = $template->addAttribute('useraccountcontrol',array('values'=> array(512)));
-//            $attribute->justModified();
-//        }
-//        else {
-//            $attribute->clearValue();
-//            $attribute->setValue(array(512));
-//        }
+        // Do not on any account - change the objectclass list - this only fills it 
+        // and does not flag it as changed
+        if (is_null($attribute = $template->getAttribute('objectclass'))) {
+            $attribute = $template->addAttribute('objectclass', array('values'=> array('top', 'person', 'organizationalPerson', 'user')));
+        }
         // now build the unicodePwd value        
         $attr = 'unicodePwd';
         $value = array(mb_convert_encoding('"' . $newpassword . '"', 'UCS-2LE', 'UTF-8'));
     }
     else {
         // update userPassword
+        if (is_null($attribute = $template->getAttribute('objectclass'))) {
+            $attribute = $template->addAttribute('objectclass', $udiconfig->getObjectClasses());
+        }
+        $this->modifyAttribute($template, 'objectclass', $user_total_classes);
         $attr = 'userPassword';
         $value = array(password_hash($newpassword, $cfg['encrypt_passwd']));
     }
@@ -163,6 +172,7 @@ function kiosk_change_passwd($username, $oldpassword, $newpassword, $confirm, $a
         return $request['page']->error(_('Could not update user: ').$username, _('Password Change'));
     }
     else {
+        $_SESSION['sysmsg'] = array();
         $request['page']->info(_('password changed for user: ').$username, _('Password Change'));
     }
     
