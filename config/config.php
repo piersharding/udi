@@ -190,6 +190,9 @@ $config->custom->menu['session'] = array(
 
  $config->custom->appearance['page_title'] = 'UDI';
 
+ // don't want to see footer images
+ $config->custom->appearance['remoteurls'] = false;
+ 
 // Control template appearance
 //$config->custom->appearance['disable_default_template'] = true;
 
@@ -318,17 +321,6 @@ $servers->newServer('ldap_pla');
 
 // split out the config for a server so that necessary config is simpler
 include('udi_config.php');
-
-/*
-$servers->newServer('ldap_pla');
-
-  $servers->SetValue('server','name','ASHS LDAP Server');
-  $servers->SetValue('server','host','127.0.0.1');
-  $servers->SetValue('server','base',array('dc=ashs,dc=internal'));
-  $servers->SetValue('login','auth_type','session');
-  $servers->SetValue('login','bind_id','cn=admin,dc=ashs,dc=internal');
-  $servers->SetValue('login','bind_pass','letmein');
-  */
 
 /* Use TLS (Transport Layer Security) to connect to the LDAP server. */
 // $servers->setValue('server','tls',false);

@@ -156,8 +156,9 @@ class page {
 		echo '<tr class="pagehead">';
 
 		echo '<td colspan=3><div id="ajHEAD"><table width=100% border=0><tr>';
-		printf('<td align="left"><a href="%s" target="_blank"><img src="%s" alt="Logo" class="logo" /></a></td>',get_href('sf'),$this->_app['logo']);
-
+//		printf('<td align="left"><a href="%s" target="_blank"><img src="%s" alt="Logo" class="logo" /></a></td>',get_href('sf'),$this->_app['logo']);
+        printf('<td align="left"></td>');
+		
 		echo '<td class="imagetop">';
  		$empty = true;
 		if (function_exists('cmd_control_pane'))
