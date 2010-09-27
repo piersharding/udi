@@ -793,7 +793,6 @@ class Processor {
                         return false;
                     }
                     $accounts[$uid] = $user;
-//                    $this->dn_cache[get_canonical_name($dn)] = $user['dn'];
                     $this->dn_cache[get_canonical_name($dn)] = $user;
                 }
             }
@@ -1133,8 +1132,17 @@ class Processor {
         foreach ($this->to_be_created as $account) {
 
             // inject object classes
-            $account['objectclass'] = $this->udiconfig->getObjectClasses();
-
+            // if we are using AD, then we have to remove securityPrincipal even
+            // though we use it for sAMAccountName
+            if ($this->cfg['server_type'] == 'ad') {
+                // AD is strange - there is only one objectClass - all Auxiliary classes
+                // appear to be automagically available through 'user'
+                $account['objectclass'] = array('user');
+            }
+            else {
+                $account['objectclass'] = $this->udiconfig->getObjectClasses();
+            }
+            
             // start building up the creation template
             $template = new Template($this->server->getIndex(),null,null,'add', null, true);
             
@@ -1221,7 +1229,7 @@ class Processor {
                 $account['userPassword'] = password_hash($account['userPassword'], $this->cfg['encrypt_passwd']);
             }
             else {
-                $account['raw_passwd'] = '';
+                $account['raw_passwd'] = isset($account['userPassword']) ? $account['userPassword'] : '';
             }
 
             // need to prevent doubling up of attribute values
@@ -1280,13 +1288,15 @@ class Processor {
             if (!isset($total_fields['cn'])) {
                 $this->addAttribute($template, 'cn', array($cn));
             }
-//            if (!isset($total_fields['uid'])) {
-//                $this->addAttribute($template, 'uid', array($uid));
-//            }
             // if we are using AD, then we have to actually disable the user
             // and set the password later
             if ($this->cfg['server_type'] == 'ad') {
+                // all new AD accounts must be deactive first
                 $this->addAttribute($template, 'useraccountcontrol', array(514));
+//                // Special AD password handling
+//                if (isset($account['userPassword'])) {
+//                    $this->addAttribute($template, 'unicodePwd', array(mb_convert_encoding('"' . $account['raw_passwd'] . '"', 'UCS-2LE', 'UTF-8')));
+//                }
             }
             
             // now do expression substitutions
@@ -1324,6 +1334,7 @@ class Processor {
             $template->setRDNAttributes($rdn);
             
             // set the CN
+//            var_dump($template->getLDAPadd());
             $result = $this->server->add($dn, $template->getLDAPadd(), 'user');
             if (!$result) {
                 $request['page']->error(_('Could not create: ').$dn, _('processing'));
@@ -1331,8 +1342,45 @@ class Processor {
             }
             else {
                 // stash in the dn cache
-//                $this->dn_cache[get_canonical_name($dn)] = $dn;
                 $this->dn_cache[get_canonical_name($dn)] = array('dn' => $dn);
+                
+                // now - if this was on an AD directory and it had a password set
+                // then we must now separately set the passwd and activate the account
+                if ($this->cfg['server_type'] == 'ad' && isset($account['userPassword'])) {
+//                    $adduserAD['unicodepwd'] = mb_convert_encoding('"' . $account['raw_passwd'] . '"', 'UCS-2LE', 'UTF-8');
+//                    $result = @ldap_modify($this->server->connect('user'), $dn, $adduserAD);
+//                    var_dump($result);
+                    $template = new Template($this->server->getIndex(),null,null,'modify', null, true);
+                    $template->setDN($dn);
+                    $template->accept(false, 'user');
+                    // Do not on any account - change the objectclass list - this only fills it 
+                    // and does not flag it as changed
+                    if (is_null($attribute = $template->getAttribute('objectclass'))) {
+                        $attribute = $template->addAttribute('objectclass', array('values'=> array('top', 'person', 'organizationalPerson', 'user')));
+                    }
+                    
+                    $this->addAttribute($template, 'unicodePwd', array(mb_convert_encoding('"' . $account['raw_passwd'] . '"', 'UCS-2LE', 'UTF-8')));
+                    $result = $this->server->modify($dn, $template->getLDAPmodify(), 'user');
+                    if (!$result) {
+                        $request['page']->error(_('Could not update the account to active: ').$dn, _('processing'));
+                        return $result;
+                    }
+                    
+                    $template = new Template($this->server->getIndex(),null,null,'modify', null, true);
+                    $template->setDN($dn);
+                    $template->accept(false, 'user');
+                    // Do not on any account - change the objectclass list - this only fills it 
+                    // and does not flag it as changed
+                    if (is_null($attribute = $template->getAttribute('objectclass'))) {
+                        $attribute = $template->addAttribute('objectclass', array('values'=> array('top', 'person', 'organizationalPerson', 'user')));
+                    }
+                    $this->addAttribute($template, 'useraccountcontrol', array(512));
+                    $result = $this->server->modify($dn, $template->getLDAPmodify(), 'user');
+                    if (!$result) {
+                        $request['page']->error(_('Could not update the account to active: ').$dn, _('processing'));
+                        return $result;
+                    }
+                }
                 
                 // need to set the group membership
                 // need to find all existing groups, and then delete those memberships first
@@ -1427,10 +1475,7 @@ class Processor {
 
             $dn = $account['dn'];
             
-//            var_dump($dn);
             // find the existing one
-//            $query = $this->server->query(array('base' => $dn), 'user');
-//            $existing_account = array_shift($query);
             $existing_account = $this->check_user_dn($dn);
             $user_total_classes = array_unique(array_merge($existing_account['objectclass'], $objectclass));
             $old_uid = false;
@@ -1460,16 +1505,21 @@ class Processor {
             }
             
             // check object classes
-            if (count($existing_account['objectclass']) < $user_total_classes) {
+            if ($this->cfg['server_type'] == 'ad') {
+                // Do not on any account - change the objectclass list - this only fills it 
+                // and does not flag it as changed
+                if (is_null($attribute = $template->getAttribute('objectclass'))) {
+                    $attribute = $template->addAttribute('objectclass', array('values'=> array('top', 'person', 'organizationalPerson', 'user')));
+                }
+            }
+            else if (count($existing_account['objectclass']) < $user_total_classes) {
                 // update user object classes
-                $classes = $this->cfg['server_type'] == 'ad' ? $objectclass : $user_total_classes;
-                $this->modifyAttribute($template, 'objectclass', $classes);
+                $this->modifyAttribute($template, 'objectclass', $user_total_classes);
             }
             
             $group_membership = false;
             $uid = false;
             $mlepusername = false;
-//            var_dump($account);
 
             // count and compare the changes against the dn_cache
             // if there are none then don't do an update XXX
@@ -1500,11 +1550,6 @@ class Processor {
                     $value = empty($value) ? array() : explode('#', $value);
                     $value = array_unique($value);
                 }
-                
-                // ignore empty values
-//                if (empty($value)) {
-//                    continue;
-//                }
                 
                 // map attributes here
                 if (!is_array($value)) {
@@ -1834,6 +1879,11 @@ class Processor {
 
 //        echo "old: $old_uid  new: $new_uid groups: $group_membership dn: $user_dn\n";
 
+        // don't process group membership if disabled in the config
+        if (!isset($this->cfg['groups_enabled']) || $this->cfg['groups_enabled'] != 'checked') {
+            return true;
+        }
+        
         // must have a user id
         if (!$new_uid) {
             return $request['page']->error(_('No uid passed, so cannot alter membership: ').$user_dn, _('processing'));

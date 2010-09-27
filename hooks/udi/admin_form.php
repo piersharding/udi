@@ -357,14 +357,16 @@ else {
             $move_to_opts['disabled'] = 'disabled';
         }
     }
-    echo $request['page']->configEntry('ignore_deletes', _('Ignore account deletes:'), $ignore_deletes_opts, true, false);    
-    if (isset($move_on_delete_opts['disabled'])) {
-        echo $request['page']->configEntry('move_on_delete', _('Move accounts on Delete:'), $move_on_delete_opts, true, false);
-        echo $request['page']->configEntry('move_on_delete', '', array('type' => 'hidden', 'value' => $cfg['move_on_delete']), false);
-    }
-    else {
-        echo $request['page']->configEntry('move_on_delete', _('Move accounts on Delete:'), $move_on_delete_opts);
-    }
+    echo $request['page']->configEntry('ignore_deletes', _('Ignore account deletes:'), $ignore_deletes_opts, true, false);   
+//    XXX for the time being we are not offering any other deletion method than 'Move on Delete' 
+//    if (isset($move_on_delete_opts['disabled'])) {
+//        echo $request['page']->configEntry('move_on_delete', _('Move accounts on Delete:'), $move_on_delete_opts, true, false);
+//        echo $request['page']->configEntry('move_on_delete', '', array('type' => 'hidden', 'value' => $cfg['move_on_delete']), false);
+//    }
+//    else {
+//        echo $request['page']->configEntry('move_on_delete', _('Move accounts on Delete:'), $move_on_delete_opts);
+//    }
+        echo $request['page']->configEntry('move_on_delete', '', array('type' => 'hidden', 'value' => 1), false);
     
     // where do we move deletes to
     if (isset($move_to_opts['disabled'])) {

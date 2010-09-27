@@ -15,8 +15,8 @@ ini_set('memory_limit', '512M');
 switch ($action) {
     case 'cancel':
         // we are canceling the upload
-//        unset($_SESSION['udi_import_file']);
-        $request['page']->info(_('File uploaded has been cancelled'));
+        unset($_SESSION['udi_import_file']);
+        $request['page']->info(_('Prcessing cancelled - please note file uploaded has been reset'));
         break;
     
     case 'validate':
