@@ -88,9 +88,6 @@ function kiosk_change_passwd($username, $oldpassword, $newpassword, $confirm, $a
             return $request['page']->error(_('Please enter your password'), 'Password Change');    
         }
     
-    //    $suser = $app['server']->getLogin('user');
-    //    $spass = $app['server']->getPassword('user');
-    
         // must be able to bind
         $app['server']->setLogin($dn, $oldpassword, 'user');
         $result = $app['server']->connect('user');

@@ -110,32 +110,32 @@ echo $request['page']->configSelectEntryBasic('passwd_policy_algo', _('Password 
 echo $request['page']->configEntry('passwd_policy_parameters', _('Policy parameters:'), array('type' => 'text', 'value' => htmlspecialchars($cfg['passwd_policy_parameters'], ENT_QUOTES), 'size' => 75), true, false);
 echo '</fieldset>';
 
-/*
- * Kiosk actions allowed
- */
-// Create In bucket for new accounts - must be one of the search bases
-echo '<fieldset class="config-block"><legend>'._('Password Change Kiosk Control').'</legend>';
-// UserId generation algorithms - list of hooks, and parameters to pass to hooks
-// User Ids       
-//$enable_kiosk_opts = array('value' => 0, 'type' => 'checkbox');
-$enable_kiosk_recover_opts = array('value' => 0, 'type' => 'checkbox');
-if (isset($cfg['enable_kiosk_recover']) && $cfg['enable_kiosk_recover'] == 'checked') {
-    $enable_kiosk_recover_opts['checked'] = 'checked';
-    $enable_kiosk_recover_opts['value'] = 1;
-}
-//if (isset($cfg['enable_kiosk']) && $cfg['enable_kiosk'] == 'checked') {
-//    $enable_kiosk_opts['checked'] = 'checked';
-//    $enable_kiosk_opts['value'] = 1;
+///*
+// * Kiosk actions allowed
+// */
+//// Create In bucket for new accounts - must be one of the search bases
+//echo '<fieldset class="config-block"><legend>'._('Password Change Kiosk Control').'</legend>';
+//// UserId generation algorithms - list of hooks, and parameters to pass to hooks
+//// User Ids       
+////$enable_kiosk_opts = array('value' => 0, 'type' => 'checkbox');
+//$enable_kiosk_recover_opts = array('value' => 0, 'type' => 'checkbox');
+//if (isset($cfg['enable_kiosk_recover']) && $cfg['enable_kiosk_recover'] == 'checked') {
+//    $enable_kiosk_recover_opts['checked'] = 'checked';
+//    $enable_kiosk_recover_opts['value'] = 1;
 //}
-//else {
-//    $enable_kiosk_recover_opts['disabled'] = 'disabled';
-//}    
-//echo $request['page']->configEntry('enable_kiosk', _('Enable Kiosk:'), $enable_kiosk_opts, true, false);    
-echo $request['page']->configEntry('enable_kiosk_recover', _('Enable Password Recovery:'), $enable_kiosk_recover_opts, true, false);
-//if (isset($enable_kiosk_recover_opts['disabled']) && isset($enable_kiosk_recover_opts['checked'])){
-//    echo $request['page']->configEntry('enable_kiosk_recover', '', array('type' => 'hidden', 'value' => $enable_kiosk_recover_opts['value']), false);
-//}
-echo '</fieldset>';
+////if (isset($cfg['enable_kiosk']) && $cfg['enable_kiosk'] == 'checked') {
+////    $enable_kiosk_opts['checked'] = 'checked';
+////    $enable_kiosk_opts['value'] = 1;
+////}
+////else {
+////    $enable_kiosk_recover_opts['disabled'] = 'disabled';
+////}    
+////echo $request['page']->configEntry('enable_kiosk', _('Enable Kiosk:'), $enable_kiosk_opts, true, false);    
+//echo $request['page']->configEntry('enable_kiosk_recover', _('Enable Password Recovery:'), $enable_kiosk_recover_opts, true, false);
+////if (isset($enable_kiosk_recover_opts['disabled']) && isset($enable_kiosk_recover_opts['checked'])){
+////    echo $request['page']->configEntry('enable_kiosk_recover', '', array('type' => 'hidden', 'value' => $enable_kiosk_recover_opts['value']), false);
+////}
+//echo '</fieldset>';
 
 
 // page save button

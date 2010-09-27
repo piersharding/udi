@@ -230,28 +230,15 @@ if ($app['server']->isLoggedIn('user')) {
     $app['server']->logout('user');
 }
 
-$adminuser = $app['server']->getValue('login','kiosk_bind_id');
-$adminpass = $app['server']->getValue('login','kiosk_bind_pass');
-if (!empty($adminuser) && !empty($adminpass)) {
-    $app['server']->setLogin($adminuser, $adminpass, 'user');
-    $result = $app['server']->connect('user');
-    if (!$result) {
-        $_SESSION['sysmsg'] = array();
-        $request['page']->error(_('Invalid login for Kiosk Administrator account'), 'Kiosk');
-    }
-}
-
 // get the UDI config
 $udiconfig = new UdiConfig($app['server']);
 $config = $udiconfig->getConfig(false, 'user');
 $udiconfigdn = $udiconfig->getBaseDN();
-if ($app['server']->isLoggedIn('user')) {
-    $app['server']->logout('user');
-}
 
 // sort out available commands
 $cmdlist = array('changepasswd', 'resetpasswd', 'lockaccount', 'help');
-if (isset($config['enable_kiosk_recover']) && $config['enable_kiosk_recover'] == 'checked') {
+$enable_kiosk = $app['server']->getValue('server','kiosk_enable_recover');
+if ($enable_kiosk) {
     $cmdlist []= 'recoverpasswd';
 }
 # See if we can render the command
@@ -266,6 +253,11 @@ $confirmnow = false;
 //var_dump($_SERVER['REQUEST_METHOD']); var_dump($_GET); var_dump($_POST); exit(0);
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     require_once HOOKSDIR.'kiosk/'.$www['cmd'].'_action.php';
+}
+
+// make sure it's logged out
+if ($app['server']->isLoggedIn('user')) {
+    $app['server']->logout('user');
 }
 
 // set the headings
@@ -325,14 +317,6 @@ echo '<td>';
 // now process output
 require_once HOOKSDIR.'kiosk/'.$www['cmd'].'_form.php';    
     
-//# Refresh a frame - this is so that one frame can trigger another frame to be refreshed.
-//if (isAjaxEnabled() && get_request('refresh','REQUEST') && get_request('refresh','REQUEST') != get_request('frame','REQUEST')) {
-//    echo '<script type="text/javascript" language="javascript">';
-//    printf("ajDISPLAY('%s','cmd=refresh&server_id=%s&meth=ajax&noheader=%s','%s');",
-//        get_request('refresh','REQUEST'),$app['server']->getIndex(),get_request('noheader','REQUEST',false,0),_('Auto refresh'));
-//    echo '</script>';
-//}
-
 echo '</td>';
 echo '</tr>';
 echo '</table>';
@@ -358,4 +342,7 @@ if ($www['meth'] == 'ajax')
 	$www['page']->show(get_request('frame','REQUEST',false,'BODY'),true,get_request('raw','REQUEST',false,false));
 else
 	$www['page']->display($display);
+	
+unset ($_SESSION['cache'][$app['server']->getIndex()]);
+unset ($_SESSION['cache']);
 ?>

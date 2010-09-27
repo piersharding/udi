@@ -538,7 +538,11 @@ class Datastore {
         $this->default->login['kiosk_bind_pass'] = array(
             'desc'=>'User Login Password to bind to this DS for Kiosk Password change',
             'default'=>null);
-		
+
+        $this->default->server['kiosk_enable_recover'] = array(
+            'desc'=>'Enable recover password funciton for Kiosk',
+            'default'=>null);
+        
 	}
 
 	/**

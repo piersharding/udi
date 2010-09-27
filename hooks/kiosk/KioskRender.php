@@ -91,7 +91,7 @@ class KioskRender extends PageRender {
 	}
 
     public function getMenu($active) {
-        global $udiconfig;
+        global $udiconfig, $app;
         $cfg = $udiconfig->getConfig();
         
         $menu = "<div id='udi-menu' class='ui-tabs ui-widget ui-widget-content ui-corner-all'>";
@@ -103,7 +103,8 @@ class KioskRender extends PageRender {
                'lockaccount' => array('name' => 'lockaccount', 'text' => _('Un/Lock Account'), 'title' => _('Un/Lock Account'), 'image' => 'key.png', 'imagetext' => _('Key'),), 
                'help' => array('name' => 'help', 'text' => _('Help'), 'title' => _('Kiosk Help'), 'image' => 'help-small.png', 'imagetext' => _('Help'),),
                 );
-        if (!isset($cfg['enable_kiosk_recover']) || $cfg['enable_kiosk_recover'] != 'checked') {
+        $enable_kiosk = $app['server']->getValue('server','kiosk_enable_recover');
+        if (!$enable_kiosk) {
             unset($menus['recoverpasswd']);
         }
         foreach ($menus as $item) {
