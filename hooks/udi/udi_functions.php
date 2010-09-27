@@ -1148,17 +1148,16 @@ class Processor {
             
             // sort out the common name
             $cn = '';
-            if (isset($acount['cn'])) {
-                $cn = $acount['cn'];
+            if (isset($account['cn'])) {
+                $cn = $account['cn'];
             }
             else {
                 $cn = $account['mlepFirstName'].' '.$account['mlepLastName'];
             }
-            
             // sort out uid
             $uid = '';
-            if (isset($acount['uid'])) {
-                $uid = $acount['uid'];
+            if (isset($account['uid'])) {
+                $uid = $account['uid'];
             }
             else {
                 $uid = $account['mlepUsername'];
