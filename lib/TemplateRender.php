@@ -1272,7 +1272,12 @@ class TemplateRender extends PageRender {
         // now check the objectClasses
         $query = $server->query(array('base' => $this->template->getDN()), 'user');
         !empty($query) && $query = array_shift($query);
-        if (!isset($query['objectclass']) || !preg_grep('/mlepPerson/', $query['objectclass'])) {
+        if ($cfg['server_type'] == 'ad') {
+            if (!preg_grep('/user/', $query['objectclass'])) {
+                return '';
+            }
+        }
+        else if (!isset($query['objectclass']) || !preg_grep('/mlepPerson/', $query['objectclass'])) {
             return '';
         }
         
@@ -1306,7 +1311,12 @@ class TemplateRender extends PageRender {
         // now check the objectClasses
         $query = $server->query(array('base' => $this->template->getDN()), 'user');
         !empty($query) && $query = array_shift($query);
-        if (!isset($query['objectclass']) || !preg_grep('/mlepPerson/', $query['objectclass'])) {
+        if ($cfg['server_type'] == 'ad') {
+            if (!preg_grep('/user/', $query['objectclass'])) {
+                return '';
+            }
+        }
+        else if (!isset($query['objectclass']) || !preg_grep('/mlepPerson/', $query['objectclass'])) {
             return '';
         }
         
