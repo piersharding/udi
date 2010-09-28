@@ -360,6 +360,7 @@ abstract class Import {
     protected $input = null;
     protected $source = array();
     protected $delimiter;
+    protected $stamp;
 
     /**
      * Constructor
@@ -387,6 +388,23 @@ abstract class Import {
             $this->source['size'] = filesize($this->filename);
             $input = file_get_contents($this->filename);
             $this->input = preg_split("/\n|\r\n|\r/",$input);
+            // 2010-09-28 11:20:40
+            if (!empty($this->input) && is_array($this->input)) {
+                // check the last populated row for a timestamp
+                end($this->input);
+                $last = current($this->input);
+                while (!empty($this->input) && empty($last)) {
+                    array_pop($this->input);
+                    end($this->input);
+                    $last = current($this->input);
+                }
+                reset($this->input);
+                if (preg_match('/\d\d\d\d\-\d\d\-\d\d \d\d\:\d\d\:\d\d/', $last)) {
+                    $this->stamp = $last;
+                    // discard timestamp record
+                    array_pop($this->input);
+                }
+            }
             	
         } else {
             system_message(array(
@@ -956,7 +974,7 @@ class Processor {
             
             $uid = (isset($account['mlepUsername']) ? $account['mlepUsername'] : false);
             if (isset($duplicates[$uid])) {
-                $request['page']->error(_('User account is duplicate in import file: '), _('processing'));
+                $request['page']->error(_('User account is duplicate in import file: ').$uid, _('processing'));
                 return false;
             }
             $duplicates[$uid] = $uid;
