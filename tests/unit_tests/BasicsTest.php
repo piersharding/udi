@@ -40,6 +40,13 @@ class BasicsTest extends UDITestBase {
         $this->assertTrue(count($result) == 234, 'account search has the right number of records'); 
         $data = self::get_data('./data/01_10_accounts.ldif');
         $this->assertTrue(count($data) == 234, 'comparison data found'); 
+        if (count(array_diff($result, $data)) != 0) {
+            var_dump(array_diff($result, $data));
+        }
+        if (count(array_diff($data, $result)) != 0) {
+            echo "other way round: \n";
+            var_dump(array_diff($data, $result));
+        }
         $this->assertTrue(count(array_diff($result, $data)) == 0, 'new accounts and check data correct');
 //        $this->assertRegExp('/teststring/', $result);
 

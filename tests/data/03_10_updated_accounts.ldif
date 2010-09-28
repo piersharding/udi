@@ -191,3 +191,27 @@ objectClass: mlepPerson
 objectClass: top
 sn: Dumpty
 
+dn: cn=xDumpty Humpty,ou=Students,ou=New People,dc=example,dc=com
+cn: xDumpty Humpty
+description: Dumpty
+mail: xdumpty@hogwarts.school.nz
+givenName: Dumpty
+l: Kerikeri
+mlepEmail: xdumpty@hogwarts.school.nz
+mlepFirstAttending: 2010-02-08
+mlepFirstName: xDumpty
+mlepLastAttendance: 2010-12-18
+mlepLastName: Humpty
+mlepOrganisation: hogwarts.school.nz
+mlepRole: Student
+mlepSmsPersonId: SMS99
+mlepStudentNSN: 9876543218
+mlepUsername: xdumpty
+o: School
+objectClass: inetOrgPerson
+objectClass: mlepPerson
+objectClass: top
+userPassword:: e01ENX1LSzVEMitRRzhBb09RNW5CVEYrYit3PT0=
+sn: Humpty
+uid: xdumpty
+

@@ -18,6 +18,6 @@
 # blank o and l
 "SMS08",9876543217,"humpty","2010-02-08","2010-12-18","Humpty","Dumpty","Student"," ","humpty@hogwarts.school.nz","hogwarts.school.nz","Students#LMS Access","Dumpty","Humpty","Humpty","",""
 # change mlepSmsPersonId - should result in a failure to process create - but the orriginal gets deactivated
-"SMS99",9876543218,"dumpty","2010-02-08","2010-12-18","Dumpty","Humpty","Student"," ","dumpty@hogwarts.school.nz","hogwarts.school.nz","Students#LMS Access","Humpty","Dumpty","Dumpty","School","Kerikeri"
+"SMS99",9876543218,"xdumpty","2010-02-08","2010-12-18","xDumpty","Humpty","Student"," ","xdumpty@hogwarts.school.nz","hogwarts.school.nz","Students#LMS Access","Humpty","Dumpty","Dumpty","School","Kerikeri"
 # sid gets deactivated
 #"SMS10",9876543219,"sid","2010-02-08","2010-12-18","Sid","Sloth","Teacher","SMS02","sid@hogwarts.school.nz","hogwarts.school.nz","Staff#Teachers","Sloth","Sid","Sidney baby","School","Kerikeri"

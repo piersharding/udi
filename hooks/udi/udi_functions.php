@@ -940,7 +940,9 @@ class Processor {
         }
         
         // Hunt down existing uid/mlepUsernames to avoid duplicates
-        $duplicates = array();
+        $uid_duplicates = array();
+        $dn_duplicates = array();
+        $mail_duplicates = array();
         $row_cnt = 0;
         foreach ($this->to_be_created as $account) {
             $row_cnt++;
@@ -972,42 +974,83 @@ class Processor {
                 }
             }
             
-            $uid = (isset($account['mlepUsername']) ? $account['mlepUsername'] : false);
-            if (isset($duplicates[$uid])) {
-                $request['page']->error(_('User account is duplicate in import file: ').$uid, _('processing'));
-                return false;
+            $uid = $account['mlepUsername'];
+            if (isset($uid_duplicates[$uid])) {
+                return $request['page']->error(_('User account is duplicate in import file: ').$uid, _('processing'));
             }
-            $duplicates[$uid] = $uid;
+            $uid_duplicates[$uid] = $uid;
              
             // make sure that an account doesn't allready exist in the directory
             // with this Id 
-            if ($uid) {
-                // check for mlepUsername
-                $query = $this->server->query(array('base' => $this->udiconfig->getBaseDN(), 'filter' => "(mlepUsername=$uid)", 'attrs' => array('dn')), 'user');
-                if (!empty($query)) {
-                    // base does not exist
-                    $request['page']->warning(_('User account is duplicate in directory for mlepUsername: ').$uid, _('processing'));
-                }
-                // check for uid or sAMAccountName
-                if ($this->cfg['server_type'] == 'ad') {
-                    $uid_attr = 'sAMAccountName';
-                }
-                else {
-                    $uid_attr = 'uid';
-                }
-                $query = $this->server->query(array('base' => $this->udiconfig->getBaseDN(), 'filter' => "($uid_attr=$uid)", 'attrs' => array('dn')), 'user');
-                if (!empty($query)) {
-                    // base does not exist
-                    $request['page']->warning(_('User account is duplicate in directory for ').$uid_attr.': '.$uid, _('processing'));
-                }
+            // check for mlepUsername
+            $query = $this->server->query(array('base' => $this->udiconfig->getBaseDN(), 'filter' => "(mlepUsername=$uid)", 'attrs' => array('dn')), 'user');
+            if (!empty($query)) {
+                $query = array_shift($query);
+                $request['page']->warning(_('User account is duplicate in directory for mlepUsername: ').$uid.' ('.$query['dn'].')', _('processing'));
+            }
+            // check for uid or sAMAccountName
+            if ($this->cfg['server_type'] == 'ad') {
+                $uid_attr = 'sAMAccountName';
+            }
+            else {
+                $uid_attr = 'uid';
+            }
+            $query = $this->server->query(array('base' => $this->udiconfig->getBaseDN(), 'filter' => "($uid_attr=$uid)", 'attrs' => array('dn')), 'user');
+            if (!empty($query)) {
+                $query = array_shift($query);
+                return $request['page']->error(_('User account is duplicate in directory for ').$uid_attr.': '.$uid.' ('.$query['dn'].')', _('processing'));
+            }
+            
+            // unique DN checking
+            // sort out the common name
+            $cn = $this->makeCN($account);
 
-                // check for mlepUsername in the deletions directory
-                if (!empty($this->cfg['move_to'])) {
-                    $query = $this->server->query(array('base' => $this->cfg['move_to'], 'filter' => "(mlepUsername=$uid)", 'attrs' => array('dn')), 'user');
-                    if (!empty($query)) {
-                        // base does not exist
-                        $request['page']->warning(_('User account is duplicate in deletion (').$this->cfg['move_to']._(') directory for mlepUsername: ').$uid, _('processing'));
-                    }
+            // sort out uid
+            $uid = $this->makeUid($account);
+            
+            // store the mlepGroupMembership
+            $group_membership = $this->makeGroupMembership($account);
+
+            // determine the target container
+            $user_container = $this->makeAccountContainer($group_membership);
+            
+            // sort out what the dn attribute is
+            $dn = $this->makeDN($user_container, $cn, $uid);
+            
+            // canonicalise DN
+            $dn = get_canonical_name($dn);
+            
+            // check and stash
+            if (isset($dn_duplicates[$dn])) {
+                return $request['page']->error(_('User account is duplicate in import file: ').$dn, _('processing'));
+            }
+            $dn_duplicates[$dn] = $dn;
+            
+            // check for duplicates in directory for DN
+            if ($this->check_user_dn($dn)) {
+                return $request['page']->error(_('User account is duplicate in directory: ').$dn, _('processing'));
+            }
+            
+            // check for duplicate email addresses
+            if (isset($account['mlepEmail']) && !empty($account['mlepEmail'])) {
+                $mail = $account['mlepEmail'];
+                if (isset($mail_duplicates[$mail])) {
+                    return $request['page']->error(_('User email address is duplicate in import file: ').$mail, _('processing'));
+                }
+                $mail_duplicates[$mail] = $mail;
+                $query = $this->server->query(array('base' => $this->udiconfig->getBaseDN(), 'filter' => "(mail=$mail)", 'attrs' => array('dn')), 'user');
+                if (!empty($query)) {
+                    $query = array_shift($query);
+                    return $request['page']->error(_('Email address is duplicate in directory for ').': '.$mail.' ('.$query['dn'].')', _('processing'));
+                }
+            }
+            
+            // check for mlepUsername in the deletions directory
+            if (!empty($this->cfg['move_to'])) {
+                $query = $this->server->query(array('base' => $this->cfg['move_to'], 'filter' => "(mlepUsername=$uid)", 'attrs' => array('dn')), 'user');
+                if (!empty($query)) {
+                    // base does not exist
+                    $request['page']->warning(_('User account is duplicate in deletion (').$this->cfg['move_to']._(') directory for mlepUsername: ').$uid, _('processing'));
                 }
             }
         }
@@ -1113,6 +1156,105 @@ class Processor {
         return $result;
     }
     
+    /**
+     * Calculate the CN for a user
+     * 
+     * @param array $account
+     * @return String CN
+     */
+    protected function makeCN ($account) {
+        $cn = '';
+        if (isset($account['cn'])) {
+            $cn = $account['cn'];
+        }
+        else {
+            $cn = $account['mlepFirstName'].' '.$account['mlepLastName'];
+        }
+        return $cn;
+    }
+
+    
+    /**
+     * Calculate the uid for a user
+     * 
+     * @param array $account
+     * @return String uid
+     */
+    protected function makeUid ($account) {
+        $uid = '';
+        if (isset($account['uid'])) {
+            $uid = $account['uid'];
+        }
+        else {
+            $uid = $account['mlepUsername'];
+        }
+        return $uid;
+    }
+    
+    /**
+     * Calculate the group membership
+     * 
+     * @param array $account
+     * @return String membership string
+     */
+    protected function makeGroupMembership ($account) {
+        $group_membership = false;
+        if (isset($account['mlepgroupmembership'])) {
+            $group_membership = $account['mlepgroupmembership'];
+        }
+        else if (isset($account['mlepGroupMembership'])) {
+            $group_membership = $account['mlepGroupMembership'];
+        }
+        return $group_membership;
+    }
+    
+    /**
+     * Calculate the Account container
+     * 
+     * @param array $group_membership
+     * @return String membership string
+     */
+    protected function makeAccountContainer ($group_membership) {
+        $user_container = $this->cfg['create_in'];
+        if (empty($this->container_mappings)) {
+            $cfg_container_mappings = $this->udiconfig->getContainerMappings();
+            $this->container_mappings = array();
+            foreach ($cfg_container_mappings as $mapping) {
+                $this->container_mappings[$mapping['source']] = $mapping['target'];
+            }
+        }
+        if ($group_membership) {
+            $groups = explode('#', $group_membership);
+            foreach ($groups as $group) {
+                if (isset($this->container_mappings[$group])) {
+                    $user_container = $this->container_mappings[$group];
+                    break;
+                }
+            }
+        }
+        return $user_container;
+    }
+
+    
+    /**
+     * Calculate the DN
+     * 
+     * @param array $account
+     * @return String membership string
+     */
+    protected function makeDN ($user_container, $cn, $uid) {
+        $dn = '';
+        switch ($this->cfg['dn_attribute']) {
+            case 'uid':
+                $dn = 'uid='.$uid.','.$user_container;
+                break;
+//                case 'cn':
+            default:
+                $dn = 'cn='.$cn.','.$user_container;
+                break;
+        }
+        return $dn;
+    }    
     
     /**
      * Process user create records
@@ -1128,13 +1270,8 @@ class Processor {
         // get mapping configuration
         $cfg_mappings = $this->udiconfig->getMappings();
         $cfg_group_mappings = $this->udiconfig->getGroupMappings();
-        $cfg_container_mappings = $this->udiconfig->getContainerMappings();
-        $container_mappings = array();
         $group_mappings = array();
         $total_groups = array();
-        foreach ($cfg_container_mappings as $mapping) {
-            $container_mappings[$mapping['source']] = $mapping['target'];
-        }
         foreach ($cfg_group_mappings as $mapping) {
             $group_mappings[$mapping['source']] = $mapping['targets'];
             foreach ($mapping['targets'] as $target) {
@@ -1165,54 +1302,20 @@ class Processor {
             $template = new Template($this->server->getIndex(),null,null,'add', null, true);
             
             // sort out the common name
-            $cn = '';
-            if (isset($account['cn'])) {
-                $cn = $account['cn'];
-            }
-            else {
-                $cn = $account['mlepFirstName'].' '.$account['mlepLastName'];
-            }
+            $cn = $this->makeCN($account);
+
             // sort out uid
-            $uid = '';
-            if (isset($account['uid'])) {
-                $uid = $account['uid'];
-            }
-            else {
-                $uid = $account['mlepUsername'];
-            }
+            $uid = $this->makeUid($account);
             
             // store the mlepGroupMembership
-            $group_membership = false;
-            if (isset($account['mlepgroupmembership'])) {
-                $group_membership = $account['mlepgroupmembership'];
-            }
-            else if (isset($account['mlepGroupMembership'])) {
-                $group_membership = $account['mlepGroupMembership'];
-            }
+            $group_membership = $this->makeGroupMembership($account);
 
             // determine the target container
-            $user_container = $this->cfg['create_in'];
-            if ($group_membership) {
-                $groups = explode('#', $group_membership);
-                foreach ($groups as $group) {
-                    if (isset($container_mappings[$group])) {
-                        $user_container = $container_mappings[$group];
-                        break;
-                    }
-                }
-            }
+            $user_container = $this->makeAccountContainer($group_membership);
             
             // sort out what the dn attribute is
-            $dn = '';
-            switch ($this->cfg['dn_attribute']) {
-                case 'uid':
-                    $dn = 'uid='.$uid.','.$user_container;
-                    break;
-//                case 'cn':
-                default:
-                    $dn = 'cn='.$cn.','.$user_container;
-                    break;
-            }
+            $dn = $this->makeDN($user_container, $cn, $uid);
+            
             $rdn = get_rdn($dn);
             $container = $this->server->getContainer($dn);
             $template->setContainer($container);
