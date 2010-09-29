@@ -1411,11 +1411,26 @@ class Processor {
             // if we are using AD, then we have to actually disable the user
             // and set the password later
             if ($this->cfg['server_type'] == 'ad') {
-                // all new AD accounts must be deactive first
+                // Special AD password handling
                 $this->addAttribute($template, 'useraccountcontrol', array(514));
-//                // Special AD password handling
 //                if (isset($account['userPassword'])) {
-//                    $this->addAttribute($template, 'unicodePwd', array(mb_convert_encoding('"' . $account['raw_passwd'] . '"', 'UCS-2LE', 'UTF-8')));
+//                    // set accounts with password to active
+//                    // // 32 + 512 + 65536 = 66080
+//                    // 1 + 32 + 512 + 65536 = 66081
+//                    // 1 = run login script
+//                    // 32 = passwd not required
+//                    // 64 = passwd can't change
+//                    // 512 = normal account
+//                    // 65536 = dont expire password
+//                    $this->addAttribute($template, 'useraccountcontrol', array(514));
+////                    $this->addAttribute($template, 'useraccountcontrol', array(66081));
+////                    $this->addAttribute($template, 'useraccountcontrol', array(545));
+////                    $this->addAttribute($template, 'pwdLastSet', array(strtotime('+0 days')));
+////                    $this->addAttribute($template, 'unicodePwd', array(mb_convert_encoding('"' . $account['raw_passwd'] . '"', 'UCS-2LE', 'UTF-8')));
+//                }
+//                else {
+//                    // all new AD accounts must be deactive first
+//                    $this->addAttribute($template, 'useraccountcontrol', array(514));
 //                }
             }
             
@@ -1494,7 +1509,7 @@ class Processor {
                     if (is_null($attribute = $template->getAttribute('objectclass'))) {
                         $attribute = $template->addAttribute('objectclass', array('values'=> array('top', 'person', 'organizationalPerson', 'user')));
                     }
-                    $this->addAttribute($template, 'useraccountcontrol', array(512));
+                    $this->addAttribute($template, 'useraccountcontrol', array(513));
                     $result = $this->server->modify($dn, $template->getLDAPmodify(), 'user');
                     if (!$result) {
                         $request['page']->error(_('Could not update the account to active: ').$dn, _('processing'));
