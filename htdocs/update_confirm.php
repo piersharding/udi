@@ -172,6 +172,10 @@ if (count($request['template']->getLDAPmodify(true))) {
 			}
 
 			$input_onclick .= '};"';
+			// default to skip if mlepPerson objectClass is present - this is a fix for Active Directory
+			if (in_array('mlepPerson', $attribute->getValues()) && in_array('user', $attribute->getValues())) {
+		          $input_disabled  .= ' value="1" checked="checked" ';
+			}
 		}
 
 		printf('<td><input name="skip_array[%s]" id="skip_array_%s" type="checkbox" %s %s/></td>',

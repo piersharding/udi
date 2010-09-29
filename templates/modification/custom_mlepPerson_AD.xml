@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE template SYSTEM "template.dtd">
+<template>
+<title>mlep Person Entry Change - Active Directory</title>
+<description>mlep Person Entry Change - Active Directory</description>
+<regexp>^(cn|uid)=.*,</regexp>
+<!-- noleaf>1</noleaf -->
+<icon>user.png</icon>
+<visible>1</visible>
+<askcontainer>1</askcontainer>
+<rdn>cn</rdn>
+
+<objectClasses>
+<objectClass id="top"></objectClass>
+<objectClass id="person"></objectClass>
+<objectClass id="organizationalPerson"></objectClass>
+<objectClass id="user"></objectClass>
+<objectClass id="mlepPerson"></objectClass>
+</objectClasses>
+
+<attributes>
+<attribute id="givenName">
+	<display>First name</display>
+	<icon>uid.png</icon>
+	<onchange>=autoFill(cn;%givenName% %sn%)</onchange>
+	<onchange>=autoFill(mlepFirstName;%givenName%)</onchange>
+	<order>1</order>
+	<page>1</page>
+</attribute>
+<attribute id="sn">
+	<display>Last name</display>
+	<onchange>=autoFill(cn;%givenName% %sn%)</onchange>
+	<onchange>=autoFill(mlepLastName;%sn%)</onchange>
+	<order>2</order>
+	<page>1</page>
+</attribute>
+<attribute id="cn">
+	<display>Common Name</display>
+	<order>3</order>
+	<page>1</page>
+	<spacer>1</spacer>
+</attribute>
+<attribute id="uid">
+	<display>User Name</display>
+	<onchange>=autoFill(mlepUsername;%uid%)</onchange>
+	<order>4</order>
+	<page>1</page>
+	<spacer>1</spacer>
+</attribute>
+<attribute id="mail">
+	<display>Email Address</display>
+	<onchange>=autoFill(mlepEmail;%mail%)</onchange>
+	<order>5</order>
+	<page>1</page>
+</attribute>
+<attribute id="mlepOrganisation">
+	<display>mlep Organisation = please accept the default</display>
+    <value><![CDATA[=php.PickList(.;(&(objectClass=organizationalUnit));ou;%l%)]]></value>
+	<order>6</order>
+	<page>1</page>
+</attribute>
+<attribute id="mlepRole">
+	<display>mlep Role</display>
+	<default>Staff</default>
+    <type>select</type>
+    <value id="Staff">Staff</value>
+    <value id="Student">Student</value>
+	<hint>Staff or Student</hint>
+	<order>7</order>
+	<page>1</page>
+	<spacer>1</spacer>
+</attribute>
+<attribute id="userPassword">
+        <display>Password</display>
+        <icon>lock.png</icon>
+        <post>=php.Password(%enc%,%userPassword%)</post>
+        <order>8</order>
+        <verify>1</verify>
+        <page>1</page>
+        <spacer>1</spacer>
+</attribute>
+<attribute id="mlepFirstName">
+	<display>mlep First Name</display>
+	<order>9</order>
+	<page>1</page>
+</attribute>
+<attribute id="mlepLastName">
+	<display>mlep Last Name</display>
+	<order>10</order>
+	<page>1</page>
+</attribute>
+<attribute id="mlepUsername">
+	<display>mlep User Name</display>
+	<order>11</order>
+	<page>1</page>
+	<spacer>1</spacer>
+</attribute>
+<attribute id="mlepEmail">
+	<display>mlep Email</display>
+	<order>12</order>
+	<page>1</page>
+</attribute>
+<attribute id="mlepSmsPersonId">
+	<display>mlep SMS Person Id</display>
+	<order>13</order>
+	<page>1</page>
+</attribute>
+<attribute id="mlepStudentNSN">
+	<display>mlep Student NSN Number</display>
+	<order>14</order>
+	<page>1</page>
+</attribute>
+<attribute id="mlepAssociatedNSN">
+	<display>mlep Associated NSN Number</display>
+	<order>15</order>
+	<page>1</page>
+</attribute>
+<attribute id="mlepFirstAttending">
+	<display>mlep First Attending Date - YYYY-MM-DD</display>
+	<order>16</order>
+	<page>1</page>
+</attribute>
+<attribute id="mlepLastAttendance">
+	<display>mlep Last Attendance Date - YYYY-MM-DD</display>
+	<order>17</order>
+	<page>1</page>
+</attribute>
+</attributes>
+</template>

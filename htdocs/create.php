@@ -51,6 +51,13 @@ foreach ($request['template']->getAttributes() as $attribute) {
 			$attribute->getName(false)),'error','index.php');
 }
 
+// check and rejig objectClass if this is AD
+$attribute = $request['template']->getAttribute('objectclass');
+if (in_array('mlepPerson', $attribute->getValues()) && in_array('user', $attribute->getValues())) {
+    $attribute->clearValue();
+    $attribute->setValue(array('user'));
+}
+
 # Create the entry
 $add_result = $app['server']->add($request['template']->getDN(),$request['template']->getLDAPadd());
 
