@@ -234,7 +234,7 @@ function read_report ($file) {
     if (count($data) > 0) {
         $header = array_shift($data);
         list($label, $header) = explode("\t", $header, 2);
-        eval('$header = ' . $header . ';');
+        @eval('$header = ' . $header . ';');
         $footer = false;
         if (count($data) > 0 && substr($data[count($data)-1], 0, 4) == "end\t") {
             $footer = array_pop($data);

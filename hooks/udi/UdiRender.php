@@ -532,19 +532,24 @@ class UdiRender extends PageRender {
     
     public function log_to_file($type, $msg) {
         if ($this->udiconfig) {
+            // dont bother if reporting is disabled
+            $cfg = $this->udiconfig->getConfig();
+            if (!isset($cfg['enable_reporting']) || $cfg['enable_reporting'] != 'checked') {
+                return;
+            }
+            if (!file_exists($cfg['reportpath'])) {
+                return;
+            }
             if (!$this->logfile) {
-                $cfg = $this->udiconfig->getConfig();
-                // dont bother if reporting is disabled
-                if (!isset($cfg['enable_reporting']) || $cfg['enable_reporting'] != 'checked') {
-                    return;
-                }
                 $file = 'processor_'.date("Y-m-d-H:i:s", strtotime("+0 days")).'.txt';
                 $this->logfile = $cfg['reportpath'].'/'.$file;
             }
             $fh = fopen($this->logfile, 'a');
-            fwrite($fh, $type."\t".$msg."\n");
-            fflush($fh);
-            fclose($fh);
+            if ($fh) {
+                fwrite($fh, $type."\t".$msg."\n");
+                fflush($fh);
+                fclose($fh);
+            }
         }
     }
     
