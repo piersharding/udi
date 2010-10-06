@@ -194,7 +194,12 @@ else {
         $ignore_updates_opts['value'] = 1;
     }
     $ignore_updates_opts['disabled'] = 'disabled';
-    echo $request['page']->configEntry('ignore_updates', _('Ignore account updates:'), $ignore_updates_opts, true, false);    
+    echo $request['page']->configEntry('ignore_updates', _('Ignore account updates:'), $ignore_updates_opts, true, false);  
+    $ignore_membership_opts = array('value' => 0, 'type' => 'checkbox', 'disabled' => 'disabled');
+    if (isset($cfg['ignore_membership_updates']) && $cfg['ignore_membership_updates'] == 'checked') {
+        $ignore_membership_opts['checked'] = 'checked';
+        $ignore_membership_opts['value'] = 1;
+    }    echo $request['page']->configEntry('ignore_membership_updates', _('Ignore membership updates:'), $ignore_membership_opts, true, false);
     echo '</fieldset>';
         
     

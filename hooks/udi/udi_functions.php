@@ -1863,6 +1863,11 @@ class Processor {
                 }
             }
 
+            // now - do we actually want to change the group membership
+            if (isset($this->cfg['ignore_membership_updates']) && $this->cfg['ignore_membership_updates'] == 'checked') {
+                continue;
+            }
+            
             // need to set the group membership
             // need to find all existing groups, and then delete those memberships first
             $new_uid = false;
