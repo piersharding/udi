@@ -980,13 +980,36 @@ class Processor {
             $field_errors = array();
             if ($this->cfg['strict_checks'] == 'checked') {
                 foreach ($mlep_mandatory_fields as $field => $tests) {
+                    // mandatory field test
                     if ($tests['mandatory']) {
-                        if (empty($user[$field])) {
-                            $field_errors[]= $field.'('.$user[$field].')';                            
+                        // some fields are mandatory - but only for certain groups
+                        if (isset($tests['group'])) {
+                            if (empty($user[$field]) && !in_array($user['mlepRole'], $tests['group'])) {
+                                // they are OK - this is allowed to be empty
+                                continue;
+                            }
+                            if (empty($user[$field]) && in_array($user['mlepRole'], $tests['group'])) {
+                                //meh - you are bad!
+                                $field_errors[]= $field.'('.$user[$field].')';
+                                continue;                            
+                            }
+                        }
+                        // mandatory for all
+                        else {
+                            if (empty($user[$field])) {
+                                // meh - bad!
+                                $field_errors[]= $field.'('.$user[$field].')';
+                                continue;                            
+                            }
                         }
                     }
+                    // now - ifthey are empty - then they can short circuit
+                    if (empty($user[$field])) {
+                        continue;
+                    }
+                    
                     // not an empty field and a test available
-                    if (!empty($user[$field]) && isset($tests['match'])) {
+                    if (isset($tests['match'])) {
                         // is in the group list specified
                         if (isset($tests['group'])) {
                             if (in_array($user['mlepRole'], $tests['group'])) {
@@ -1055,6 +1078,7 @@ class Processor {
         $uid_duplicates = array();
         $dn_duplicates = array();
         $mail_duplicates = array();
+        $remove_duplicates = array();
         $row_cnt = 0;
         foreach ($this->to_be_created as $account) {
             $row_cnt++;
@@ -1089,7 +1113,9 @@ class Processor {
             
             $uid = $account['mlepUsername'];
             if (isset($uid_duplicates[$uid])) {
-                return $request['page']->error(_('User account is duplicate in import file: ').$uid, _('processing'));
+                $request['page']->warning(_('User account is duplicate in import file based on mlepUsername: ').$uid._(' record ignored'), _('processing'));
+                $remove_duplicates[]= $row_cnt;
+                continue;
             }
             $uid_duplicates[$uid] = $uid;
              
@@ -1099,7 +1125,9 @@ class Processor {
             $query = $this->server->query(array('base' => $this->udiconfig->getBaseDN(), 'filter' => "(mlepUsername=$uid)", 'attrs' => array('dn')), 'user');
             if (!empty($query)) {
                 $query = array_shift($query);
-                $request['page']->warning(_('User account is duplicate in directory for mlepUsername: ').$uid.' ('.$query['dn'].')', _('processing'));
+                $request['page']->warning(_('User account is duplicate in directory for mlepUsername: ').$uid.' ('.$query['dn'].')'._(' record ignored'), _('processing'));
+                $remove_duplicates[]= $row_cnt;
+                continue;
             }
             // check for uid or sAMAccountName
             if ($this->cfg['server_type'] == 'ad') {
@@ -1111,7 +1139,9 @@ class Processor {
             $query = $this->server->query(array('base' => $this->udiconfig->getBaseDN(), 'filter' => "($uid_attr=$uid)", 'attrs' => array('dn')), 'user');
             if (!empty($query)) {
                 $query = array_shift($query);
-                return $request['page']->error(_('User account is duplicate in directory for ').$uid_attr.': '.$uid.' ('.$query['dn'].')', _('processing'));
+                $request['page']->warning(_('User account is duplicate in directory for ').$uid_attr.': '.$uid.' ('.$query['dn'].')'._(' record ignored'), _('processing'));
+                $remove_duplicates[]= $row_cnt;
+                continue;
             }
             
             // unique DN checking
@@ -1135,26 +1165,34 @@ class Processor {
             
             // check and stash
             if (isset($dn_duplicates[$dn])) {
-                return $request['page']->error(_('User account is duplicate in import file: ').$dn, _('processing'));
+                $request['page']->warning(_('User account is duplicate in import file based on DN attribute: ').$dn._(' record ignored'), _('processing'));
+                $remove_duplicates[]= $row_cnt;
+                continue;
             }
             $dn_duplicates[$dn] = $dn;
             
             // check for duplicates in directory for DN
             if ($this->check_user_dn($dn)) {
-                return $request['page']->error(_('User account is duplicate in directory: ').$dn, _('processing'));
+                $request['page']->warning(_('User account is duplicate in directory: ').$dn._(' record ignored'), _('processing'));
+                $remove_duplicates[]= $row_cnt;
+                continue;
             }
             
             // check for duplicate email addresses
             if (isset($account['mlepEmail']) && !empty($account['mlepEmail'])) {
                 $mail = $account['mlepEmail'];
                 if (isset($mail_duplicates[$mail])) {
-                    return $request['page']->error(_('User email address is duplicate in import file: ').$mail, _('processing'));
+                    $request['page']->warning(_('User email address is duplicate in import file: ').$mail._(' record ignored'), _('processing'));
+                    $remove_duplicates[]= $row_cnt;
+                    continue;
                 }
                 $mail_duplicates[$mail] = $mail;
                 $query = $this->server->query(array('base' => $this->udiconfig->getBaseDN(), 'filter' => "(mail=$mail)", 'attrs' => array('dn')), 'user');
                 if (!empty($query)) {
                     $query = array_shift($query);
-                    return $request['page']->error(_('Email address is duplicate in directory for ').': '.$mail.' ('.$query['dn'].')', _('processing'));
+                    $request['page']->warning(_('Email address is duplicate in directory for ').': '.$mail.' ('.$query['dn'].')'._(' record ignored'), _('processing'));
+                    $remove_duplicates[]= $row_cnt;
+                    continue;
                 }
             }
             
@@ -1164,8 +1202,15 @@ class Processor {
                 if (!empty($query)) {
                     // base does not exist
                     $request['page']->warning(_('User account is duplicate in deletion (').$this->cfg['move_to']._(') directory for mlepUsername: ').$uid, _('processing'));
+                    $remove_duplicates[]= $row_cnt;
+                    continue;
                 }
             }
+        }
+        
+        // remove the dropped records
+        foreach (array_reverse($remove_duplicates) as $pos) {
+            array_splice($this->to_be_created, $pos - 1, 1);
         }
         
         $request['page']->info(_('Calculated: ').count($this->to_be_created)._(' creates ').count($this->to_be_updated)._(' updates ').count($this->to_be_deactivated)._(' deletes'), _('processing'));
@@ -1283,9 +1328,13 @@ class Processor {
         else {
             $cn = $account['mlepFirstName'].' '.$account['mlepLastName'];
         }
+//        $cn = preg_replace('/\\\\/', '\\\\', $cn);
+        foreach (array('#', '^', '$', '+', '"', '<', '>', ';', '/') as $char) {
+//            $cn = preg_replace('/\\'.$char.'/', '\\'.$char, $cn);
+            $cn = preg_replace('/\\'.$char.'/', '', $cn);
+        }
         return $cn;
     }
-
     
     /**
      * Calculate the uid for a user
@@ -1300,6 +1349,12 @@ class Processor {
         }
         else {
             $uid = $account['mlepUsername'];
+        }
+//        $uid = preg_replace('/\\\\/', '\\\\', $uid);
+//        foreach (array('#', '^', '$', '+', '"', '<', '>', ';', '/') as $char) {
+        foreach (array('#', '^', '$', '+', '"', '<', '>', ';') as $char) {
+//            $uid = preg_replace('/\\'.$char.'/', '\\'.$char, $uid);
+            $uid = preg_replace('/\\'.$char.'/', '', $uid);
         }
         return $uid;
     }
@@ -1318,7 +1373,8 @@ class Processor {
         else if (isset($account['mlepGroupMembership'])) {
             $group_membership = $account['mlepGroupMembership'];
         }
-        return $group_membership;
+        // combine role and groupmembership
+        return implode('#', array($account['mlepRole'], $group_membership));
     }
     
     /**
@@ -1487,6 +1543,7 @@ class Processor {
                 // split the multi-value attributes
                 if (strtolower($attr) == 'mlepassociatednsn') {
                     $value = empty($value) ? array() : explode('#', $value);
+                    $value = array_unique($value);
                 }
                 
                 // store UserId candidates
@@ -1585,6 +1642,8 @@ class Processor {
 //            var_dump($template->getLDAPadd());
             $result = $this->server->add($dn, $template->getLDAPadd(), 'user');
             if (!$result) {
+//                var_dump($dn);
+//                var_dump($template->getLDAPadd());
                 $request['page']->error(_('Could not create: ').$dn, _('processing'));
                 return $result;
             }
@@ -1859,6 +1918,8 @@ class Processor {
 //                return false;
                 $result = $this->server->modify($dn, $template->getLDAPmodify(), 'user');
                 if (!$result) {
+//                    var_dump($dn);
+//                    var_dump($template->getLDAPmodify());
                     $request['page']->error(_('Could not update: ').$dn, _('processing'));
                     return $result;
                 }
