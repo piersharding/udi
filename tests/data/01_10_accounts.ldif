@@ -10,7 +10,7 @@ mlepFirstName: Piers
 mlepLastAttendance: 2010-12-18
 mlepLastName: Harding
 mlepOrganisation: hogwarts.school.nz
-mlepRole: Administrator
+mlepRole: NonTeachingStaff
 mlepSmsPersonId: SMS01
 mlepStudentNSN: 9876543210
 mlepUsername: piers
@@ -61,7 +61,7 @@ mlepFirstName: Daisy Elorous
 mlepLastAttendance: 2010-12-18
 mlepLastName: Duck
 mlepOrganisation: hogwarts.school.nz
-mlepRole: Parent
+mlepRole: ParentCaregiver
 mlepSmsPersonId: SMS03
 mlepStudentNSN: 9876543212
 mlepUsername: de.duc
@@ -157,7 +157,7 @@ mlepFirstName: Mo
 mlepLastAttendance: 2010-12-18
 mlepLastName: Somebody-Else
 mlepOrganisation: hogwarts.school.nz
-mlepRole: Staff
+mlepRole: TeachingStaff
 mlepSmsPersonId: SMS07
 mlepStudentNSN: 9876543216
 mlepUsername: mo
@@ -230,7 +230,7 @@ mlepFirstName: Sid
 mlepLastAttendance: 2010-12-18
 mlepLastName: Sloth
 mlepOrganisation: hogwarts.school.nz
-mlepRole: Teacher
+mlepRole: TeachingStaff
 mlepSmsPersonId: SMS10
 mlepStudentNSN: 9876543219
 mlepUsername: sid

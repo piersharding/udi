@@ -100,17 +100,34 @@ default:
     foreach (array('filepath', 'udi_version', 'enabled', 'ignore_deletes', 
                    'ignore_creates', 'ignore_updates', 'move_on_delete',  
                    'enable_reporting', 'reportpath', 'reportemail',
-                   'move_to', 'dir_match_on', 'import_match_on', 'dn_attribute') as $config) {
+                   'move_to', 'dir_match_on', 'import_match_on', 
+                   'dn_attribute', 'ignore_membership_updates',
+                    'process_role_Student',
+                    'process_role_TeachingStaff',
+                    'process_role_NonTeachingStaff',
+                    'process_role_ParentCaregiver',
+                    'process_role_Alumni',
+                    'strict_checks',
+                    ) as $config) {
         $cfg[$config] = get_request($config);
         // enabled is a checkbox
         if ($config == 'enabled' || $config == 'ignore_deletes' || $config == 'move_on_delete' || 
-            $config == 'ignore_creates' || $config == 'ignore_updates' || $config == 'enable_reporting') {
+            $config == 'ignore_creates' || $config == 'ignore_updates' || $config == 'enable_reporting' ||
+            $config == 'strict_checks' ||
+            $config == 'ignore_membership_updates' ||
+            $config == 'process_role_Student' ||
+            $config == 'process_role_TeachingStaff' ||
+            $config == 'process_role_NonTeachingStaff' ||
+            $config == 'process_role_ParentCaregiver' ||
+            $config == 'process_role_Alumni'
+            ) {
             $udiconfig->setConfigCheckBox($config, $cfg[$config]);
         }
         else {
             $udiconfig->setConfig($config, $cfg[$config]);
         }
     }
+//    var_dump($cfg);
 
     // get the search bases
     $bases = array();

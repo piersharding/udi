@@ -88,6 +88,26 @@ else {
     }
     $field .= '</table>';
     echo $request['page']->configRow($request['page']->configFieldLabel('search_bases', _('Search bases for users:')), $field, false);
+    // Roles to process
+    $roles = '<table class="item-list">';
+    foreach (array('Student', 'TeachingStaff', 'NonTeachingStaff', 'ParentCaregiver', 'Alumni') as $role) {
+        $role_opts = array('value' => 0, 'type' => 'checkbox', 'disabled' => 'disabled');
+        if (isset($cfg['process_role_'.$role]) && $cfg['process_role_'.$role] == 'checked') {
+            $role_opts['checked'] = 'checked';
+            $role_opts['value'] = 1;
+        }
+        $roles .= '<tr><td><span style="white-space: nowrap;">'.
+                  $request['page']->configField('process_role_'.$role, $role_opts, array()).$role.'</span></td></tr>';
+    }
+    $roles .= '</table>';
+    echo $request['page']->configRow($request['page']->configFieldLabel('process_roles', _('Which mlepRoles to Process:')), $roles, false);
+    $strict_checks_opts = array('value' => 0, 'type' => 'checkbox', 'disabled' => 'disabled');
+    if (isset($cfg['strict_checks']) && $cfg['strict_checks'] == 'checked') {
+        $strict_checks_opts['checked'] = 'checked';
+        $strict_checks_opts['value'] = 1;
+    }
+    echo $request['page']->configEntry('strict_checks', _('Apply strict checks:'), $strict_checks_opts, true, false);
+    
     echo '</fieldset>';
     
     // ignore account creations

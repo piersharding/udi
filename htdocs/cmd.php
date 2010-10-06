@@ -48,7 +48,7 @@ $www['page'] = new page($app['server']->getIndex());
 if (trim($www['cmd'])) {
 	# If this is a READ-WRITE operation, the LDAP server must not be in READ-ONLY mode.
 	if ($app['server']->isReadOnly() && ! in_array(get_request('cmd','REQUEST'),$app['readwrite_cmds']))
-		error(_('You cannot perform updates while server is in read-only mode'),'error','index.php');
+		error(_('You cannot perform updates while server is in read-only mode - please re-login'),'error','index.php');
 
 	# If this command has been disabled by the config.
 	if (! $_SESSION[APPCONFIG]->isCommandAvailable('script',$www['cmd'])) {

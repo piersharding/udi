@@ -42,7 +42,7 @@ switch ($action) {
             $processor = new Processor($app['server'], array('header' => $header, 'contents' => $rows));
         }
         // validate file contents
-        $processor->validate(true);
+        $processor->validate();
         break;
         
     case 'process':

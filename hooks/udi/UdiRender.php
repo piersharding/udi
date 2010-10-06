@@ -495,7 +495,7 @@ class UdiRender extends PageRender {
     
     public function info($msg, $action='') {
         $this->messages[]= array('type' => 'info', 'message' => $msg);
-        $this->log_to_file('info', $msg);
+//        $this->log_to_file('info', $msg);
         system_message(array(
                      'title'=>_('UDI '.$action),
                                 'body'=> $msg,
@@ -507,7 +507,7 @@ class UdiRender extends PageRender {
 
     public function warning($msg, $action='') {
         $this->messages[]= array('type' => 'warning', 'message' => $msg);
-        $this->log_to_file('warning', $msg);
+//        $this->log_to_file('warning', $msg);
         system_message(array(
                      'title'=>_('UDI '.$action),
                                 'body'=> $msg,
@@ -519,7 +519,7 @@ class UdiRender extends PageRender {
 
     public function error($msg, $action='') {
         $this->messages[]= array('type' => 'error', 'message' => $msg);
-        $this->log_to_file('error', $msg);
+//        $this->log_to_file('error', $msg);
         system_message(array(
                      'title'=>_('UDI '.$action),
                                 'body'=> $msg,

@@ -29,7 +29,7 @@ if (get_request('udi_decoration', 'REQUEST') == 'none') {
                 for($i=0; $i<$count; $i++){
                     echo "<row id='r".($i+1)."'>";
                     $row = $_SESSION['udi_import_file']['contents'][$i];
-                    foreach ($row as $cell) {
+                    foreach ($row['data'] as $cell) {
                         echo "<cell>".$cell."</cell>";
                     }
                     echo "</row>";
@@ -71,8 +71,8 @@ if (get_request('udi_decoration', 'REQUEST') == 'none') {
                     break;
                 }
                 else {
-                    $_SESSION['udi_import_file']['contents'][$row - 1][$header_cnt - 1] = $value;
-//                    echo "cell $header is now: ".$_SESSION['udi_import_file']['contents'][$row - 1][$header_cnt - 1];
+                    $_SESSION['udi_import_file']['contents'][$row - 1]['data'][$header_cnt - 1] = $value;
+//                    echo "cell $header is now: ".$_SESSION['udi_import_file']['contents'][$row - 1]['data'][$header_cnt - 1];
                 }
             }
             if ($no_errors) {
@@ -84,7 +84,7 @@ if (get_request('udi_decoration', 'REQUEST') == 'none') {
             foreach ($_SESSION['udi_import_file']['header'] as $header) {
                 $insert[]= get_request($header, 'REQUEST');
             }
-            $_SESSION['udi_import_file']['contents'][$row - 1]= $insert;
+            $_SESSION['udi_import_file']['contents'][$row - 1]['data']= $insert;
             echo "<action type='insert' sid='".$rowId."' tid='".$newId."'/>";
         }
         else if ($mode == 'deleted') {

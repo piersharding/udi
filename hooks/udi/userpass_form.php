@@ -71,13 +71,20 @@ echo '</fieldset>';
 echo '<fieldset class="config-block"><legend>'._('Passwords Generation').'</legend>';
 $ignore_passwds_opts = array('value' => 0, 'type' => 'checkbox');
 $passwd_algo_opts = array('value' => 0, 'type' => 'checkbox');
+$passwd_reset_state_opts = array('value' => 0, 'type' => 'checkbox');
 $passwd_parameters_opts = array('type' => 'text', 'value' => $cfg['passwd_parameters'], 'size' => 50);
 if (isset($cfg['ignore_passwds']) && $cfg['ignore_passwds'] == 'checked') {
     $ignore_passwds_opts['checked'] = 'checked';
     $ignore_passwds_opts['value'] = 1;
     $passwd_algo_opts['disabled'] = 'disabled';
     $passwd_parameters_opts['disabled'] = 'disabled';
+    $passwd_reset_state_opts['disabled'] = 'disabled';
 }
+if (isset($cfg['passwd_reset_state']) && $cfg['passwd_reset_state'] == 'checked') {
+    $passwd_reset_state_opts['checked'] = 'checked';
+    $passwd_reset_state_opts['value'] = 1;
+}
+
 echo $request['page']->configEntry('ignore_passwds', _('No password processing:'), $ignore_passwds_opts, true, false);    
 if (isset($passwd_algo_opts['disabled'])) {
     echo $request['page']->configEntry('passwd_algo', _('Password algorithm:'), array('type' => 'text', 'value' => $passwd_algols[$cfg['passwd_algo']], 'size' => 25, 'disabled' => 'disabled'), true, false);
@@ -98,6 +105,15 @@ if (isset($passwd_algo_opts['disabled'])) {
 else {
     // select algorythm
     echo $request['page']->configSelectEntryBasic('encrypt_passwd', _('Password ecryption:'), $enc_methods, $cfg['encrypt_passwd'], false);
+}
+
+if ($cfg['server_type'] == 'ad') {
+    echo $request['page']->configEntry('passwd_reset_state', _('AD passwd reset on create:'), $passwd_reset_state_opts, true, false);
+    if (isset($cfg['ignore_passwds']) && $cfg['ignore_passwds'] == 'checked') {
+        if (isset($cfg['passwd_reset_state']) && $cfg['passwd_reset_state'] == 'checked') {
+            echo $request['page']->configEntry('passwd_reset_state', '', array('type' => 'hidden', 'value' => 1), false);
+        }
+    }    
 }
 echo '</fieldset>';
 

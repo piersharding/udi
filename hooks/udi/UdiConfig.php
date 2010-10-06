@@ -52,7 +52,13 @@ class UdiConfig {
                     'next_seq_no' => 0,
                     'udi_version' => '1.2.0.5',
                     'server_type' => 'ad',
-            ),
+                    'process_role_Student' => 'checked',
+                    'process_role_TeachingStaff' => 'checked',
+                    'process_role_NonTeachingStaff' => 'checked',
+                    'process_role_ParentCaregiver' => 'checked',
+                    'process_role_Alumni' => 'checked',
+                    'strict_checks' => 'checked',
+    ),
            'default' => array(
                     'enabled' => null,
                     'ignore_deletes' => null,
@@ -91,6 +97,12 @@ class UdiConfig {
                     'next_seq_no' => 0,
                     'udi_version' => '1.2.0.5',
                     'server_type' => 'default',
+                    'process_role_Student' => 'checked',
+                    'process_role_TeachingStaff' => 'checked',
+                    'process_role_NonTeachingStaff' => 'checked',
+                    'process_role_ParentCaregiver' => 'checked',
+                    'process_role_Alumni' => 'checked',
+                    'strict_checks' => 'checked',
             ),            
     );
     
@@ -156,6 +168,29 @@ class UdiConfig {
         return $this->config;
     }    
 
+    /**
+     * Get the value of a checkbox configuration
+     * 
+     * @param String $switch checkbox value name
+     * @Return boolean flag of checkbox value
+     */
+    public function getSwitch($switch) {
+        if (isset($this->config[$switch]) && $this->config[$switch] == 'checked') {
+            return 1;
+        }
+        else {
+            return 0;
+        }
+    }
+    
+    /**
+     * Get the switch value for a mlepRole
+     * @Param String $role - the role name to test
+     * @Return boolean whether this role is active or not
+     */
+    public function getRole($role) {
+        return $this->getSwitch('process_role_'.$role);
+    }
     
     /**
      * Get the next sequential number
@@ -350,7 +385,7 @@ class UdiConfig {
     public function setConfigCheckBox($field, $value=false) {
 
         if ($value === null) {
-            return $this->setConfig($field);
+            return $this->setConfig($field, 'unchecked');
         }
         else {
             return $this->setConfig($field, 'checked');

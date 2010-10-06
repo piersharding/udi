@@ -49,7 +49,7 @@ if ($request['dn']) {
 
 } else {
 	if ($app['server']->isReadOnly())
-		error(_('You cannot perform updates while server is in read-only mode'),'error','index.php');
+		error(_('You cannot perform updates while server is in read-only mode - please re-login'),'error','index.php');
 
 	$request['page']->setContainer(get_request('container','REQUEST'));
 	$request['page']->accept();

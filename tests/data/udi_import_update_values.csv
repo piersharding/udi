@@ -2,11 +2,11 @@
 
 "mlepSmsPersonId","mlepStudentNSN","mlepUsername","mlepFirstAttending","mlepLastAttendance","mlepFirstName","mlepLastName","mlepRole","mlepAssociatedNSN","mlepEmail","mlepOrganisation","mlepGroupMembership","sn","givenName","description","o","l"
 # change the dates
-"SMS01",9876543210,"piers","2009-02-08","2012-12-12","Piers","Harding","Administrator"," ","piers@hogwarts.school.nz","hogwarts.school.nz","Staff","Harding","Piers","Piers","School","Kerikeri"
+"SMS01",9876543210,"piers","2009-02-08","2012-12-12","Piers","Harding","NonTeachingStaff"," ","piers@hogwarts.school.nz","hogwarts.school.nz","Staff","Harding","Piers","Piers","School","Kerikeri"
 # change mlepFirstName mlepLastName
 "SMS02",9876543211,"daffy","2010-02-08","2010-12-18","Daffy de x","Duck'alater","Student"," ","daffy@hogwarts.school.nz","hogwarts.school.nz","Students#LMS Access","Duck","Daffy","Daffy","School","Kerikeri"
 # change the mlepAssociatedNSN
-"SMS03",9876543212,"","2010-02-08","2010-12-18","Daisy Elorous","Duck","Parent","9999999913#0000000026#9876543211","daisy@example.com","hogwarts.school.nz","Parent#Board of Trustees","Duck","Daisy","Daisy","School","Kerikeri"
+"SMS03",9876543212,"","2010-02-08","2010-12-18","Daisy Elorous","Duck","ParentCaregiver","9999999913#0000000026#9876543211","daisy@example.com","hogwarts.school.nz","Parent#Board of Trustees","Duck","Daisy","Daisy","School","Kerikeri"
 # change mlepEmail/mail
 "SMS04",9876543213,"prabbit","2010-02-08","2010-12-18","Peter","Rabbit","Student"," ","prabbitxxx@hogwarts.school.nz","hogwarts.school.nz","Students#LMS Access","Rabbit","Peter","Peter","School","Kerikeri"
 # change mlepOrganisation
@@ -14,10 +14,10 @@
 # change username - ignored
 "SMS06",9876543215,"curlyxxx","2010-02-08","2010-12-18","Curly","Somebody","Student"," ","curly@hogwarts.school.nz","hogwarts.school.nz","Students#LMS Access","Somebody","Curly","Curly","School","Kerikeri"
 # change o and l
-"SMS07",9876543216,"mo","2010-02-08","2010-12-18","Mo","Somebody-Else","Staff"," ","mo@hogwarts.school.nz","hogwarts.school.nz","Staff","Somebody-Else","Mo","Mo","School xxx","Kerikeri xx"
+"SMS07",9876543216,"mo","2010-02-08","2010-12-18","Mo","Somebody-Else","TeachingStaff"," ","mo@hogwarts.school.nz","hogwarts.school.nz","Staff","Somebody-Else","Mo","Mo","School xxx","Kerikeri xx"
 # blank o and l
 "SMS08",9876543217,"humpty","2010-02-08","2010-12-18","Humpty","Dumpty","Student"," ","humpty@hogwarts.school.nz","hogwarts.school.nz","Students#LMS Access","Dumpty","Humpty","Humpty","",""
 # change mlepSmsPersonId - should result in a failure to process create - but the orriginal gets deactivated
 "SMS99",9876543218,"xdumpty","2010-02-08","2010-12-18","xDumpty","Humpty","Student"," ","xdumpty@hogwarts.school.nz","hogwarts.school.nz","Students#LMS Access","Humpty","Dumpty","Dumpty","School","Kerikeri"
 # sid gets deactivated
-#"SMS10",9876543219,"sid","2010-02-08","2010-12-18","Sid","Sloth","Teacher","SMS02","sid@hogwarts.school.nz","hogwarts.school.nz","Staff#Teachers","Sloth","Sid","Sidney baby","School","Kerikeri"
+#"SMS10",9876543219,"sid","2010-02-08","2010-12-18","Sid","Sloth","TeachingStaff","SMS02","sid@hogwarts.school.nz","hogwarts.school.nz","Staff#Teachers","Sloth","Sid","Sidney baby","School","Kerikeri"

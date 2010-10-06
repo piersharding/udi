@@ -15,6 +15,25 @@ if (!defined('AUTH_AD_NORMAL_ACCOUNT')) {
     define('AUTH_AD_NORMAL_ACCOUNT', 0x0200);
 }
 
+// data validation scheme for mlep values
+$mlep_mandatory_fields = array(
+                            'mlepRole' => array('mandatory' => true, 'match' => array('Student', 'TeachingStaff', 'NonTeachingStaff', 'ParentCaregiver', 'Alumni')),
+                            'mlepSmsPersonId' => array('mandatory' => true, 'match' => '/[a-zA-Z0-9]+/'),
+                            'mlepStudentNSN' => array('mandatory' => false, 'match' => '/^\d{10}$/'),
+                            'mlepUsername' => array('mandatory' => false, 'match' => '/.+/'),
+                            'mlepFirstAttending' => array('mandatory' => true, 'match' => '/^\d{4}\-\d{2}\-\d{2}$/', 'group' => array('Student')),
+                            'mlepLastAttendance' => array('mandatory' => false, 'match' => '/^\d{4}\-\d{2}\-\d{2}$/', 'group' => array('Student')),
+                            'mlepFirstName' => array('mandatory' => true, 'match' => '/.+/'),
+                            'mlepLastName' => array('mandatory' => true, 'match' => '/.+/'),
+                            'mlepAssociatedNSN' => array('mandatory' => false, 'match' => '/^\d{10}((\#\d{10})+)?$/', 'group' => array('ParentCaregiver')),
+                            'mlepEmail' => array('mandatory' => false, 'match' => '#^[-!\#$%&\'*+\\/0-9=?A-Z^_`a-z{|}~]+'.
+                                                                                  '(\.[-!\#$%&\'*+\\/0-9=?A-Z^_`a-z{|}~]+)*'.
+                                                                                  '@'.
+                                                                                  '[-!\#$%&\'*+\\/0-9=?A-Z^_`a-z{|}~]+\.'.
+                                                                                  '[-!\#$%&\'*+\\./0-9=?A-Z^_`a-z{|}~]+$#'),
+                            'mlepOrganisation' => array('mandatory' => false, 'match' => '/^[\w\d\.-]+$/'),
+                            'mlepGroupMembership' => array('mandatory' => false, 'match' => '/[\w\d\s\#]+/'),
+                            );
 /**
  *  Check that a DN exists in the directory
  *  
@@ -464,6 +483,8 @@ class ImportCSV extends Import {
         global $app;
         parent::accept($delimiter);
         $this->_header_line = $this->readEntry(true);
+        $this->_header_line = $this->_header_line['data'];
+        
         // header must exists
         if (empty($this->_header_line)) {
             system_message(array(
@@ -565,7 +586,7 @@ class ImportCSV extends Import {
     public function readEntry($header=false) {
 
         if ($line = $this->nextLine($header)) {
-            return $line;
+            return array('data' => $line, 'lineno' => $this->_currentLineNumber);
         }
         else {
             return false;
@@ -737,8 +758,8 @@ class Processor {
      *
      * @return boolean true if file validates.
      */
-    public function validate() {
-        global $request;
+    public function validate($logtofile=false) {
+        global $request, $mlep_mandatory_fields;
         /*
          * Validation
          *
@@ -781,8 +802,8 @@ class Processor {
         $accounts = array();
         
         $bases = explode(';', $this->cfg['search_bases']);
-//        // also check the deactivated base
-//        $bases []= $this->cfg['move_to'];
+        // also check the deactivated base
+        $bases []= $this->cfg['move_to'];
         
         // target identifier - this is the attribute in the directory to match accounts on
         $id = strtolower($this->cfg['dir_match_on']);
@@ -790,7 +811,6 @@ class Processor {
         // run through all the search bases
         foreach ($bases as $base) {
             // ensure that accounts inspected have the mlepPerson object class
-            //$query = $this->server->query(array('base' => $base, 'filter' => "(&(objectclass=mlepperson)($id=*))"), 'user');
             $query = $this->server->query(array('base' => $base, 'filter' => "(&(|(objectclass=user)(objectclass=inetorgperson)(objectclass=mlepperson))($id=*))"), 'user');
             if (empty($query)) {
                 // base does not exist
@@ -799,6 +819,14 @@ class Processor {
             else {
                 // run through each discovered account
                 foreach ($query as $dn => $user) {
+                    // check that the mlepRole of this user us active - if mlepRole exists
+                    if (isset($user['mleprole']) && !empty($user['mleprole'])) {
+                        if ($this->udiconfig->getRole($user['mleprole'][0]) == 0) {
+                            // skip this user
+//                            echo 'skipping a user: '.$user['mleprole'][0].' '.$dn;
+                            continue;
+                        }
+                    }
                     $uid = $user[$id][0];
                     // uid MUST NOT already exist
                     if (isset($accounts[$uid])) {
@@ -894,10 +922,14 @@ class Processor {
         $imports = array();
         $iuid = $this->cfg['import_match_on'];
         $row_cnt = 0;
+        $found_bad_records = false;
         foreach ($this->data['contents'] as $row) {
             $row_cnt++;
+            $row_cnt = isset($row['lineno']) ? $row['lineno'] : $row_cnt;
+            $row = $row['data'];
             $cell = 0;
             $user = array();
+            
             // check for MUST mapped values
             foreach ($this->data['header'] as $header) {
                 $user[$header] = $row[$cell];
@@ -921,11 +953,90 @@ class Processor {
                 }
                 $cell++;
             }
+            
+            // check for a valid mlepRole
+            if (!isset($user['mlepRole']) || !in_array($user['mlepRole'], $mlep_mandatory_fields['mlepRole']['match'])) {
+                if ($logtofile) {
+                    array_unshift($user, 'mlepRole('.$user['mlepRole'].')');
+                    $request['page']->log_to_file('Invalid data in record', preg_replace('/\n/', '', var_export($user, true)));
+                }
+                else {
+                    $request['page']->warning(_('Invalid data in record: ').$row_cnt._(' broken values: mlepRole').'('.$user['mlepRole'].')', _('processing'));
+                }
+                unset($accounts[$user[$iuid]]);
+                // skip this user
+                continue;
+            }
+            
+            // check that the mlepRole of this user us active
+            if (isset($user['mlepRole']) && $this->udiconfig->getRole($user['mlepRole']) == 0) {
+                // skip this user
+                continue;
+            }
+            
+            // check for bad records values
+            // if problems found then log, and remove ID from read directory list $accounts
+            $field_errors = array();
+            if ($this->cfg['strict_checks'] == 'checked') {
+                foreach ($mlep_mandatory_fields as $field => $tests) {
+                    if ($tests['mandatory']) {
+                        if (empty($user[$field])) {
+                            $field_errors[]= $field.'('.$user[$field].')';                            
+                        }
+                    }
+                    // not an empty field and a test available
+                    if (!empty($user[$field]) && isset($tests['match'])) {
+                        // is in the group list specified
+                        if (isset($tests['group'])) {
+                            if (in_array($user['mlepRole'], $tests['group'])) {
+                                if (is_array($tests['match'])) {
+                                    // check that value is in the list
+                                    if (!in_array($user[$field], $tests['match'])) {
+                                        $field_errors[]= $field.'('.$user[$field].')';
+                                    }
+                                }
+                                // apply the test regex
+                                else {
+                                    if (!preg_match($tests['match'], $user[$field])) {
+                                        $field_errors[]= $field.'('.$user[$field].')';
+                                    }
+                                }
+                            }
+                        }
+                        // not a group limited test
+                        else {
+                            // check that value is in the match list
+                            if (is_array($tests['match'])) {
+                                if (!in_array($user[$field], $tests['match'])) {
+                                    $field_errors[]= $field.'('.$user[$field].')';
+                                }
+                            }
+                            else {
+                                // this is a regex test
+                                if (!preg_match($tests['match'], $user[$field])) {
+                                    $field_errors[]= $field.'('.$user[$field].')';
+                                }
+                            }
+                        }
+                    }
+                }
+                // extra checks are done for mlepUsername later
+                if (!empty($field_errors)) {
+                    if ($logtofile) {
+                        $request['page']->log_to_file('Invalid data in record', preg_replace('/\n/', '', var_export($user, true)));
+                    }
+                    $request['page']->warning(_('Invalid data in record: ').$row_cnt._(' values: ').implode(', ', $field_errors), _('processing'));
+                    unset($accounts[$user[$iuid]]);
+                    continue;
+                }
+            }
+            
             $imports[$user[$iuid]] = $user;
         }
 
         // find the missing accounts in the directory
         $this->to_be_deactivated = array_diff_key($accounts, $imports);
+//        var_dump($this->to_be_deactivated);
         
         // find the new accounts in the file
         $this->to_be_created = array_diff_key($imports, $accounts);
@@ -948,7 +1059,7 @@ class Processor {
             $row_cnt++;
             
             // run userid hook
-            if (!isset($this->cfg['ignore_userids']) || !$this->cfg['ignore_userids']) {
+            if (!isset($this->cfg['ignore_userids']) || $this->cfg['ignore_userids'] != 'checked') {
                 $result = udi_run_hook('account_create_before',array($this->server, $this->udiconfig, $account), $this->cfg['userid_algo']);
                 if (is_array($result)) {
                     $result = array_pop($result);
@@ -959,12 +1070,13 @@ class Processor {
             }
 
             // User Id must exist now
+//            var_dump($account);
             if (empty($account['mlepUsername'])) {
                 return $request['page']->error(_('Mandatory value: mlepUsername ')._(' is empty in row: ').$row_cnt, _('processing'));
             }
            
             // run passwd hook
-            if (!isset($this->cfg['ignore_passwds']) || !$this->cfg['ignore_passwds']) {
+            if (!isset($this->cfg['ignore_passwds']) || $this->cfg['ignore_passwds'] != 'checked') {
                 $result = udi_run_hook('passwd_algorithm',array($this->server, $this->udiconfig, $account, $this->cfg['passwd_parameters']), $this->cfg['passwd_algo']);
                 if (is_array($result)) {
                     $result = array_pop($result);
@@ -1322,7 +1434,7 @@ class Processor {
             $template->accept(false, 'user');
             
             // run userid hook
-            if (!isset($this->cfg['ignore_userids']) || !$this->cfg['ignore_userids']) {
+            if (!isset($this->cfg['ignore_userids']) || $this->cfg['ignore_userids'] != 'checked') {
                 $result = udi_run_hook('account_create_before',array($this->server, $this->udiconfig, $account), $this->cfg['userid_algo']);
                 if (is_array($result)) {
                     $result = array_pop($result);
@@ -1333,7 +1445,7 @@ class Processor {
             }
            
             // run passwd hook
-            if (!isset($this->cfg['ignore_passwds']) || !$this->cfg['ignore_passwds']) {
+            if (!isset($this->cfg['ignore_passwds']) || $this->cfg['ignore_passwds'] != 'checked') {
                 $result = udi_run_hook('passwd_algorithm',array($this->server, $this->udiconfig, $account, $this->cfg['passwd_parameters']), $this->cfg['passwd_algo']);
                 if (is_array($result)) {
                     $result = array_pop($result);
@@ -1493,27 +1605,34 @@ class Processor {
                     if (is_null($attribute = $template->getAttribute('objectclass'))) {
                         $attribute = $template->addAttribute('objectclass', array('values'=> array('top', 'person', 'organizationalPerson', 'user')));
                     }
-                    
+                    // add the account control in here and only do two steps to
+                    // leave account in password change on first login state
+                    if (isset($this->cfg['passwd_reset_state']) && $this->cfg['passwd_reset_state'] == 'checked') {
+                        $this->addAttribute($template, 'useraccountcontrol', array(513));
+                    }
                     $this->addAttribute($template, 'unicodePwd', array(mb_convert_encoding('"' . $account['raw_passwd'] . '"', 'UCS-2LE', 'UTF-8')));
                     $result = $this->server->modify($dn, $template->getLDAPmodify(), 'user');
                     if (!$result) {
                         $request['page']->error(_('Could not update the account to active: ').$dn, _('processing'));
                         return $result;
                     }
-                    
-                    $template = new Template($this->server->getIndex(),null,null,'modify', null, true);
-                    $template->setDN($dn);
-                    $template->accept(false, 'user');
-                    // Do not on any account - change the objectclass list - this only fills it 
-                    // and does not flag it as changed
-                    if (is_null($attribute = $template->getAttribute('objectclass'))) {
-                        $attribute = $template->addAttribute('objectclass', array('values'=> array('top', 'person', 'organizationalPerson', 'user')));
+
+                    // 3rd step to leave account fully active 
+                    if (!isset($this->cfg['passwd_reset_state']) || $this->cfg['passwd_reset_state'] != 'checked') {
+                        $template = new Template($this->server->getIndex(),null,null,'modify', null, true);
+                        $template->setDN($dn);
+                        $template->accept(false, 'user');
+                        // Do not on any account - change the objectclass list - this only fills it 
+                        // and does not flag it as changed
+                        if (is_null($attribute = $template->getAttribute('objectclass'))) {
+                            $attribute = $template->addAttribute('objectclass', array('values'=> array('top', 'person', 'organizationalPerson', 'user')));
+                        }
+                        $this->addAttribute($template, 'useraccountcontrol', array(513));
+                        $result = $this->server->modify($dn, $template->getLDAPmodify(), 'user');
+                        if (!$result) {
+                            $request['page']->error(_('Could not update the account to active: ').$dn, _('processing'));
+                            return $result;
                     }
-                    $this->addAttribute($template, 'useraccountcontrol', array(513));
-                    $result = $this->server->modify($dn, $template->getLDAPmodify(), 'user');
-                    if (!$result) {
-                        $request['page']->error(_('Could not update the account to active: ').$dn, _('processing'));
-                        return $result;
                     }
                 }
                 
@@ -1629,7 +1748,7 @@ class Processor {
             $template->accept(false, 'user');
             
             // run userid hook
-            if (!isset($this->cfg['ignore_userids']) || !$this->cfg['ignore_userids']) {
+            if (!isset($this->cfg['ignore_userids']) || $this->cfg['ignore_userids'] != 'checked') {
                 $result = udi_run_hook('account_update_before',array($this->server, $this->udiconfig, $account), $this->cfg['userid_algo']);
                 if (is_array($result)) {
                     $result = array_pop($result);
@@ -1693,7 +1812,7 @@ class Processor {
                 if (isset($field_mappings[$attr])) {
                     foreach ($field_mappings[$attr] as $target) {
                         // check ignore attrs
-                        if (isset($ignore_attrs[strtolower($target)])) {
+                        if (isset($ignore_attrs[strtolower($target)]) || $this->cfg['dn_attribute'] == $target) {
                             continue;
                         }
                         if (isset($existing_account[strtolower($attr)])) {
@@ -1712,7 +1831,7 @@ class Processor {
                 }
                 else {
                     // check ignore attrs
-                    if (!isset($ignore_attrs[strtolower($attr)])) {
+                    if (!isset($ignore_attrs[strtolower($attr)]) && $this->cfg['dn_attribute'] != $attr) {
                         if (isset($existing_account[strtolower($attr)])) {
                             // check for change
                             if ($this->changedValue($existing_account[strtolower($attr)], $value)) {
@@ -1735,6 +1854,8 @@ class Processor {
             // if ! changed then skip XXX
             if ($changed) {
 //                var_dump($template->getLDAPmodify());
+//                var_dump($dn);
+//                return false;
                 $result = $this->server->modify($dn, $template->getLDAPmodify(), 'user');
                 if (!$result) {
                     $request['page']->error(_('Could not update: ').$dn, _('processing'));
@@ -1761,6 +1882,12 @@ class Processor {
             else {
                 // it must a member style DN group - CN can't change so old == new
                 $new_uid = $dn; 
+                // check if this is a deactivated account
+                if (isset($account['labelleduri'])) {
+                    $labeleduri = preg_grep('/^udi_deactivated:/', $account['labeleduri']);
+                    $labeleduri = array_shift($labeleduri);
+                    list($discard, $new_uid) = explode('udi_deactivated:', $labeleduri, 2);
+                }
                 $old_uid = $new_uid;
             }
             if (!$this->replaceGroupMembership($old_uid, $new_uid, $group_membership, $dn)) {

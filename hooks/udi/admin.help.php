@@ -13,6 +13,15 @@ Here, you can specify the various parameters that control aspects of user accoun
 In most cases only a single search base should be supplied, and this search base will be the same as the default new accounts container
 </p>
 <p>
+<h4>Which mlepRoles to Process</h4>
+This enables the UDI to ignore the processing of specific roles so that the functioning of the UDI can be limited to portions of the user base.
+</p>
+<p>
+<h4>Apply Strict Checks</h4>
+Enable/disable strict checks on mlep values.  This can be used to enforce the mandatory values in the file, and do basic character type checking.  Any records 
+that fail the checks will be logged and skipped.
+</p>
+<p>
 <h4>DN Attribute</h4>
 This should be 'cn' - most directory implementations name user entries like: cn=Daisy Duck,OU=New People,dc=example,dc=com
 </p>
