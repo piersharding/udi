@@ -971,6 +971,7 @@ class Processor {
             // check that the mlepRole of this user us active
             if (isset($user['mlepRole']) && $this->udiconfig->getRole($user['mlepRole']) == 0) {
                 // skip this user
+                unset($accounts[$user[$iuid]]);
                 continue;
             }
             
