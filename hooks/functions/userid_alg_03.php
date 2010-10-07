@@ -64,6 +64,9 @@ add_hook('userid_algorithm_label','userid_alg_03_userid_algorithm_label');
  *  %[mlepFirstName:4] gives the first 4 chars of mlepFirstname.
  *  
  */
+global $USERID_ALG_03_CACHE;
+$USERID_ALG_03_CACHE = array();
+
 function userid_alg_03_userid_algorithm() {
     list($server, $udiconfig, $account) = func_get_args();
 
@@ -103,15 +106,18 @@ function userid_alg_03_userid_algorithm() {
             $counter = 0;
             $test = $uid;
             while (1) {
-                $query = $server->query(array('base' => $udiconfig->getBaseDN(), 'filter' => "(mlepUsername=$test)", 'attrs' => array('dn')), 'user');
-                if (empty($query)) {
-                    $uid = $test;
-                    break;
+                if (!isset($USERID_ALG_03_CACHE[$test])) {
+                    $query = $server->query(array('base' => $udiconfig->getBaseDN(), 'filter' => "(mlepUsername=$test)", 'attrs' => array('dn')), 'user');
+                    if (empty($query)) {
+                        $uid = $test;
+                        break;
+                    }
                 }
                 $counter++;
                 $test = $uid . $counter;
             }
             $account['mlepUsername'] = $uid;
+            $USERID_ALG_03_CACHE[$uid] = $uid;
             return $account;
         }
     }

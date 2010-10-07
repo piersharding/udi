@@ -51,8 +51,12 @@ add_hook('userid_algorithm_label','userid_alg_02_userid_algorithm_label');
  *  This callback generates the User Id based on <LastName><Initials>
  *  
  */
+global $USERID_ALG_02_CACHE;
+$USERID_ALG_02_CACHE = array();
+
 function userid_alg_02_userid_algorithm() {
     list($server, $udiconfig, $account) = func_get_args();
+    global $USERID_ALG_02_CACHE;
 
     // Dont overwrite the proposed mlepUsername if it exists
     if (empty($account['mlepUsername'])) {
@@ -65,15 +69,19 @@ function userid_alg_02_userid_algorithm() {
             $counter = 0;
             $test = $uid;
             while (1) {
-                $query = $server->query(array('base' => $udiconfig->getBaseDN(), 'filter' => "(mlepUsername=$test)", 'attrs' => array('dn')), 'user');
-                if (empty($query)) {
-                    $uid = $test;
-                    break;
+                if (!isset($USERID_ALG_02_CACHE[$test])) {
+                    $query = $server->query(array('base' => $udiconfig->getBaseDN(), 'filter' => "(mlepUsername=$test)", 'attrs' => array('dn')), 'user');
+                    if (empty($query)) {
+                        $uid = $test;
+                        break;
+                    }
                 }
                 $counter++;
                 $test = $uid . $counter;
             }
             $account['mlepUsername'] = $uid;
+            // need to cache generated uids too
+            $USERID_ALG_02_CACHE[$uid] = $uid;
             return $account;
         }
     }

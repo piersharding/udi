@@ -262,6 +262,7 @@ function read_report ($file) {
         } 
         // if footer then finished successfully
         $start = (int)$header['time'];
+//        date_default_timezone_set('Pacific/Auckland');
         $header['time'] = date("d/m/Y H:i:s", $start);
         $header['id'] = $start;
         $report = array('file' => $file, 'header' => $header, 'footer' => $footer, 'messages' => array());
@@ -1055,6 +1056,7 @@ class Processor {
                 }
             }
             
+            $user['_row_cnt'] = $row_cnt;
             $imports[$user[$iuid]] = $user;
         }
 
@@ -1071,6 +1073,7 @@ class Processor {
         foreach ($to_be_updated as $id => $account) {
             $data = $imports[$id];
             $data['dn'] = $account['dn'];
+            unset($data['_row_cnt']);
             $this->to_be_updated[$id] = $data;
         }
         
@@ -1080,7 +1083,7 @@ class Processor {
         $mail_duplicates = array();
         $remove_duplicates = array();
         $row_cnt = 0;
-        foreach ($this->to_be_created as $account) {
+        foreach ($this->to_be_created as &$account) {
             $row_cnt++;
             
             // run userid hook
@@ -1097,7 +1100,7 @@ class Processor {
             // User Id must exist now
 //            var_dump($account);
             if (empty($account['mlepUsername'])) {
-                return $request['page']->error(_('Mandatory value: mlepUsername ')._(' is empty in row: ').$row_cnt, _('processing'));
+                return $request['page']->error(_('Mandatory value: mlepUsername ')._(' is empty in row: ').$account['_row_cnt'], _('processing'));
             }
            
             // run passwd hook
@@ -1113,7 +1116,7 @@ class Processor {
             
             $uid = $account['mlepUsername'];
             if (isset($uid_duplicates[$uid])) {
-                $request['page']->warning(_('User account is duplicate in import file based on mlepUsername: ').$uid._(' record ignored'), _('processing'));
+                $request['page']->warning(_('User account is duplicate in import file based on mlepUsername: ').$uid._(' record: ').$account['_row_cnt']._(' ignored'), _('processing'));
                 $remove_duplicates[]= $row_cnt;
                 continue;
             }
@@ -1125,7 +1128,7 @@ class Processor {
             $query = $this->server->query(array('base' => $this->udiconfig->getBaseDN(), 'filter' => "(mlepUsername=$uid)", 'attrs' => array('dn')), 'user');
             if (!empty($query)) {
                 $query = array_shift($query);
-                $request['page']->warning(_('User account is duplicate in directory for mlepUsername: ').$uid.' ('.$query['dn'].')'._(' record ignored'), _('processing'));
+                $request['page']->warning(_('User account is duplicate in directory for mlepUsername: ').$uid.' ('.$query['dn'].')'._(' record: ').$account['_row_cnt']._(' ignored'), _('processing'));
                 $remove_duplicates[]= $row_cnt;
                 continue;
             }
@@ -1139,7 +1142,7 @@ class Processor {
             $query = $this->server->query(array('base' => $this->udiconfig->getBaseDN(), 'filter' => "($uid_attr=$uid)", 'attrs' => array('dn')), 'user');
             if (!empty($query)) {
                 $query = array_shift($query);
-                $request['page']->warning(_('User account is duplicate in directory for ').$uid_attr.': '.$uid.' ('.$query['dn'].')'._(' record ignored'), _('processing'));
+                $request['page']->warning(_('User account is duplicate in directory for ').$uid_attr.': '.$uid.' ('.$query['dn'].')'._(' record: ').$account['_row_cnt']._(' ignored'), _('processing'));
                 $remove_duplicates[]= $row_cnt;
                 continue;
             }
@@ -1165,7 +1168,7 @@ class Processor {
             
             // check and stash
             if (isset($dn_duplicates[$dn])) {
-                $request['page']->warning(_('User account is duplicate in import file based on DN attribute: ').$dn._(' record ignored'), _('processing'));
+                $request['page']->warning(_('User account is duplicate in import file based on DN attribute: ').$dn._(' record: ').$account['_row_cnt']._(' ignored'), _('processing'));
                 $remove_duplicates[]= $row_cnt;
                 continue;
             }
@@ -1173,7 +1176,7 @@ class Processor {
             
             // check for duplicates in directory for DN
             if ($this->check_user_dn($dn)) {
-                $request['page']->warning(_('User account is duplicate in directory: ').$dn._(' record ignored'), _('processing'));
+                $request['page']->warning(_('User account is duplicate in directory: ').$dn._(' record: ').$account['_row_cnt']._(' ignored'), _('processing'));
                 $remove_duplicates[]= $row_cnt;
                 continue;
             }
@@ -1182,7 +1185,7 @@ class Processor {
             if (isset($account['mlepEmail']) && !empty($account['mlepEmail'])) {
                 $mail = $account['mlepEmail'];
                 if (isset($mail_duplicates[$mail])) {
-                    $request['page']->warning(_('User email address is duplicate in import file: ').$mail._(' record ignored'), _('processing'));
+                    $request['page']->warning(_('User email address is duplicate in import file: ').$mail._(' record: ').$account['_row_cnt']._(' ignored'), _('processing'));
                     $remove_duplicates[]= $row_cnt;
                     continue;
                 }
@@ -1190,7 +1193,7 @@ class Processor {
                 $query = $this->server->query(array('base' => $this->udiconfig->getBaseDN(), 'filter' => "(mail=$mail)", 'attrs' => array('dn')), 'user');
                 if (!empty($query)) {
                     $query = array_shift($query);
-                    $request['page']->warning(_('Email address is duplicate in directory for ').': '.$mail.' ('.$query['dn'].')'._(' record ignored'), _('processing'));
+                    $request['page']->warning(_('Email address is duplicate in directory for ').': '.$mail.' ('.$query['dn'].')'._(' record: ').$account['_row_cnt']._(' ignored'), _('processing'));
                     $remove_duplicates[]= $row_cnt;
                     continue;
                 }
@@ -1201,19 +1204,21 @@ class Processor {
                 $query = $this->server->query(array('base' => $this->cfg['move_to'], 'filter' => "(mlepUsername=$uid)", 'attrs' => array('dn')), 'user');
                 if (!empty($query)) {
                     // base does not exist
-                    $request['page']->warning(_('User account is duplicate in deletion (').$this->cfg['move_to']._(') directory for mlepUsername: ').$uid, _('processing'));
+                    $request['page']->warning(_('User account is duplicate in deletion (').$this->cfg['move_to']._(') directory for mlepUsername: ').$uid._(' record: ').$account['_row_cnt'], _('processing'));
                     $remove_duplicates[]= $row_cnt;
                     continue;
                 }
             }
+            unset($account['_row_cnt']);
         }
         
         // remove the dropped records
+        $skips = count($remove_duplicates);
         foreach (array_reverse($remove_duplicates) as $pos) {
             array_splice($this->to_be_created, $pos - 1, 1);
         }
         
-        $request['page']->info(_('Calculated: ').count($this->to_be_created)._(' creates ').count($this->to_be_updated)._(' updates ').count($this->to_be_deactivated)._(' deletes'), _('processing'));
+        $request['page']->info(_('Calculated: ').count($this->to_be_created)._(' creates ').count($this->to_be_updated)._(' updates ').count($this->to_be_deactivated)._(' deletes ').$skips._(' skips'), _('processing'));
         return true;
     }
 
