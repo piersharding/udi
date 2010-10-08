@@ -1333,6 +1333,9 @@ class Processor {
         else {
             $cn = $account['mlepFirstName'].' '.$account['mlepLastName'];
         }
+        // normalise spaces
+        $cn = preg_replace('/\s\s+/', ' ', $cn);
+        // get rid of bad characters
 //        $cn = preg_replace('/\\\\/', '\\\\', $cn);
         foreach (array('#', '^', '$', '+', '"', '<', '>', ';', '/') as $char) {
 //            $cn = preg_replace('/\\'.$char.'/', '\\'.$char, $cn);
