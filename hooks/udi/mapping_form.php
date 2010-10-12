@@ -31,18 +31,19 @@ $imo_attrs = array_merge($must, $may);
 $dmo_attrs = $app['server']->SchemaAttributes('user');
 $dmo_attrs = array_merge(array("none" => new ObjectClass_ObjectClassAttribute("", "")), $dmo_attrs);
 
+
 $no_mappings = 0;
 echo '<div class="underline">&nbsp;</div>';
 if (isset($cfg['mappings'])) {
     $mappings = explode(';', $cfg['mappings']);
-    //var_dump($mappings);
+//    var_dump($mappings);
     foreach ($mappings as $map) {
         // break the mapping into source and targets
         list($source, $targets) = explode('(', $map);
         $targets = preg_replace('/^(.*?)\)$/','$1', $targets);
         $targets = explode(',', $targets);
-        //var_dump($source);
-        //var_dump($targets);
+//        var_dump($source);
+//        var_dump($targets);
         //exit(0);
         // ignore broken mappings
         if (empty($source)) {
@@ -60,9 +61,20 @@ if (isset($cfg['mappings'])) {
             $field .= '</td></tr>';
         }
         $source_attrs = array_merge($imo_attrs, array());
-        if (!array_key_exists(strtolower($source), $imo_attrs)) {
-            $source_attrs[strtolower($source)] = new ObjectClass_ObjectClassAttribute($source, $source);
+//        var_dump(array_keys($imo_attrs));
+//        var_dump($imo_attrs);
+        
+        $func = function($attr) { 
+            return $attr->getName(false); 
+        };
+        
+        if (!in_array($source, array_map($func, $imo_attrs))) {
+            $source_attrs["".strtolower($source)] = new ObjectClass_ObjectClassAttribute("".$source, "".$source);
         }
+        
+//        if (!in_array(strtolower($source), array_keys($imo_attrs))) {
+//            $source_attrs["".strtolower($source)] = new ObjectClass_ObjectClassAttribute("".$source, "".$source);
+//        }
         $field .= '<tr><td>'.$request['page']->configMoreSelect('new_mapping_'.$no_mappings, _('New Target'), $dmo_attrs).'</td></tr>';
         $field .= '</table>';
         $field .= $request['page']->configField('no_of_fields_in_mapping_'.$no_mappings, array('type' => 'hidden', 'value' => $no_fields), array());

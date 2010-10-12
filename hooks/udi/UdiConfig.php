@@ -301,7 +301,7 @@ class UdiConfig {
             if (isset($this->config['move_on_delete']) && $this->config['move_on_delete'] !== null) {
                 if (isset($this->config['move_to']) && check_dn_exists($this->config['move_to'], _('Target delete DN does not exist: ').$this->config['move_to'])) {
                     // check that deletes are not going to the new bucket or one of the search bases
-                    if ($this->config['move_to'] == $this->config['create_in']) {
+                    if (isset($this->config['create_in']) && $this->config['move_to'] == $this->config['create_in']) {
                         $request['page']->error(_('Target delete DN must be different from the create new accounts target: ').$this->config['create_in'], _('configuration'));
                         $valid = false;
                     }

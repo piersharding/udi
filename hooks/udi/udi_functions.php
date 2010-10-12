@@ -736,6 +736,9 @@ class Processor {
     // dn exists cache
     private $dn_cache;
     
+    // userpassalgols cache
+    private $userpassalgols;
+    
     /**
      * Constructor
      * build connection to environment and LDAP directory
@@ -753,6 +756,32 @@ class Processor {
         $this->dn_cache = array();
     }
 
+    /**
+     * Get the list of register user id and password
+     * algorythms
+     * 
+     */
+    private function getUserPassAlgorythms() {
+        
+        if (!$this->userpassalgols) {
+            // userid and passwd algorythms
+            $result = udi_run_hook('userid_algorithm_label',array());
+            $algols = array();
+            if (!empty($result)) {
+                foreach ($result as $algo) {
+                    $algols[]= $algo['name'];
+                }
+            }
+            $result = udi_run_hook('passwd_algorithm_label',array());
+            if (!empty($result)) {
+                foreach ($result as $algo) {
+                    $algols[]= $algo['name'];
+                }
+            }
+            $this->userpassalgols = $algols;
+        }
+        return $this->userpassalgols;
+    }
 
     /**
      * Validates the import against the user directory
@@ -762,7 +791,7 @@ class Processor {
     public function validate($logtofile=false) {
         global $request, $mlep_mandatory_fields;
         /*
-         * Validation
+         * Validation$algols[]= $algo['name'];
          *
          * 3 main cases:
          *
@@ -1077,6 +1106,9 @@ class Processor {
             $this->to_be_updated[$id] = $data;
         }
         
+        // userid and passwd algorythms
+        $algols = $this->getUserPassAlgorythms();
+        
         // Hunt down existing uid/mlepUsernames to avoid duplicates
         $uid_duplicates = array();
         $dn_duplicates = array();
@@ -1085,7 +1117,24 @@ class Processor {
         $row_cnt = 0;
         foreach ($this->to_be_created as &$account) {
             $row_cnt++;
-            
+
+            // run all other account_create_before hooks
+            $hooks = isset($_SESSION[APPCONFIG]) ? $_SESSION[APPCONFIG]->hooks : array();
+            while (list($key,$hook) = each($hooks['account_create_before'])) {
+                // ignore the active userid algorythm
+                if (in_array($hook['hook_function'], $algols)) {
+                    continue;
+                }
+                // run each hook
+                var_dump($hook['hook_function']);
+                $result = udi_run_hook('account_create_before',array($this->server, $this->udiconfig, $account), $hook['hook_function']);
+                if (is_array($result)) {
+                    $result = array_pop($result);
+                    if (is_array($result)) {
+                        $account = $result;
+                    }
+                }
+            }
             // run userid hook
             if (!isset($this->cfg['ignore_userids']) || $this->cfg['ignore_userids'] != 'checked') {
                 $result = udi_run_hook('account_create_before',array($this->server, $this->udiconfig, $account), $this->cfg['userid_algo']);
@@ -1459,7 +1508,10 @@ class Processor {
         foreach ($cfg_mappings as $mapping) {
             $field_mappings[$mapping['source']] = $mapping['targets'];
         }
-
+        
+        // userid and passwd algorythms
+        $algols = $this->getUserPassAlgorythms();
+        
         // create the missing
         foreach ($this->to_be_created as $account) {
 
@@ -1498,6 +1550,22 @@ class Processor {
             $template->setContainer($container);
             $template->accept(false, 'user');
             
+            // run all other account_create_before hooks
+            $hooks = isset($_SESSION[APPCONFIG]) ? $_SESSION[APPCONFIG]->hooks : array();
+            while (list($key,$hook) = each($hooks['account_create_before'])) {
+                // ignore the active userid algorythm
+                if (in_array($hook['hook_function'], $algols)) {
+                    continue;
+                }
+                // run each hook
+                $result = udi_run_hook('account_create_before',array($this->server, $this->udiconfig, $account), $hook['hook_function']);
+                if (is_array($result)) {
+                    $result = array_pop($result);
+                    if (is_array($result)) {
+                        $account = $result;
+                    }
+                }
+            }
             // run userid hook
             if (!isset($this->cfg['ignore_userids']) || $this->cfg['ignore_userids'] != 'checked') {
                 $result = udi_run_hook('account_create_before',array($this->server, $this->udiconfig, $account), $this->cfg['userid_algo']);
@@ -2692,4 +2760,20 @@ class Processor {
         }
     }
 }
+
+
+// for the missing str_
+if (!function_exists('str_getcsv')) { 
+    function str_getcsv($input, $delimiter = ",", $enclosure = '"', $escape = "\\") { 
+        $fiveMBs = 5 * 1024 * 1024; 
+        $fp = fopen("php://temp/maxmemory:$fiveMBs", 'r+'); 
+        fputs($fp, $input); 
+        rewind($fp); 
+
+        $data = fgetcsv($fp, 1000, $delimiter, $enclosure); //  $escape only got added in 5.3.0 
+
+        fclose($fp); 
+        return $data; 
+    } 
+} 
 ?>
