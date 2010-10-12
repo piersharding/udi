@@ -17,7 +17,7 @@
  * @subpackage Functions
  */
 
-// disable this plugin
+// disable this plugin - comment out to enable
 return false;
 
 

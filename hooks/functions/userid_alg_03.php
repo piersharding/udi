@@ -34,7 +34,10 @@ function userid_alg_03_userid_algorithm_label() {
  %[UniqueNo] substitutes an auto-generated unique number.
  <br/>
  All substitutions can be given an optional length specfier which will truncate accordingly eg: <span class=\'tiny\'>%[Initials].%[mlepLastName:3].%[UniqueNo:5]</span>
-  would give d.duc.00001.');
+  would give d.duc.00001.
+  <br/>
+  Additionally, the substitutions can be specified per mlepRole using the following syntax style:
+  <span class=\'tiny\'>{Student=STU%[UniqueNo:5]; TeachiingStaff=%[Initials]%[mlepLastName]; NonTeachingStaff=%[Initials]%[mlepLastName]}</span>');
 }
 add_hook('userid_algorithm_label','userid_alg_03_userid_algorithm_label');
 
@@ -63,6 +66,12 @@ add_hook('userid_algorithm_label','userid_alg_03_userid_algorithm_label');
  *  Also need to consider legnth eg: put a length specifier on fields such as
  *  %[mlepFirstName:4] gives the first 4 chars of mlepFirstname.
  *  
+ *  mlepRole split determiniation eg:
+ *  {Student=STU%[UniqueNo:5];TeachiingStaff=%[Initials]%[mlepLastName];NonTeachingStaff=%[Initials]%[mlepLastName]}
+ *  
+ *  * must have curly braces
+ *  * each role delimited by ';'
+ *  * role=<mask>
  */
 global $USERID_ALG_03_CACHE;
 $USERID_ALG_03_CACHE = array();
@@ -74,8 +83,32 @@ function userid_alg_03_userid_algorithm() {
     if (empty($account['mlepUsername'])) {
         $cfg = $udiconfig->getConfig();
         $uid = $cfg['userid_parameters'];
+
+        // first check if this is mlepRole split
+        $pattern = $cfg['userid_parameters'];
+        if (preg_match('/^\{(.*?)\}$/', $pattern, $matches)) {
+            // now find the particular role pattern
+            $splits = explode(';', $matches[1]);
+            $roles = array();
+            foreach ($splits as $split) {
+                if (preg_match('/=/', $split)) {
+                    list($role, $mask) = explode('=', $split, 2);
+                    $roles[$role] = $mask;
+                }
+            }
+            // right - do we have a pattern for our role?
+            if (isset($roles[$account['mlepRole']])) {
+                $pattern = $roles[$account['mlepRole']];
+                $uid = $pattern;
+            }
+            else {
+                // the patterns must be broken - so jump out here
+                return false;
+            }
+        }
+        
         // find the substitutions
-        if (preg_match_all('/\%\[(.+?)\]/', $cfg['userid_parameters'], $matches)) {
+        if (preg_match_all('/\%\[(.+?)\]/', $pattern, $matches)) {
             foreach ($matches[1] as $match) {
                 $parts = explode(':', $match);
                 $attr = array_shift($parts);
@@ -99,6 +132,7 @@ function userid_alg_03_userid_algorithm() {
                 $uid = preg_replace('/\%\['.preg_quote($match).'\]/', $value, $uid, 1);
             }
         }
+        
         // now squash the result
         $uid = strtolower(preg_replace('/\s+/', '', $uid));
         if ($uid) {
