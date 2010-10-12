@@ -18,7 +18,7 @@
  */
 
 // disable this plugin
-//return false;
+return false;
 
 
 /**
@@ -42,10 +42,10 @@ function posix_uidNumber_generator_01() {
     list($server, $udiconfig, $account) = func_get_args();
     global $POSIX_NEXT_UID;
     
-    // do nothing if uidNumber allready exists
-//    if (isset($account['uidNumber'])) {
-//        return false;
-//    }
+    // do nothing if uidNumber field doesn't exist
+    if (!isset($account['uidNumber'])) {
+        return false;
+    }
     
     if (!$POSIX_NEXT_UID) {
         // find the current high water mark

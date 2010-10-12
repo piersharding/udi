@@ -1126,7 +1126,7 @@ class Processor {
                     continue;
                 }
                 // run each hook
-                var_dump($hook['hook_function']);
+//                var_dump($hook['hook_function']);
                 $result = udi_run_hook('account_create_before',array($this->server, $this->udiconfig, $account), $hook['hook_function']);
                 if (is_array($result)) {
                     $result = array_pop($result);
