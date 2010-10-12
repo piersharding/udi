@@ -1902,9 +1902,19 @@ class Processor {
                     $attribute = $template->addAttribute('objectclass', array('values'=> array('top', 'person', 'organizationalPerson', 'user')));
                 }
             }
-            else if (count($existing_account['objectclass']) < $user_total_classes) {
+            else {
+                // check that atleast these object classes exist
+                $final_classes = $existing_account['objectclass'];
+                foreach ($user_total_classes as $class) {
+                    if (!in_array($class, $existing_account['objectclass'])) {
+                        // update user object classes
+                        $final_classes[]= $class;
+                    }
+                }
                 // update user object classes
-                $this->modifyAttribute($template, 'objectclass', $user_total_classes);
+                if (count($final_classes) != count($existing_account['objectclass'])) {
+                    $this->modifyAttribute($template, 'objectclass', $final_classes);
+                }
             }
             
             $group_membership = false;
@@ -1994,8 +2004,8 @@ class Processor {
 //                return false;
                 $result = $this->server->modify($dn, $template->getLDAPmodify(), 'user');
                 if (!$result) {
-//                    var_dump($dn);
-//                    var_dump($template->getLDAPmodify());
+                    var_dump($dn);
+                    var_dump($template->getLDAPmodify());
                     $request['page']->error(_('Could not update: ').$dn, _('processing'));
                     return $result;
                 }
