@@ -406,6 +406,18 @@ abstract class Import {
         if (file_exists($this->filename)) {
             $this->source['name'] = $this->realname;
             $this->source['size'] = filesize($this->filename);
+            // can we read this file?
+            if (!is_file($this->filename) || !is_Readable($this->filename)) {
+                // die a death
+                system_message(array(
+                    'title'=>_('Cannot read file'),
+                    'body'=>_('You must specify a valid file for upload: ').$this->realname,
+                    'type'=>'error'),
+                sprintf('cmd.php?cmd=udi_form&udi_nav=%s&server_id=%s',
+                get_request('udi_nav','REQUEST'),
+                get_request('server_id','REQUEST')));
+                die();
+            }
             $input = file_get_contents($this->filename);
             $this->input = preg_split("/\n|\r\n|\r/",$input);
             // 2010-09-28 11:20:40
