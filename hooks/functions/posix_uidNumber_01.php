@@ -18,7 +18,7 @@
  */
 
 // disable this plugin - comment out to enable
-return false;
+//return false;
 
 
 /**
@@ -44,6 +44,11 @@ function posix_uidNumber_generator_01() {
     
     // do nothing if uidNumber field doesn't exist
     if (!isset($account['uidNumber'])) {
+        return false;
+    }
+
+    // if we allready have one except for 99999 the bail
+    if (!empty($account['uidNumber']) && $account['uidNumber'] != 99999) {
         return false;
     }
     

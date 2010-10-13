@@ -1649,11 +1649,7 @@ class Processor {
                     }
                 }
             }
-            
-            // ensure the sanity fields are set
-            if (!isset($total_fields['cn'])) {
-                $this->addAttribute($template, 'cn', array($cn));
-            }
+
             // if we are using AD, then we have to actually disable the user
             // and set the password later
             if ($this->cfg['server_type'] == 'ad') {
@@ -1710,6 +1706,22 @@ class Processor {
                     }
                     
                 }
+                else {
+                    // find all the constants that aren't attribute names
+                    foreach ($targets as $target) {
+                        // dont allow doubling up
+                        if (isset($total_fields[$target])) {
+                            continue;
+                        }
+                        $total_fields[$target] = $source;
+                        $this->addAttribute($template, $target, array($source));
+                    }
+                }
+            }
+
+            // ensure the sanity fields are set
+            if (!isset($total_fields['cn'])) {
+                $this->addAttribute($template, 'cn', array($cn));
             }
             
             $template->setRDNAttributes($rdn);
@@ -1848,12 +1860,6 @@ class Processor {
         
         // inject object classes
         $objectclass = $this->udiconfig->getObjectClasses();        
-        
-        // get Ignore for update attributes
-        $ignore_attrs = array();
-        foreach ($this->udiconfig->getIgnoreAttrs() as $attr) {
-            $ignore_attrs[strtolower($attr)] = $attr;
-        }
 
         $field_mappings = array();
         foreach ($cfg_mappings as $mapping) {
@@ -1864,6 +1870,12 @@ class Processor {
         foreach ($this->to_be_updated as $account) {
 
             $dn = $account['dn'];
+            
+            // get Ignore for update attributes
+            $ignore_attrs = array();
+            foreach ($this->udiconfig->getIgnoreAttrs() as $attr) {
+                $ignore_attrs[strtolower($attr)] = $attr;
+            }
             
             // find the existing one
             $existing_account = $this->check_user_dn($dn);
@@ -1961,16 +1973,19 @@ class Processor {
                         if (isset($ignore_attrs[strtolower($target)]) || $this->cfg['dn_attribute'] == $target) {
                             continue;
                         }
+                        $ignore_attrs[strtolower($target)] = $target;
                         if (isset($existing_account[strtolower($attr)])) {
                             // check for change
                             if ($this->changedValue($existing_account[strtolower($attr)], $value)) {
                                 $this->modifyAttribute($template, $target, $value);
+                                $existing_account[strtolower($attr)] = $value;
                                 $changed = true;
                             }
                         }
                         // a new attribute
                         else if (!empty($value)) {
                             $this->modifyAttribute($template, $target, $value);
+                            $existing_account[strtolower($attr)] = $value;
                             $changed = true;
                         }
                     }
@@ -1978,16 +1993,99 @@ class Processor {
                 else {
                     // check ignore attrs
                     if (!isset($ignore_attrs[strtolower($attr)]) && $this->cfg['dn_attribute'] != $attr) {
+                        $ignore_attrs[strtolower($attr)] = $attr;
                         if (isset($existing_account[strtolower($attr)])) {
                             // check for change
                             if ($this->changedValue($existing_account[strtolower($attr)], $value)) {
                                 $this->modifyAttribute($template, $attr, $value);
+                                $existing_account[strtolower($attr)] = $value;
                                 $changed = true;
                             }
                         }
                         // a new attribute
                         else if (!empty($value)) {
                             $this->modifyAttribute($template, $attr, $value);
+                            $existing_account[strtolower($attr)] = $value;
+                            $changed = true;
+                        }
+                    }
+                }
+            }
+
+            // now do expression substitutions
+            foreach ($field_mappings as $source => $targets) {
+                if (preg_match('/\%\[.+\]/', $source)) {
+                    // do the expansion then map to fields
+                    $value = $source;
+                    // find the substitutions
+                    if (preg_match_all('/\%\[(.+?)\]/', $source, $matches)) {
+                        foreach ($matches[1] as $match) {
+                            $parts = explode(':', $match);
+                            $attr = array_shift($parts);
+                            $length = empty($parts) ? 0 : (int)array_shift($parts);
+                            $length = (int)$length;
+                            $part = isset($existing_account[strtolower($attr)]) ? $existing_account[strtolower($attr)][0] : '';
+                            if ($length > 0) {
+                                $part = substr($part, 0, $length);
+                            }
+                            $value = preg_replace('/\%\['.preg_quote($match).'\]/', $part, $value, 1);
+                        }
+                    }
+                    if (!is_array($value)) {
+                        $value = !empty($value) ? array($value) : array(); 
+                    }
+                    
+                    // do the mapping
+                    foreach ($targets as $target) {
+                        // check ignore attrs
+                        if (isset($ignore_attrs[strtolower($target)]) || $this->cfg['dn_attribute'] == $target) {
+                            continue;
+                        }
+//                    var_dump($target);
+//                    var_dump($value);
+                        
+                        $ignore_attrs[strtolower($target)] = $target;
+                        if (isset($existing_account[strtolower($target)])) {
+                            // check for change
+                            if ($this->changedValue($existing_account[strtolower($target)], $value)) {
+                                $this->modifyAttribute($template, $target, $value);
+                                $existing_account[strtolower($target)] = $value;
+                                $changed = true;
+                            }
+                        }
+                        // a new attribute
+                        else if (!empty($value)) {
+                            $this->modifyAttribute($template, $target, $value);
+                            $existing_account[strtolower($target)] = $value;
+                            $changed = true;
+                        }
+                    }
+                    
+                }
+                else {
+                    // find all the constants that aren't attribute names
+                    $value = !empty($source) ? array($source) : array(); 
+                    
+                    foreach ($targets as $target) {
+                        // check ignore attrs
+                        if (isset($ignore_attrs[strtolower($target)]) || $this->cfg['dn_attribute'] == $target) {
+                            continue;
+                        }
+//                    var_dump($target);
+//                    var_dump($value);
+                        $ignore_attrs[strtolower($target)] = $target;
+                        if (isset($existing_account[strtolower($target)])) {
+                            // check for change
+                            if ($this->changedValue($existing_account[strtolower($target)], $value)) {
+                                $this->modifyAttribute($template, $target, $value);
+                                $existing_account[strtolower($target)] = $value;
+                                $changed = true;
+                            }
+                        }
+                        // a new attribute
+                        else if (!empty($value)) {
+                            $this->modifyAttribute($template, $target, $value);
+                            $existing_account[strtolower($target)] = $value;
                             $changed = true;
                         }
                     }
@@ -1999,13 +2097,12 @@ class Processor {
 
             // if ! changed then skip XXX
             if ($changed) {
-//                var_dump($template->getLDAPmodify());
 //                var_dump($dn);
-//                return false;
+//                var_dump($template->getLDAPmodify());
                 $result = $this->server->modify($dn, $template->getLDAPmodify(), 'user');
                 if (!$result) {
-                    var_dump($dn);
-                    var_dump($template->getLDAPmodify());
+//                    var_dump($dn);
+//                    var_dump($template->getLDAPmodify());
                     $request['page']->error(_('Could not update: ').$dn, _('processing'));
                     return $result;
                 }
