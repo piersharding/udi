@@ -1974,18 +1974,18 @@ class Processor {
                             continue;
                         }
                         $ignore_attrs[strtolower($target)] = $target;
-                        if (isset($existing_account[strtolower($attr)])) {
+                        if (isset($existing_account[strtolower($target)])) {
                             // check for change
-                            if ($this->changedValue($existing_account[strtolower($attr)], $value)) {
+                            if ($this->changedValue($existing_account[strtolower($target)], $value)) {
                                 $this->modifyAttribute($template, $target, $value);
-                                $existing_account[strtolower($attr)] = $value;
+                                $existing_account[strtolower($target)] = $value;
                                 $changed = true;
                             }
                         }
                         // a new attribute
                         else if (!empty($value)) {
                             $this->modifyAttribute($template, $target, $value);
-                            $existing_account[strtolower($attr)] = $value;
+                            $existing_account[strtolower($target)] = $value;
                             $changed = true;
                         }
                     }
@@ -2041,9 +2041,6 @@ class Processor {
                         if (isset($ignore_attrs[strtolower($target)]) || $this->cfg['dn_attribute'] == $target) {
                             continue;
                         }
-//                    var_dump($target);
-//                    var_dump($value);
-                        
                         $ignore_attrs[strtolower($target)] = $target;
                         if (isset($existing_account[strtolower($target)])) {
                             // check for change
@@ -2071,8 +2068,6 @@ class Processor {
                         if (isset($ignore_attrs[strtolower($target)]) || $this->cfg['dn_attribute'] == $target) {
                             continue;
                         }
-//                    var_dump($target);
-//                    var_dump($value);
                         $ignore_attrs[strtolower($target)] = $target;
                         if (isset($existing_account[strtolower($target)])) {
                             // check for change
