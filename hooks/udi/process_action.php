@@ -7,7 +7,7 @@ $action = (get_request('cancel') ? 'cancel' : '').
           (get_request('delete') ? 'delete' : '');
           
 // Set our timelimit in case we have a lot of importing to do
-@set_time_limit(0);
+set_time_limit(0);
 
 // up the memory limit as this could be big
 ini_set('memory_limit', '512M');

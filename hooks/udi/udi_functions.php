@@ -1359,6 +1359,9 @@ class Processor {
         
         $result = true;
         
+        // Set our timelimit in case we have a lot of importing to do
+        set_time_limit(0);
+        
         if ($this->cfg['enabled'] != 'checked') {
             $request['page']->error(_('Processing is not enabled - check configuration'), _('processing'));
             return false;
