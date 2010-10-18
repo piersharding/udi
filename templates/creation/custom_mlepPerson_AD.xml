@@ -56,11 +56,14 @@
 </attribute>
 <attribute id="mlepRole">
 	<display>mlep Role</display>
-	<default>Staff</default>
+	<default>Student</default>
     <type>select</type>
-    <value id="Staff">Staff</value>
+    <value id="TeachingStaff">TeachingStaff</value>
+    <value id="NonTeachingStaff">NonTeachingStaff</value>
     <value id="Student">Student</value>
-	<hint>Staff or Student</hint>
+    <value id="Parencaregiver">Parencaregiver</value>
+    <value id="Alumni">Alumni</value>
+	<hint>TeachingStaff or Student</hint>
 	<order>7</order>
 	<page>1</page>
 	<spacer>1</spacer>
