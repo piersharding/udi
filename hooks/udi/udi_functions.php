@@ -1161,7 +1161,9 @@ class Processor {
             // User Id must exist now
 //            var_dump($account);
             if (empty($account['mlepUsername'])) {
-                return $request['page']->error(_('Mandatory value: mlepUsername ')._(' is empty in row: ').$account['_row_cnt'], _('processing'));
+                $request['page']->warning(_('Mandatory value: mlepUsername ')._(' is empty in row: ').$account['_row_cnt']._(' - skipping'), _('processing'));
+                $remove_duplicates[]= $row_cnt;
+                continue;
             }
            
             // run passwd hook
@@ -1177,7 +1179,7 @@ class Processor {
             
             $uid = $account['mlepUsername'];
             if (isset($uid_duplicates[$uid])) {
-                $request['page']->warning(_('User account is duplicate in import file based on mlepUsername: ').$uid._(' record: ').$account['_row_cnt']._(' ignored'), _('processing'));
+                $request['page']->warning(_('User account is duplicate in import file based on mlepUsername: ').$uid._(' record: ').$account['_row_cnt']._(' - skipping'), _('processing'));
                 $remove_duplicates[]= $row_cnt;
                 continue;
             }
@@ -1189,7 +1191,7 @@ class Processor {
             $query = $this->server->query(array('base' => $this->udiconfig->getBaseDN(), 'filter' => "(mlepUsername=$uid)", 'attrs' => array('dn')), 'user');
             if (!empty($query)) {
                 $query = array_shift($query);
-                $request['page']->warning(_('User account is duplicate in directory for mlepUsername: ').$uid.' ('.$query['dn'].')'._(' record: ').$account['_row_cnt']._(' ignored'), _('processing'));
+                $request['page']->warning(_('User account is duplicate in directory for mlepUsername: ').$uid.' ('.$query['dn'].')'._(' record: ').$account['_row_cnt']._(' - skipping'), _('processing'));
                 $remove_duplicates[]= $row_cnt;
                 continue;
             }
@@ -1203,7 +1205,7 @@ class Processor {
             $query = $this->server->query(array('base' => $this->udiconfig->getBaseDN(), 'filter' => "($uid_attr=$uid)", 'attrs' => array('dn')), 'user');
             if (!empty($query)) {
                 $query = array_shift($query);
-                $request['page']->warning(_('User account is duplicate in directory for ').$uid_attr.': '.$uid.' ('.$query['dn'].')'._(' record: ').$account['_row_cnt']._(' ignored'), _('processing'));
+                $request['page']->warning(_('User account is duplicate in directory for ').$uid_attr.': '.$uid.' ('.$query['dn'].')'._(' record: ').$account['_row_cnt']._(' - skipping'), _('processing'));
                 $remove_duplicates[]= $row_cnt;
                 continue;
             }
@@ -1229,7 +1231,7 @@ class Processor {
             
             // check and stash
             if (isset($dn_duplicates[$dn])) {
-                $request['page']->warning(_('User account is duplicate in import file based on DN attribute: ').$dn._(' record: ').$account['_row_cnt']._(' ignored'), _('processing'));
+                $request['page']->warning(_('User account is duplicate in import file based on DN attribute: ').$dn._(' record: ').$account['_row_cnt']._(' - skipping'), _('processing'));
                 $remove_duplicates[]= $row_cnt;
                 continue;
             }
@@ -1237,7 +1239,7 @@ class Processor {
             
             // check for duplicates in directory for DN
             if ($this->check_user_dn($dn)) {
-                $request['page']->warning(_('User account is duplicate in directory: ').$dn._(' record: ').$account['_row_cnt']._(' ignored'), _('processing'));
+                $request['page']->warning(_('User account is duplicate in directory: ').$dn._(' record: ').$account['_row_cnt']._(' - skipping'), _('processing'));
                 $remove_duplicates[]= $row_cnt;
                 continue;
             }
@@ -1246,7 +1248,7 @@ class Processor {
             if (isset($account['mlepEmail']) && !empty($account['mlepEmail'])) {
                 $mail = $account['mlepEmail'];
                 if (isset($mail_duplicates[$mail])) {
-                    $request['page']->warning(_('User email address is duplicate in import file: ').$mail._(' record: ').$account['_row_cnt']._(' ignored'), _('processing'));
+                    $request['page']->warning(_('User email address is duplicate in import file: ').$mail._(' record: ').$account['_row_cnt']._(' - skipping'), _('processing'));
                     $remove_duplicates[]= $row_cnt;
                     continue;
                 }
@@ -1254,7 +1256,7 @@ class Processor {
                 $query = $this->server->query(array('base' => $this->udiconfig->getBaseDN(), 'filter' => "(mail=$mail)", 'attrs' => array('dn')), 'user');
                 if (!empty($query)) {
                     $query = array_shift($query);
-                    $request['page']->warning(_('Email address is duplicate in directory for ').': '.$mail.' ('.$query['dn'].')'._(' record: ').$account['_row_cnt']._(' ignored'), _('processing'));
+                    $request['page']->warning(_('Email address is duplicate in directory for ').': '.$mail.' ('.$query['dn'].')'._(' record: ').$account['_row_cnt']._(' - skipping'), _('processing'));
                     $remove_duplicates[]= $row_cnt;
                     continue;
                 }
@@ -1265,7 +1267,7 @@ class Processor {
                 $query = $this->server->query(array('base' => $this->cfg['move_to'], 'filter' => "(mlepUsername=$uid)", 'attrs' => array('dn')), 'user');
                 if (!empty($query)) {
                     // base does not exist
-                    $request['page']->warning(_('User account is duplicate in deletion (').$this->cfg['move_to']._(') directory for mlepUsername: ').$uid._(' record: ').$account['_row_cnt'], _('processing'));
+                    $request['page']->warning(_('User account is duplicate in deletion (').$this->cfg['move_to']._(') directory for mlepUsername: ').$uid._(' record: ').$account['_row_cnt']._(' - skipping'), _('processing'));
                     $remove_duplicates[]= $row_cnt;
                     continue;
                 }
