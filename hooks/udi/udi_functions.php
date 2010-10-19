@@ -889,8 +889,14 @@ class Processor {
        // get mapping configuration - map input file fields to LDAP attributes
         $cfg_mappings = $this->udiconfig->getMappings();
         $field_mappings = array();
+        $targets_to_source = array();
         foreach ($cfg_mappings as $mapping) {
             $field_mappings[$mapping['source']] = $mapping['targets'];
+            foreach($mapping['targets'] as $target) {
+                if (!isset($targets_to_source[$target])) {
+                    $targets_to_source[$target] = $mapping['source'];
+                }
+            }
         }
         $total_fields = array();
         
@@ -1124,6 +1130,7 @@ class Processor {
         // Hunt down existing uid/mlepUsernames to avoid duplicates
         $uid_duplicates = array();
         $dn_duplicates = array();
+        $mlepmail_duplicates = array();
         $mail_duplicates = array();
         $remove_duplicates = array();
         $row_cnt = 0;
@@ -1244,21 +1251,56 @@ class Processor {
                 continue;
             }
             
-            // check for duplicate email addresses
-            if (isset($account['mlepEmail']) && !empty($account['mlepEmail'])) {
-                $mail = $account['mlepEmail'];
-                if (isset($mail_duplicates[$mail])) {
-                    $request['page']->warning(_('User email address is duplicate in import file: ').$mail._(' record: ').$account['_row_cnt']._(' - skipping'), _('processing'));
-                    $remove_duplicates[]= $row_cnt;
-                    continue;
+//            // check for duplicate email addresses
+//            if ($this->cfg['strict_checks'] == 'checked') {
+//                if (isset($account['mlepEmail']) && !empty($account['mlepEmail'])) {
+//                    $mail = $account['mlepEmail'];
+//                    if (isset($mlepmail_duplicates[$mail])) {
+//                        $request['page']->warning(_('User email address is duplicate in import file: ').$mail._(' record: ').$account['_row_cnt']._(' - skipping'), _('processing'));
+//                        $remove_duplicates[]= $row_cnt;
+//                        continue;
+//                    }
+//                    $mlepmail_duplicates[$mail] = $mail;
+//                    $query = $this->server->query(array('base' => $this->udiconfig->getBaseDN(), 'filter' => "(mail=$mail)", 'attrs' => array('dn')), 'user');
+//                    if (!empty($query)) {
+//                        $query = array_shift($query);
+//                        $request['page']->warning(_('Email address is duplicate in directory for ').': '.$mail.' ('.$query['dn'].')'._(' record: ').$account['_row_cnt']._(' - skipping'), _('processing'));
+//                        $remove_duplicates[]= $row_cnt;
+//                        continue;
+//                    }
+//                }
+//            }
+            
+            // check for duplicate email addresses - mail attribute
+            if (in_array('mail', $this->server->getValue('unique','attrs'))) {
+                // figure out what the mail attribute will be - if at all
+                $mail = '';            
+                if (isset($account['mail']) && !empty($account['mail'])) {
+                    $mail = $account['mail'];
                 }
-                $mail_duplicates[$mail] = $mail;
-                $query = $this->server->query(array('base' => $this->udiconfig->getBaseDN(), 'filter' => "(mail=$mail)", 'attrs' => array('dn')), 'user');
-                if (!empty($query)) {
-                    $query = array_shift($query);
-                    $request['page']->warning(_('Email address is duplicate in directory for ').': '.$mail.' ('.$query['dn'].')'._(' record: ').$account['_row_cnt']._(' - skipping'), _('processing'));
-                    $remove_duplicates[]= $row_cnt;
-                    continue;
+                // find mapping - if exists
+                else if (isset($targets_to_source['mail'])) {
+                    if (isset($account[$targets_to_source['mail']])) {
+                        $mail = $account[$targets_to_source['mail']];
+                    }
+                    else {
+                        $mail = $targets_to_source['mail']; // constant value
+                    }
+                }
+                if (!empty($mail)) {
+                    if (isset($mail_duplicates[$mail])) {
+                        $request['page']->warning(_('User email (mail) address is duplicate in import file: ').$mail._(' record: ').$account['_row_cnt']._(' - skipping'), _('processing'));
+                        $remove_duplicates[]= $row_cnt;
+                        continue;
+                    }
+                    $mail_duplicates[$mail] = $mail;
+                    $query = $this->server->query(array('base' => $this->udiconfig->getBaseDN(), 'filter' => "(mail=$mail)", 'attrs' => array('dn')), 'user');
+                    if (!empty($query)) {
+                        $query = array_shift($query);
+                        $request['page']->warning(_('Email address (mail) is duplicate in directory for ').': '.$mail.' ('.$query['dn'].')'._(' record: ').$account['_row_cnt']._(' - skipping'), _('processing'));
+                        $remove_duplicates[]= $row_cnt;
+                        continue;
+                    }
                 }
             }
             
@@ -1280,6 +1322,7 @@ class Processor {
         foreach (array_reverse($remove_duplicates) as $pos) {
             array_splice($this->to_be_created, $pos - 1, 1);
         }
+//        var_dump($this->to_be_created);
         
         $request['page']->info(_('Calculated: ').count($this->to_be_created)._(' creates ').count($this->to_be_updated)._(' updates ').count($this->to_be_deactivated)._(' deletes ').$skips._(' skips'), _('processing'));
         return true;

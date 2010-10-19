@@ -16,7 +16,7 @@ switch ($action) {
     case 'cancel':
         // we are canceling the upload
         unset($_SESSION['udi_import_file']);
-        $request['page']->info(_('Prcessing cancelled - please note file uploaded has been reset'));
+        $request['page']->info(_('Processing cancelled - please note file uploaded has been reset'));
         break;
     
     case 'validate':
