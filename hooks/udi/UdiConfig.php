@@ -453,7 +453,7 @@ class UdiConfig {
                     continue;
                 }
                 $targets = preg_replace('/^(.*?)\)$/','$1', $targets);
-                $targets = explode(',', $targets);
+                $targets = empty($targets) ? array() : explode(',', $targets);
                 $cfg_mappings []= array('source' => $source, 'targets' => $targets);
             }
         }
