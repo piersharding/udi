@@ -23,8 +23,8 @@ $mlep_mandatory_fields = array(
                             'mlepUsername' => array('mandatory' => false, 'match' => '/.+/'),
                             'mlepFirstAttending' => array('mandatory' => true, 'match' => '/^\d{4}\-\d{2}\-\d{2}$/', 'group' => array('Student')),
                             'mlepLastAttendance' => array('mandatory' => false, 'match' => '/^\d{4}\-\d{2}\-\d{2}$/', 'group' => array('Student')),
-                            'mlepFirstName' => array('mandatory' => true, 'match' => '/.+/'),
-                            'mlepLastName' => array('mandatory' => true, 'match' => '/.+/'),
+                            'mlepFirstName' => array('mandatory' => true, 'match' => '/^[^\*\?\;\,\<\>\!\%\^\&\|]+$/'),
+                            'mlepLastName' => array('mandatory' => true, 'match' => '/^[^\*\?\;\,\<\>\!\%\^\&\|]+$/'),
                             'mlepAssociatedNSN' => array('mandatory' => false, 'match' => '/^\d{10}((\#\d{10})+)?$/', 'group' => array('ParentCaregiver')),
                             'mlepEmail' => array('mandatory' => false, 'match' => '#^[-!\#$%&\'*+\\/0-9=?A-Z^_`a-z{|}~]+'.
                                                                                   '(\.[-!\#$%&\'*+\\/0-9=?A-Z^_`a-z{|}~]+)*'.
@@ -971,6 +971,7 @@ class Processor {
         $iuid = $this->cfg['import_match_on'];
         $row_cnt = 0;
         $found_bad_records = false;
+        $skips = 0;
         foreach ($this->data['contents'] as $row) {
             $row_cnt++;
             $row_cnt = isset($row['lineno']) ? $row['lineno'] : $row_cnt;
@@ -1012,6 +1013,7 @@ class Processor {
                     $request['page']->warning(_('Invalid data in record: ').$row_cnt._(' broken values: mlepRole').'('.$user['mlepRole'].')', _('processing'));
                 }
                 unset($accounts[$user[$iuid]]);
+                $skips++;
                 // skip this user
                 continue;
             }
@@ -1020,6 +1022,7 @@ class Processor {
             if (isset($user['mlepRole']) && $this->udiconfig->getRole($user['mlepRole']) == 0) {
                 // skip this user
                 unset($accounts[$user[$iuid]]);
+                $skips++;
                 continue;
             }
             
@@ -1098,6 +1101,7 @@ class Processor {
                         $request['page']->log_to_file('Invalid data in record', preg_replace('/\n/', '', var_export($user, true)));
                     }
                     $request['page']->warning(_('Invalid data in record: ').$row_cnt._(' values: ').implode(', ', $field_errors), _('processing'));
+                    $skips++;
                     unset($accounts[$user[$iuid]]);
                     continue;
                 }
@@ -1318,7 +1322,7 @@ class Processor {
         }
         
         // remove the dropped records
-        $skips = count($remove_duplicates);
+        $skips += count($remove_duplicates);
         foreach (array_reverse($remove_duplicates) as $pos) {
             array_splice($this->to_be_created, $pos - 1, 1);
         }
