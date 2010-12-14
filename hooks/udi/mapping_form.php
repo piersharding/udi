@@ -46,7 +46,7 @@ if (isset($cfg['mappings'])) {
 //        var_dump($targets);
         //exit(0);
         // ignore broken mappings
-        if (empty($source)) {
+        if (empty($source) && $source !== '0') {
             continue;
         }
         $no_mappings += 1;
@@ -63,15 +63,15 @@ if (isset($cfg['mappings'])) {
         $source_attrs = array_merge($imo_attrs, array());
 //        var_dump(array_keys($imo_attrs));
 //        var_dump($imo_attrs);
-        
-        $func = function($attr) { 
-            return $attr->getName(false); 
+
+        $func = function($attr) {
+            return $attr->getName(false);
         };
-        
-        if (!in_array($source, array_map($func, $imo_attrs))) {
+
+        if (!in_array($source, array_map($func, $imo_attrs)) || $source === '0') {
             $source_attrs["".strtolower($source)] = new ObjectClass_ObjectClassAttribute("".$source, "".$source);
         }
-        
+
 //        if (!in_array(strtolower($source), array_keys($imo_attrs))) {
 //            $source_attrs["".strtolower($source)] = new ObjectClass_ObjectClassAttribute("".$source, "".$source);
 //        }
@@ -81,14 +81,14 @@ if (isset($cfg['mappings'])) {
 
         echo $request['page']->configRow(
                     $request['page']->configFieldLabel(
-                                        'mapping_'.$no_mappings, 
+                                        'mapping_'.$no_mappings,
         '<span style="white-space: nowrap;"><a href="" title="'._('Delete entire source').'" onclick="post_to_url(\'cmd.php\', {\'delete\': \'mapping\', \'mapping\': \''.$source.'\'}); return false;"><img src="images/udi/trash.png" alt="'._('Delete entire source').'"/></a> &nbsp;'.
                                         $request['page']->configSelect(
-                                                            'mapping_'.$no_mappings, 
-                                                            $source_attrs, 
+                                                            'mapping_'.$no_mappings,
+                                                            $source_attrs,
                                                             strtolower($source)).'</span>',
-                                        '_left_wide'), 
-                    $field, 
+                                        '_left_wide'),
+                    $field,
                     false);
         echo '<div class="underline">&nbsp;</div>';
     }
@@ -100,10 +100,10 @@ $imo_attrs = array_merge(array("none" => new ObjectClass_ObjectClassAttribute(""
 echo $request['page']->configRow(
                                 '<div class="fitemtitle_left">'.
                                 $request['page']->configMoreOrSelect(
-                                                        'new_mapping', 
+                                                        'new_mapping',
                                                         _('New Mapping'),
                                                         array('type' => 'text', 'value' => '', 'size' => 35),
-                                                        $imo_attrs 
+                                                        $imo_attrs
                                                         ).
                                 '</div>',
             '',
@@ -128,7 +128,7 @@ if (isset($cfg['groups_enabled']) && $cfg['groups_enabled'] == 'checked') {
     $groups_enabled_opts['value'] = 1;
 }
 echo $request['page']->configEntry('groups_enabled', _('Processing mlepGroupMembership Enabled:'), $groups_enabled_opts, true, false);
-$group_attrs = array('none' => new ObjectClass_ObjectClassAttribute("", ""), 
+$group_attrs = array('none' => new ObjectClass_ObjectClassAttribute("", ""),
                      'member' => new ObjectClass_ObjectClassAttribute("member", "member"),
                      'memberuid' => new ObjectClass_ObjectClassAttribute("memberUid", "memberuid"),
                      'uniquemember' => new ObjectClass_ObjectClassAttribute("uniqueMember", "uniquemember"),
@@ -180,14 +180,14 @@ if (!empty($cfg['group_mappings'])) {
 
         echo $request['page']->configRow(
                     $request['page']->configFieldLabel(
-                                        'group_mapping_'.$no_mappings, 
+                                        'group_mapping_'.$no_mappings,
         '<span style="white-space: nowrap;"><a href="" title="'._('Delete entire group').'" onclick="post_to_url(\'cmd.php\', {\'delete\': \'group_mapping\', \'group_mapping\': \''.$group.'\'}); return false;"><img src="images/udi/trash.png" alt="'._('Delete entire group').'"/></a> &nbsp;'.
                                         $request['page']->configField(
-                                                            'group_mapping_'.$no_mappings, 
+                                                            'group_mapping_'.$no_mappings,
                                                             array('type' => 'text', 'value' => $group, 'size' => 13), array()).'</span>'
-                                        ), 
-                    '<div class="felement_free ftext">'.$field.'</div>', 
-                    //$field, 
+                                        ),
+                    '<div class="felement_free ftext">'.$field.'</div>',
+                    //$field,
                     false);
         echo '<div class="underline">&nbsp;</div>';
     }

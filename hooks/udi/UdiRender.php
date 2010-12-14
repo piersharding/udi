@@ -15,17 +15,17 @@
 class UdiRender extends PageRender {
 	# Page number
 	private $pagelast;
-	
+
 	private $udiconfig = false;
-	
+
 	private $logfile = false;
 
 	public $messages = array();
-	
+
 	public function setConfig($config) {
 	    $this->udiconfig = $config;
 	}
-	
+
 	public function isError() {
 	    foreach ($this->messages as $msg) {
 	        if ($msg['type'] == 'error') {
@@ -55,7 +55,7 @@ class UdiRender extends PageRender {
         return implode("\n", $msgs);
     }
 
-    
+
     /**
      * Log the system messages to report file
      */
@@ -66,8 +66,8 @@ class UdiRender extends PageRender {
             }
         }
     }
-    
-    
+
+
 	/** CORE FUNCTIONS **/
 
 	/**
@@ -96,11 +96,11 @@ class UdiRender extends PageRender {
 		$after_function = isset($item['onload']) ? $item['onload'].';' : '';
         $layout = '<li  class="ui-state-default ui-corner-top %s"><a href="cmd.php?%s" title="%s" onclick="var res = ajDISPLAY(\'BODY\',\'%s\',\'%s\'); '.$after_function.' return res;"><img src="%s/%s" alt="%s" /> %s</a></li>';
         $classes = '';
-        
+
         if ($selected) {
             $classes = ' ui-tabs-selected ui-state-active';
         }
-	    
+
 		return sprintf($layout,
 		        $classes,
 				htmlspecialchars($href), // href
@@ -116,23 +116,23 @@ class UdiRender extends PageRender {
         $menu .= '<ul class="tabset_tabs ui-tabs-nav ui-helper-reset ui-helper-clearfix ui-widget-header ui-corner-all">';
         $menus = array(
                 array('name' => 'admin', 'text' => _('Configuration'), 'title' => _('Configure the UDI'), 'image' => 'tools.png', 'imagetext' => _('Admin'),),
-                array('name' => 'mapping', 'text' => _('Mapping'), 'title' => _('Perform data mapping'), 'image' => 'add.png', 'imagetext' => _('Mapping'),), 
-                array('name' => 'userpass', 'text' => _('User & Pass'), 'title' => _('UserId & Passwd processing control'), 'image' => 'key.png', 'imagetext' => _('UserId & Passwd'),), 
-                array('name' => 'upload', 'text' => _('Upload'), 'title' => _('Upload a file'), 'image' => 'import.png', 'imagetext' => _('Upload'),), 
+                array('name' => 'mapping', 'text' => _('Mapping'), 'title' => _('Perform data mapping'), 'image' => 'add.png', 'imagetext' => _('Mapping'),),
+                array('name' => 'userpass', 'text' => _('User & Pass'), 'title' => _('UserId & Passwd processing control'), 'image' => 'key.png', 'imagetext' => _('UserId & Passwd'),),
+                array('name' => 'upload', 'text' => _('Upload'), 'title' => _('Upload a file'), 'image' => 'import.png', 'imagetext' => _('Upload'),),
                 array('name' => 'process', 'text' => _('Processing'), 'title' => _('Process the UDI'), 'image' => 'timeout.png', 'imagetext' => _('Process'),),
-                array('name' => 'reporting', 'text' => _('Reporting'), 'title' => _('Reporting on the UDI'), 'image' => 'files-small.png', 'imagetext' => _('Reporting'), ), 
+                array('name' => 'reporting', 'text' => _('Reporting'), 'title' => _('Reporting on the UDI'), 'image' => 'files-small.png', 'imagetext' => _('Reporting'), ),
                 array('name' => 'help', 'text' => _('Help'), 'title' => _('UDI Help'), 'image' => 'help-small.png', 'imagetext' => _('Help'),),
                 );
-        
+
         foreach ($menus as $item) {
             $menu .= $this->getMenuItem($item, ($active == $item['name'] ? true : false));
         }
         $menu .= "</ul></div>";
         return $menu;
     }
-    
+
     private static    $skip_fields = array('objectclass', 'dn');
-    
+
     public function reportSummary($report) {
         $header = $report['header'];
         $footer = $report['footer'];
@@ -166,10 +166,10 @@ class UdiRender extends PageRender {
             $id = 'udi-report-'.$header['id'].'-'.$cnt;
             $table .= '<tr id="'.$id.'" style="display: none;" class="udi-report-message '.$class.'"><td class="udi-report-left">'.$message['type'].'</td><td colspan="2">'.$message['message'].'</td></tr>';
         }
-        
+
         // add the table data to the report
         if (!empty($data_tables)) {
-            foreach ($data_tables as $table_description => $table_lines) {  
+            foreach ($data_tables as $table_description => $table_lines) {
                 $first = $table_lines[0];
                 $table_data = '<table class="udi-report-tabledata"><tr class="udi-report-tabledata-header">';
                 // add the header line
@@ -199,7 +199,7 @@ class UdiRender extends PageRender {
                 $table .= '<tr id="'.$id.'" style="display: none;" class="udi-report-message '.$class.'"><td class="udi-report-left">'.$table_description.'</td><td colspan="2">'.$table_data.'</td></tr>';
             }
         }
-        
+
         if ($footer) {
             if ($errors) {
                 $table .= '<tr class="udi-report-footer udi-report-error">';
@@ -207,7 +207,7 @@ class UdiRender extends PageRender {
             else {
                 $table .= '<tr class="udi-report-footer udi-report-complete">';
             }
-            $table .= '<td class="udi-report-left">'._('Action: ').$header['action'].'</td>'.       
+            $table .= '<td class="udi-report-left">'._('Action: ').$header['action'].'</td>'.
                       '<td colspan="2">'._('Finished: ').$footer['time'].'</td>';
             $table .= '</tr>';
         }
@@ -218,7 +218,7 @@ class UdiRender extends PageRender {
         return $table;
     }
 
-    
+
     public function emailSummary($report) {
         $cssclasses = array(
                             'udi-report-info' => 'background: #ffffff;',
@@ -232,8 +232,8 @@ class UdiRender extends PageRender {
                             'udi-report-tabledata-header' => 'border: 1px solid #AAC; padding: 10px; border-spacing: 0px; vertical-align: top;',
                             'udi-report' => 'border: 1px solid #AAC; padding: 10px; border-spacing: 0px; vertical-align: top;',
                             );
-            
-                            
+
+
         $header = $report['header'];
         $footer = $report['footer'];
         $messages = $report['messages'];
@@ -266,10 +266,10 @@ class UdiRender extends PageRender {
             $id = 'udi-report-'.$header['id'].'-'.$cnt;
             $table .= '<tr id="'.$id.'" style="'.$cssclasses[$class].'"><td  valign="top" style="'.$cssclasses['udi-report-left'].'">'.$message['type'].'</td><td colspan="2">'.$message['message'].'</td></tr>';
         }
-        
+
         // add the table data to the report
         if (!empty($data_tables)) {
-            foreach ($data_tables as $table_description => $table_lines) {  
+            foreach ($data_tables as $table_description => $table_lines) {
                 $first = $table_lines[0];
                 $table_data = '<table  width="100%" cell-padding="0px" cell-spacing="0px"  style="'.$cssclasses['udi-report-tabledata'].'"><tr  style="'.$cssclasses['udi-report-tabledata-header'].'">';
                 // add the header line
@@ -298,7 +298,7 @@ class UdiRender extends PageRender {
                 $table .= '<tr id="'.$id.'" style="display: none;"  style="'.$cssclasses['udi-report-message'].$cssclasses[$class].'"><td  valign="top" class="udi-report-left">'.$table_description.'</td><td colspan="2">'.$table_data.'</td></tr>';
             }
         }
-        
+
         if ($footer) {
             if ($errors) {
                 $table .= '<tr style="'.$cssclasses['udi-report-footer'].$cssclasses['udi-report-error'].'">';
@@ -306,7 +306,7 @@ class UdiRender extends PageRender {
             else {
                 $table .= '<tr style="'.$cssclasses['udi-report-footer'].$cssclasses['udi-report-complete'].'">';
             }
-            $table .= '<td  valign="top" style="'.$cssclasses['udi-report-left'].'">'._('Action: ').$header['action'].'</td>'.       
+            $table .= '<td  valign="top" style="'.$cssclasses['udi-report-left'].'">'._('Action: ').$header['action'].'</td>'.
                       '<td colspan="2">'._('Finished: ').$footer['time'].'</td>';
             $table .= '</tr>';
         }
@@ -316,8 +316,8 @@ class UdiRender extends PageRender {
         $table .= '</table></td></tr></table>';
         return $table;
     }
-    
-    
+
+
     public function configRow($label, $field, $required=true) {
         if ($required) {
             return '<div class="fitem required">' . $label . $field .  '</div>';
@@ -372,7 +372,7 @@ class UdiRender extends PageRender {
             return '<div '.$container_opts.'><input type="button" '.$field_opts.'/></div>';
         }
     }
-    
+
     public function configEntry($name, $text, $attrs = array(), $label=true, $required=true) {
 
         if ($label) {
@@ -454,13 +454,13 @@ class UdiRender extends PageRender {
         foreach ($attrs as $attr) {
             $opt_name = $attr->getName(false);
             $opt_text = $attr->getName(false);
-            if (empty($opt_name)) {
+            if (empty($opt_name) && $opt_name !== '0') {
                 $opt_name = 'none';
                 $opt_text = _(' - unselected - ');
             }
-            $select .= sprintf('<option value="%s" %s>%s</option>', 
-                    $opt_name,strtolower($opt_name) == strtolower("".$default) ? 'selected ': '',$opt_text);
-        }   
+            $select .= sprintf('<option value="%s" %s>%s</option>',
+                    $opt_name,strtolower($opt_name) === strtolower("".$default) ? 'selected ': '',$opt_text);
+        }
         $select .= '</select>';
         return $select;
     }
@@ -476,23 +476,23 @@ class UdiRender extends PageRender {
                 $label = 'none';
                 $opt = _(' - unselected - ');
             }
-            $select .= sprintf('<option value="%s" %s>%s</option>', 
+            $select .= sprintf('<option value="%s" %s>%s</option>',
                     $label,strtolower($label) == strtolower("".$default) ? 'selected ': '',$opt);
-        }   
+        }
         $select .= '</select>';
         return $select;
     }
-    
+
     public function configSelectEntry($name, $text, $attrs = array(), $default='mlepSmsPersonId', $required=true) {
 
         return  $this->configRow($this->configFieldLabel($name, $text), '<div class="felement ftext">'.$this->configSelect($name, $attrs, $default).'</div>', $required);
     }
-    
+
     public function configSelectEntryBasic($name, $text, $opts = array(), $default='none', $required=true) {
 
         return  $this->configRow($this->configFieldLabel($name, $text), '<div class="felement ftext">'.$this->configSelectBasic($name, $opts, $default).'</div>', $required);
     }
-    
+
     public function info($msg, $action='') {
         $this->messages[]= array('type' => 'info', 'message' => $msg);
 //        $this->log_to_file('info', $msg);
@@ -529,7 +529,7 @@ class UdiRender extends PageRender {
                     get_request('server_id','REQUEST'))));
         return false;
     }
-    
+
     public function log_to_file($type, $msg) {
         if ($this->udiconfig) {
             // dont bother if reporting is disabled
@@ -552,7 +552,7 @@ class UdiRender extends PageRender {
             }
         }
     }
-    
+
     public function log_header($action, $cron=false) {
         global $app;
         $mode = $cron ? 'cron' : 'web';
@@ -562,41 +562,41 @@ class UdiRender extends PageRender {
         else {
             $user = $app['server']->getLogin('user');
         }
-        $msg = var_export(array('action' => $action, 
-                                            'time' => time(), 
+        $msg = var_export(array('action' => $action,
+                                            'time' => time(),
                                             'user' => $user,
                                             'mode' => $mode), true);
         $msg = preg_replace('/\n/', '', $msg);
         $this->log_to_file('start', $msg);
     }
-    
+
     public function log_footer() {
         global $app;
         $msg = var_export(array('time' => date("d/m/Y H:i:s", strtotime('+0 days'))), true);
         $msg = preg_replace('/\n/', '', $msg);
         $this->log_to_file('end', $msg);
     }
-    
+
     public function email_report() {
         if ($this->udiconfig && $this->logfile) {
             $cfg = $this->udiconfig->getConfig();
             $report = read_report($this->logfile);
             $report = $this->emailSummary($report);
             // series of nasty hacks because css is not honoured in email clients
-            $to = $cfg['reportemail']; 
-            $subject = _('UDI Processing report'); 
-            $random_hash = md5(date('r', time())); 
-            $headers = "From: udi@localhost\r\nReply-To: noreply@localhost"; 
+            $to = $cfg['reportemail'];
+            $subject = _('UDI Processing report');
+            $random_hash = md5(date('r', time()));
+            $headers = "From: udi@localhost\r\nReply-To: noreply@localhost";
             $headers .= "\r\nContent-Type: multipart/mixed; boundary=\"PHP-mixed-".$random_hash."\"";
             $body = "
 --PHP-mixed-$random_hash
 Content-Type: multipart/alternative; boundary=\"PHP-alt-$random_hash\"
 
 --PHP-alt-$random_hash
-Content-Type: text/plain; charset=\"iso-8859-1\" 
+Content-Type: text/plain; charset=\"iso-8859-1\"
 Content-Transfer-Encoding: 7bit
 
-This report is only visible in HTML format 
+This report is only visible in HTML format
 
 --PHP-alt-$random_hash
 Content-Type: text/html; charset=\"iso-8859-1\"
@@ -609,17 +609,17 @@ Content-Transfer-Encoding: 7bit
 <meta http-equiv=\"Content-Type\" content=\"text/html; charset=iso-8859-1\">
 </head>
 <body>
-<h2>UDI Processing report</h2> 
+<h2>UDI Processing report</h2>
 $report
 </body>
 </html>
---PHP-alt-$random_hash-- 
+--PHP-alt-$random_hash--
 
-"; 
-            $mail_sent = @mail( $to, $subject, $body, $headers ); 
+";
+            $mail_sent = @mail( $to, $subject, $body, $headers );
         }
     }
-    
+
     public function outputMessages() {
         $msgs = '';
         foreach ($this->messages as $msg) {
@@ -628,7 +628,7 @@ $report
         $this->messages = array();
         return "<div class='messages'>".$msgs.'</div>';
     }
-    
+
     public function confirmationPage($title, $acronym, $element, $msg, $action, $params) {
         global $app;
         $out  =  '<table class="forminput" border=0>';
@@ -665,6 +665,6 @@ $report
         $out .=  '</table>';
         return $out;
     }
-    
+
 }
 ?>

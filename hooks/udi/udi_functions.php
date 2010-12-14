@@ -1575,6 +1575,10 @@ class Processor {
         }
         $field_mappings = array();
         foreach ($cfg_mappings as $mapping) {
+            // guard against numeric value source keys
+            if (preg_match('/^\d+$/', $mapping['source'])) {
+                $mapping['source'] = '_constant:'.$mapping['source'];
+            }
             $field_mappings[$mapping['source']] = $mapping['targets'];
         }
 
@@ -1777,13 +1781,21 @@ class Processor {
                 }
                 else {
                     // find all the constants that aren't attribute names
+                    if (preg_match('/^\_constant:(\d+)$/', $source, $matches)) {
+                        // unpack the real source
+                        $source = $matches[1];
+                    }
+
+                    // setup value correctly
+                    $value = (!empty($source) || $source === '0') ? array($source) : array();
+
                     foreach ($targets as $target) {
                         // dont allow doubling up
                         if (isset($total_fields[$target])) {
                             continue;
                         }
                         $total_fields[$target] = $source;
-                        $this->addAttribute($template, $target, array($source));
+                        $this->addAttribute($template, $target, $value);
                     }
                 }
             }
@@ -1932,6 +1944,10 @@ class Processor {
 
         $field_mappings = array();
         foreach ($cfg_mappings as $mapping) {
+            // guard against numeric value source keys
+            if (preg_match('/^\d+$/', $mapping['source'])) {
+                $mapping['source'] = '_constant:'.$mapping['source'];
+            }
             $field_mappings[$mapping['source']] = $mapping['targets'];
         }
 
@@ -2083,6 +2099,7 @@ class Processor {
 
             // now do expression substitutions
             foreach ($field_mappings as $source => $targets) {
+
                 if (preg_match('/\%\[.+\]/', $source)) {
                     // do the expansion then map to fields
                     $value = $source;
@@ -2130,7 +2147,13 @@ class Processor {
                 }
                 else {
                     // find all the constants that aren't attribute names
-                    $value = !empty($source) ? array($source) : array();
+                    if (preg_match('/^\_constant:(\d+)$/', $source, $matches)) {
+                        // unpack the real source
+                        $source = $matches[1];
+                    }
+
+                    // setup value correctly
+                    $value = (!empty($source) || $source === '0') ? array($source) : array();
 
                     foreach ($targets as $target) {
                         // check ignore attrs
@@ -2889,7 +2912,7 @@ class Processor {
             $attribute->clearValue();
             $attribute->setValue($value);
         }
-        if (empty($value) || empty($value[0])) {
+        if (empty($value) || (empty($value[0]) && $value[0] !== '0')) {
             $attribute->setForceDelete();
         }
     }

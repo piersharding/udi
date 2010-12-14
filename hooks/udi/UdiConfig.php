@@ -103,15 +103,15 @@ class UdiConfig {
                     'process_role_ParentCaregiver' => 'checked',
                     'process_role_Alumni' => 'checked',
                     'strict_checks' => 'checked',
-            ),            
+            ),
     );
-    
+
     private $server;
 
     private $base;
-    
+
     public $config = null;
-    
+
 	# Config DN
     protected $configouname = 'OU=UDIConfig';
     protected $configdnname = 'cn=UDIConfig';
@@ -136,24 +136,24 @@ class UdiConfig {
 	 * Get the base DN
 	 */
 	public function getBaseDN() {
-        return $this->base;	    
+        return $this->base;
 	}
 
 	/**
      * Get the Config base DN
      */
     public function getConfigDN() {
-        return $this->configdn;        
+        return $this->configdn;
     }
 
     /**
      * Get the Config backup base DN
      */
     public function getConfigBackupDN() {
-        return $this->configbackupdn;        
+        return $this->configbackupdn;
     }
-    
-    
+
+
     /**
      * Get the Config
      */
@@ -166,11 +166,11 @@ class UdiConfig {
         $query = $this->server->query(array('base' => $this->configdn, 'attrs' => array('description')), $method);
         $this->unpackConfig($query);
         return $this->config;
-    }    
+    }
 
     /**
      * Get the value of a checkbox configuration
-     * 
+     *
      * @param String $switch checkbox value name
      * @Return boolean flag of checkbox value
      */
@@ -182,7 +182,7 @@ class UdiConfig {
             return 0;
         }
     }
-    
+
     /**
      * Get the switch value for a mlepRole
      * @Param String $role - the role name to test
@@ -191,7 +191,7 @@ class UdiConfig {
     public function getRole($role) {
         return $this->getSwitch('process_role_'.$role);
     }
-    
+
     /**
      * Get the next sequential number
      */
@@ -201,34 +201,34 @@ class UdiConfig {
         $this->updateConfig();
         return $seq;
     }
-    
-    
+
+
     /**
      * Validate the Config
      */
     public function validate($all=false) {
         global $request;
-        
+
         $valid = true;
-        
+
         // prepoulate defaults
 //        foreach (self::$DEFAULTS as $var => $default) {
 //            if (!isset($this->config[$var])) {
 //                $this->config[$var] = $default;
 //            }
 //        }
-                
+
         // validate the file path - must exist
         if (preg_match('/^http/', $this->config['filepath'])) {
             $hdrs = get_headers($this->config['filepath']);
             if (!preg_match('/^HTTP.*? 200 .*?OK/', $hdrs[0])) {
                 $request['page']->warning(_('Source import URL does not exist: ').$this->config['filepath'], _('configuration'));
             }
-        } 
+        }
         else if (!file_exists($this->config['filepath'])) {
             $request['page']->warning(_('Source import file does not exist: ').$this->config['filepath'], _('configuration'));
         }
-        
+
         if (isset($this->config['enable_reporting']) && $this->config['enable_reporting'] == 'checked') {
             // validate reporting email address
             if (empty($this->config['reportemail'])) {
@@ -243,7 +243,7 @@ class UdiConfig {
                 $request['page']->error(_('Reporting email address is invalid: ').$this->config['reportemail'], _('configuration'));
                 $valid = false;
             }
-            
+
             // create missing directory
             if (empty($this->config['reportpath'])) {
                 $request['page']->warning(_('Reporting file path is empty'), _('configuration'));
@@ -262,7 +262,7 @@ class UdiConfig {
                 }
             }
         }
-        
+
         // get the search bases
         if (isset($this->config['search_bases'])) {
             $bases = explode(';', $this->config['search_bases']);
@@ -275,7 +275,7 @@ class UdiConfig {
         else {
             $request['page']->warning(_('Search bases are empty - the UDI cannot run without them set'), _('configuration'));
         }
-        
+
         // The create in bucket for new accounts
         if (!empty($this->config['create_in'])) {
             if (check_dn_exists($this->config['create_in'], _('Create new accounts target DN does not exist: ').$this->config['create_in'])) {
@@ -295,7 +295,7 @@ class UdiConfig {
                 $valid = false;
             }
         }
-        
+
         // validate the target DN for moving deletes
         if (!isset($this->config['ignore_deletes']) || $this->config['ignore_deletes'] != 'checked') {
             if (isset($this->config['move_on_delete']) && $this->config['move_on_delete'] !== null) {
@@ -307,7 +307,7 @@ class UdiConfig {
                     }
                     else if (in_array($this->config['move_to'], $bases)){
                         $request['page']->error(_('Target delete DN must not be one of the search bases: ').$this->config['move_to'], _('configuration'));
-                        $valid = false;   
+                        $valid = false;
                     }
                 }
                 else {
@@ -316,7 +316,7 @@ class UdiConfig {
                 }
             }
         }
-        
+
         // get the objectClasses
         $classes = explode(';', $this->config['objectclasses']);
         foreach ($classes as $class) {
@@ -324,7 +324,7 @@ class UdiConfig {
                 check_objectclass($class) ? true : $valid = false;
             }
         }
-        
+
         // validate container mappings
         $container_mappings = $this->getContainerMappings();
         foreach ($container_mappings as $mapping) {
@@ -346,7 +346,7 @@ class UdiConfig {
                 $valid = false;
             }
         }
-        
+
         if ($all) {
             if ((!isset($this->config['ignore_userids']) || $this->config['ignore_userids'] != 'checked') && $this->config['userid_algo'] != 'none') {
                 if (!function_exists($this->config['userid_algo'])) {
@@ -363,7 +363,7 @@ class UdiConfig {
         }
         return $valid;
     }
-    
+
     /**
      * Set a config value
      */
@@ -417,7 +417,7 @@ class UdiConfig {
         }
         return $cfg_ignore_attrs;
     }
-    
+
 
     /**
      * Set the objectclasses config value
@@ -427,7 +427,7 @@ class UdiConfig {
         $this->setConfig('objectclasses', $objectclasses);
         return $this->updateConfig();
     }
-   
+
 
     /**
      * Set the ignore_attrs config value
@@ -437,8 +437,8 @@ class UdiConfig {
         $this->setConfig('ignore_attrs', $attrs);
         return $this->updateConfig();
     }
-    
-    
+
+
     /**
      * Get the mapping config value
      */
@@ -449,7 +449,7 @@ class UdiConfig {
             $mappings = explode(';', $this->config['mappings']);
             foreach ($mappings as $map) {
                 list($source, $targets) = explode('(', $map);
-                if (empty($source) || empty($targets)) {
+                if ((empty($source) && $source !== '0') || empty($targets)) {
                     continue;
                 }
                 $targets = preg_replace('/^(.*?)\)$/','$1', $targets);
@@ -527,7 +527,7 @@ class UdiConfig {
         }
         return $cfg_mappings;
     }
-    
+
     /**
      * Set the container mapping config value
      */
@@ -540,7 +540,7 @@ class UdiConfig {
         $this->setConfig('container_mappings', $map);
         return true;
     }
-    
+
     /**
      * Update the Config
      */
@@ -596,7 +596,7 @@ class UdiConfig {
     }
 
     /**
-     * Determine the server type and then set the config 
+     * Determine the server type and then set the config
      * for it - server_type
      * @return String server type
      */
@@ -611,7 +611,7 @@ class UdiConfig {
         }
         return $this->config['server_type'];
     }
-    
+
     /**
      * backup the Config
      */
@@ -643,7 +643,7 @@ class UdiConfig {
                         $this->config[$config_var[0]] = $config_var[1];
                     }
                 }
-            }    
+            }
         }
         // determine server type
         $this->serverType();

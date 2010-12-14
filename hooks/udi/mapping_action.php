@@ -99,7 +99,7 @@ default:
         // cycle through each source mapping
         foreach (range(1, $no_mappings) as $this_mapping) {
             $source = get_request('mapping_'.$this_mapping);
-            if (empty($source)) {
+            if (empty($source) && $source !== '0') {
                 continue;
             }
             // do we have any target fields for this mapping
@@ -126,22 +126,22 @@ default:
     // did we add a new mapping source
     $source_field = get_request('new_mapping_field');
     $source = get_request('new_mapping_select');
-    if (!empty($source_field)) {
+    if (!empty($source_field) || $source_field === '0') {
         $source = $source_field;
     }
-    if (!empty($source) && $source != 'none') {
+    if ((!empty($source) && $source != 'none')  || $source_field === '0') {
         $cfg_mappings []= array('source' => $source, 'targets' => array());
     }
     $cfg = $udiconfig->updateMappings($cfg_mappings);
 
     // process group membership mappings
-    
-    
-    
+
+
+
     // WE NEED TO CHECK THAT THESE ARE REAL GROUPS eg. posixGroup objectClass XXX !!!!!!!!!!!!!!!
-    
-    
-    
+
+
+
     $no_mappings = (int)get_request('no_of_group_mappings');
     $cfg_group_mappings = array();
     // do we have any mappings
@@ -184,11 +184,11 @@ default:
     // groups_enabled is a checkbox
     $groups_enabled = get_request('groups_enabled');
     $udiconfig->setConfigCheckBox('groups_enabled', $groups_enabled);
-    
+
     // group membership attribute
     $group_attr = get_request('group_attr');
     $udiconfig->setConfig('group_attr', $group_attr);
-    
+
     // finally update all the config
     $cfg = $udiconfig->updateGroupMappings($cfg_group_mappings);
     $request['page']->info(_('Mappings saved'));
