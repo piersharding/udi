@@ -551,8 +551,18 @@ class UdiConfig {
             return false;
         }
         $attrs = array('description' => array());
+        $cnt = 0; // to ensure attr values are unique
         foreach ($this->config as $k => $v) {
-            $attrs['description'][]= "$k=$v";
+            if (strlen($v) > 512) {
+                var_dump($v);
+            }
+            // break up the parameters into fixed lengths
+            // because of attribute length limitations
+            $parts = str_split($v, 512);
+            foreach ($parts as $part) {
+                $cnt++;
+                $attrs['description'][]= "{$cnt}_{$k}={$part}";
+            }
         }
 //        global $request;
 //        $request['page']->warning(var_export($attrs, true), _('configuration'));
@@ -637,10 +647,23 @@ class UdiConfig {
         if (!empty($query)) {
             $query = array_pop($query);
             if (isset($query['description'])) {
+//                sort($query['description']);
                 foreach ($query['description'] as $attr) {
-                    if (preg_match('/.*?\=/', $attr)) {
+                    if (preg_match('/.+?\=/', $attr)) {
                         $config_var = explode('=', $attr, 2);
-                        $this->config[$config_var[0]] = $config_var[1];
+                        if (preg_match('/\d+?\_.+?\=/', $attr)) {
+                            $parts = explode('_', $config_var[0], 2);
+                            $key = $parts[1];
+                        }
+                        else {
+                            $key = $config_var[0];
+                        }
+                        if (array_key_exists($key, $this->config)) {
+                            $this->config[$key] .= $config_var[1];
+                        }
+                        else {
+                            $this->config[$key] = $config_var[1];
+                        }
                     }
                 }
             }

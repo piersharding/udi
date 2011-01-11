@@ -994,14 +994,14 @@ class Processor {
                 if (isset($field_mappings[$header])) {
                     foreach ($field_mappings[$header] as $target) {
                         $value = trim($user[$header]);
-                        if ($total_attrs[strtolower($target)] && empty($value) && !in_array(strtolower($target), array('mlepusername', 'samaccountname'))) {
+                        if ($total_attrs[strtolower($target)] && empty($value) && !in_array(strtolower($target), array('mlepusername', 'samaccountname', 'uid'))) {
                             return $request['page']->error(_('Mandatory value: ').$header._(' (maps to: ').$target.')'._(' is empty in row: ').$row_cnt, _('processing'));
                         }
                     }
                 }
                 else {
                     $value = trim($user[$header]);
-                    if ($total_attrs[strtolower($header)] && empty($value) && !in_array(strtolower($header), array('mlepusername', 'samaccountname'))) {
+                    if ($total_attrs[strtolower($header)] && empty($value) && !in_array(strtolower($header), array('mlepusername', 'samaccountname', 'uid'))) {
                         return $request['page']->error(_('Mandatory value: ').$header._(' (maps to: ').$header.')'._(' is empty in row: ').$row_cnt, _('processing'));
                     }
                 }
