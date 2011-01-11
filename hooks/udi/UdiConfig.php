@@ -553,9 +553,6 @@ class UdiConfig {
         $attrs = array('description' => array());
         $cnt = 0; // to ensure attr values are unique
         foreach ($this->config as $k => $v) {
-            if (strlen($v) > 512) {
-                var_dump($v);
-            }
             // break up the parameters into fixed lengths
             // because of attribute length limitations
             $parts = str_split($v, 512);
@@ -651,9 +648,8 @@ class UdiConfig {
                 foreach ($query['description'] as $attr) {
                     if (preg_match('/.+?\=/', $attr)) {
                         $config_var = explode('=', $attr, 2);
-                        if (preg_match('/\d+?\_.+?\=/', $attr)) {
-                            $parts = explode('_', $config_var[0], 2);
-                            $key = $parts[1];
+                        if (preg_match('/^\d+?\_(.+?)\=(.*?)$/', $attr, $matches)) {
+                            $key = $matches[1];
                         }
                         else {
                             $key = $config_var[0];
