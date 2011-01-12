@@ -550,17 +550,7 @@ class UdiConfig {
         if (!$this->createConfigDn($this->configdn)) {
             return false;
         }
-        $attrs = array('description' => array());
-        $cnt = 0; // to ensure attr values are unique
-        foreach ($this->config as $k => $v) {
-            // break up the parameters into fixed lengths
-            // because of attribute length limitations
-            $parts = str_split($v, 512);
-            foreach ($parts as $part) {
-                $cnt++;
-                $attrs['description'][]= "{$cnt}_{$k}={$part}";
-            }
-        }
+        $attrs = $this->serialiseConfig();
 //        global $request;
 //        $request['page']->warning(var_export($attrs, true), _('configuration'));
         $result = $this->server->modify($this->configdn, $attrs, 'user');
@@ -620,6 +610,25 @@ class UdiConfig {
     }
 
     /**
+     * serialise config
+     */
+    public function serialiseConfig() {
+
+        $attrs = array('description' => array());
+        $cnt = 0; // to ensure attr values are unique
+        foreach ($this->config as $k => $v) {
+            // break up the parameters into fixed lengths
+            // because of attribute length limitations
+            $parts = str_split($v, 768);
+            foreach ($parts as $part) {
+                $cnt++;
+                $attrs['description'][]= "{$cnt}_{$k}=#{$part}#";
+            }
+        }
+        return $attrs;
+    }
+
+    /**
      * backup the Config
      */
     public function backupConfig() {
@@ -629,10 +638,7 @@ class UdiConfig {
             return false;
         }
 
-        $attrs = array('description' => array());
-        foreach ($this->config as $k => $v) {
-            $attrs['description'][]= "$k=$v";
-        }
+        $attrs = $this->serialiseConfig();
         $result = $this->server->modify($this->configbackupdn, $attrs);
         return $this->getConfig(true);
     }
@@ -644,21 +650,24 @@ class UdiConfig {
         if (!empty($query)) {
             $query = array_pop($query);
             if (isset($query['description'])) {
-//                sort($query['description']);
                 foreach ($query['description'] as $attr) {
                     if (preg_match('/.+?\=/', $attr)) {
                         $config_var = explode('=', $attr, 2);
+                        $value = $config_var[1];
                         if (preg_match('/^\d+?\_(.+?)\=(.*?)$/', $attr, $matches)) {
                             $key = $matches[1];
+                            if (preg_match('/^\#(.*?)\#$/', $config_var[1], $matches)) {
+                                $value = $matches[1];
+                            }
                         }
                         else {
                             $key = $config_var[0];
                         }
                         if (array_key_exists($key, $this->config)) {
-                            $this->config[$key] .= $config_var[1];
+                            $this->config[$key] .= $value;
                         }
                         else {
-                            $this->config[$key] = $config_var[1];
+                            $this->config[$key] = $value;
                         }
                     }
                 }
