@@ -89,4 +89,16 @@ function userid_alg_02_userid_algorithm() {
 }
 add_hook('account_create_before','userid_alg_02_userid_algorithm');
 
+
+/**
+ * intialise the userid cache between 
+ * the validation run and the live run
+*/
+function userid_alg_02_userid_algorithm_init() {
+    list($server, $udiconfig) = func_get_args();
+    global $USERID_ALG_02_CACHE;
+    $USERID_ALG_02_CACHE = array();
+}
+add_hook('account_create_before_init','userid_alg_02_userid_algorithm_init');
+
 ?>
