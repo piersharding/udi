@@ -1,6 +1,7 @@
 UDI callback hooks that you can register functions for
 ======================================================
 
+account_create_before_init - general purpose routine for setting up cache global cache data before successive account_create_before calls
 account_create_before - User Id generation - this callback enables the modification of the user attributes before user creation
 passwd_algorithm - Password generation - this callback enables the generation of passwords only prior to user creation
 account_create_after - access to perform follow on functions after users are created

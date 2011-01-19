@@ -346,9 +346,9 @@ class Importer {
 
             default:
                 system_message(array(
-					'title'=>sprintf('%s %s',_('Unknown Import Type'),$this->template_id),
-					'body'=>_('phpLDAPadmin has not been configured for that import type'),
-					'type'=>'warn'),'index.php');
+                    'title'=>sprintf('%s %s',_('Unknown Import Type'),$this->template_id),
+                    'body'=>_('phpLDAPadmin has not been configured for that import type'),
+                    'type'=>'warn'),'index.php');
                 die();
         }
         $this->template->accept($this->delimiter);
@@ -971,6 +971,9 @@ class Processor {
             }
         }
 
+        // Initialise any account create before algorithms
+        udi_run_hook('account_create_before_init', array($this->server, $this->udiconfig));
+
         // reorder the list of import users based on their match_from
         $imports = array();
         $iuid = $this->cfg['import_match_on'];
@@ -1584,6 +1587,9 @@ class Processor {
 
         // userid and passwd algorythms
         $algols = $this->getUserPassAlgorythms();
+
+        // Initialise any account create before algorithms
+        udi_run_hook('account_create_before_init', array($this->server, $this->udiconfig));
 
         // create the missing
         foreach ($this->to_be_created as $account) {
