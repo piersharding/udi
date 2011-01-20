@@ -30,7 +30,7 @@ function userid_alg_03_userid_algorithm_label() {
 	             'description' => 'generates the User Id based on an edit mask created from
   the CSV column headings similar to sprintf. eg:
   <span class=\'tiny\'>STU%[YearGroup]%[mlepFirstName]%[mlepLastName]</span> would create an User Id of stu10daisyduck.<br/>
- There is a special value %[Initials] that substitutes in the intials of the users first name.  
+ There is a special value %[Initials] that substitutes in the intials of the users first name.
  %[UniqueNo] substitutes an auto-generated unique number.  %[RolePrefix] substitutes a 2 char label for each mlepRole type (eg. Student = st, TeachingStaff = ts).
  <br/>
  All substitutions can be given an optional length specfier which will truncate accordingly eg: <span class=\'tiny\'>%[Initials].%[mlepLastName:3].%[UniqueNo:5]</span>
@@ -46,7 +46,7 @@ add_hook('userid_algorithm_label','userid_alg_03_userid_algorithm_label');
 /**
  * The account_create_before function is called from within the udi_import Processor class
  * to allow the custom generation of User Id
- * It is expected that the result of this call will update mlepUsername on the 
+ * It is expected that the result of this call will update mlepUsername on the
  * import file structure, which will then be available to the mapping process for
  * distribution of the value to the directory
  *
@@ -55,21 +55,21 @@ add_hook('userid_algorithm_label','userid_alg_03_userid_algorithm_label');
  *  - UDIConfig object for access to complete UDI configuration settings
  *  - user record from file - array keyed by csv column headings
  *  - return the $account array if you want it modfied else false
- *  
+ *
  *  YOU MUST MODIFY mlepUsername to SET the NEW User Id !!!!
- *  
+ *
  *  This callback generates the User Id based on an edit mask created from
  *  the CSV column headings similar to sprintf. eg:
  *  STU%[YearGroup]%[mlepFirstName]%[mlepLastName]
- *  There is the special value %[Initials] that substitutes in the intials of 
+ *  There is the special value %[Initials] that substitutes in the intials of
  *  the users first name
  *  %[UniqueNo] - substituted next sequential number for userid generation
  *  Also need to consider legnth eg: put a length specifier on fields such as
  *  %[mlepFirstName:4] gives the first 4 chars of mlepFirstname.
- *  
+ *
  *  mlepRole split determiniation eg:
  *  {Student=STU%[UniqueNo:5];TeachiingStaff=%[Initials]%[mlepLastName];NonTeachingStaff=%[Initials]%[mlepLastName]}
- *  
+ *
  *  * must have curly braces
  *  * each role delimited by ';'
  *  * role=<mask>
@@ -112,7 +112,7 @@ function userid_alg_03_userid_algorithm() {
                 return false;
             }
         }
-        
+
         // find the substitutions
         if (preg_match_all('/\%\[(.+?)\]/', $pattern, $matches)) {
             foreach ($matches[1] as $match) {
@@ -120,7 +120,7 @@ function userid_alg_03_userid_algorithm() {
                 $attr = array_shift($parts);
                 $length = empty($parts) ? 0 : (int)array_shift($parts);
                 $length = (int)$length;
-                
+
                 // special UniqueNo tag
                 if (strtolower($attr) == 'uniqueno') {
                     $next = $udiconfig->nextNumber();
@@ -147,7 +147,7 @@ function userid_alg_03_userid_algorithm() {
                 $uid = preg_replace('/\%\['.preg_quote($match).'\]/', $value, $uid, 1);
             }
         }
-        
+
         // now squash the result
         $uid = strtolower(preg_replace('/\s+/', '', $uid));
         if ($uid) {
@@ -176,7 +176,7 @@ add_hook('account_create_before','userid_alg_03_userid_algorithm');
 
 
 /**
- * intialise the userid cache between 
+ * intialise the userid cache between
  * the validation run and the live run
 */
 function userid_alg_03_userid_algorithm_init() {

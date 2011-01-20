@@ -1026,7 +1026,7 @@ class Processor {
                 continue;
             }
 
-            // check that the mlepRole of this user us active
+            // check that the mlepRole of this user is active
             if (isset($user['mlepRole']) && $this->udiconfig->getRole($user['mlepRole']) == 0) {
                 // skip this user
                 unset($accounts[$user[$iuid]]);
@@ -1062,7 +1062,7 @@ class Processor {
                             }
                         }
                     }
-                    // now - ifthey are empty - then they can short circuit
+                    // now - if they are empty - then they can short circuit
                     if (empty($user[$field])) {
                         continue;
                     }
@@ -1121,7 +1121,6 @@ class Processor {
 
         // find the missing accounts in the directory
         $this->to_be_deactivated = array_diff_key($accounts, $imports);
-//        var_dump($this->to_be_deactivated);
 
         // find the new accounts in the file
         $this->to_be_created = array_diff_key($imports, $accounts);
@@ -1146,7 +1145,7 @@ class Processor {
         $mail_duplicates = array();
         $remove_duplicates = array();
         $row_cnt = 0;
-        foreach ($this->to_be_created as &$account) {
+        foreach ($this->to_be_created as $id => $account) {
             $row_cnt++;
 
             // run all other account_create_before hooks
@@ -1327,6 +1326,9 @@ class Processor {
                 }
             }
             unset($account['_row_cnt']);
+
+            // now paste $account back on as it may have been modified
+            $this->to_be_created[$id] = $account;
         }
 
         // remove the dropped records
@@ -1334,9 +1336,28 @@ class Processor {
         foreach (array_reverse($remove_duplicates) as $pos) {
             array_splice($this->to_be_created, $pos - 1, 1);
         }
-//        var_dump($this->to_be_created);
 
-        $request['page']->info(_('Calculated: ').count($this->to_be_created)._(' creates ').count($this->to_be_updated)._(' updates ').count($this->to_be_deactivated)._(' deletes ').$skips._(' skips'), _('processing'));
+        // check deactivated for allready deavtive
+        $allready_deactive = 0;
+        if (!empty($this->cfg['move_to'])) {
+            $remove_existing = array();
+            $row_cnt = 0;
+            $ddn = get_canonical_name($this->cfg['move_to']);
+            foreach ($this->to_be_deactivated as $id => $account) {
+                $row_cnt++;
+                $dn = get_canonical_name($account['dn']);
+                // are they allready deactive
+                if (preg_match('/'.preg_quote($ddn).'$/', $dn)) {
+                    $remove_existing[]= $row_cnt;
+                }
+            }
+            $allready_deactive = count($remove_existing);
+            foreach (array_reverse($remove_existing) as $pos) {
+                array_splice($this->to_be_deactivated, $pos - 1, 1);
+            }
+        }
+
+        $request['page']->info(_('Calculated: ').count($this->to_be_created)._(' creates ').count($this->to_be_updated)._(' updates ').(count($this->to_be_deactivated) + $allready_deactive)._(' deletes ').$skips._(' skips'), _('processing'));
         return true;
     }
 
@@ -1503,7 +1524,15 @@ class Processor {
             $group_membership = $account['mlepGroupMembership'];
         }
         // combine role and groupmembership
-        return implode('#', array($account['mlepRole'], $group_membership));
+        if (isset($account['mleprole']) && is_array($account['mleprole'])) {
+            return implode('#', array($account['mleprole'][0], $group_membership));
+        }
+        else if (isset($account['mlepRole'])) {
+            return implode('#', array($account['mlepRole'], $group_membership));
+        }
+        else {
+            return $group_membership;
+        }
     }
 
     /**
@@ -1680,6 +1709,7 @@ class Processor {
             $total_fields = array();
             $uid = false;
             $mlepusername = false;
+
             foreach ($account as $attr => $value) {
                 // skip the stashed raw password value
                 if (strtolower($attr) == 'raw_passwd') {
