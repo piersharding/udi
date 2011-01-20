@@ -64,9 +64,7 @@ if (isset($cfg['mappings'])) {
 //        var_dump(array_keys($imo_attrs));
 //        var_dump($imo_attrs);
 
-        $func = function($attr) {
-            return $attr->getName(false);
-        };
+	$func = create_function('$attr', 'return $attr->getName(false);');
 
         if (!in_array($source, array_map($func, $imo_attrs)) || $source === '0') {
             $source_attrs["".strtolower($source)] = new ObjectClass_ObjectClassAttribute("".$source, "".$source);

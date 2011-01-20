@@ -54,6 +54,8 @@ if (file_exists(LIBDIR.'functions.custom.php'))
 function __autoload($className) {
 	if (file_exists(HOOKSDIR."classes/$className.php"))
 		require_once(HOOKSDIR."classes/$className.php");
+	elseif (file_exists(HOOKSDIR."udi/$className.php"))
+		require_once(HOOKSDIR."udi/$className.php");
 	elseif (file_exists(LIBDIR."$className.php"))
 		require_once(LIBDIR."$className.php");
 	elseif (file_exists(LIBDIR."ds_$className.php"))
