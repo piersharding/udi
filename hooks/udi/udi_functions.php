@@ -2020,7 +2020,10 @@ class Processor {
                 }
             }
 
-            $group_membership = false;
+
+            // store the mlepGroupMembership
+            $group_membership = $this->makeGroupMembership($account);
+
             $uid = false;
             $mlepusername = false;
 
@@ -2034,7 +2037,6 @@ class Processor {
                 }
                 // skip the mlepgroupmembership
                 if (strtolower($attr) == 'mlepgroupmembership') {
-                    $group_membership = $value;
                     continue;
                 }
                 // store UserId candidates
