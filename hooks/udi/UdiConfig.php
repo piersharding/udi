@@ -619,10 +619,12 @@ class UdiConfig {
         foreach ($this->config as $k => $v) {
             // break up the parameters into fixed lengths
             // because of attribute length limitations
+            $v = base64_encode($v);
             $parts = str_split($v, 768);
             foreach ($parts as $part) {
                 $cnt++;
-                $attrs['description'][]= "{$cnt}_{$k}=#{$part}#";
+                //$attrs['description'][]= "{$cnt}_{$k}=#{$part}#";
+                $attrs['description'][]= "{$cnt}_{$k}={$part}";
             }
         }
         return $attrs;
@@ -650,6 +652,7 @@ class UdiConfig {
         if (!empty($query)) {
             $query = array_pop($query);
             if (isset($query['description'])) {
+                $b64 = false;
                 foreach ($query['description'] as $attr) {
                     if (preg_match('/.+?\=/', $attr)) {
                         $config_var = explode('=', $attr, 2);
@@ -657,11 +660,20 @@ class UdiConfig {
                         if (preg_match('/^\d+?\_(.+?)\=(.*?)$/', $attr, $matches)) {
                             $key = $matches[1];
                             if (preg_match('/^\#(.*?)\#$/', $config_var[1], $matches)) {
+                                // intermediate style of # delimited values to preserve spaces - didnt work with PLA export LDIF
+                                // 99_key=#value#
                                 $value = $matches[1];
+                            }
+                            else {
+                                // base64 style 99_key=0d0202
+                                $b64 = true;
+                                $value = $config_var[1];
                             }
                         }
                         else {
+                            // old style - key=value 
                             $key = $config_var[0];
+                            $value = $config_var[1];
                         }
                         if (array_key_exists($key, $this->config)) {
                             $this->config[$key] .= $value;
@@ -669,6 +681,12 @@ class UdiConfig {
                         else {
                             $this->config[$key] = $value;
                         }
+                    }
+                }
+                // now de-base64 them
+                if ($b64) {
+                    foreach ($this->config as $key => $value) {
+                        $this->config[$key] = base64_decode($value);
                     }
                 }
             }
