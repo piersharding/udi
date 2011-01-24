@@ -33,10 +33,10 @@ if (!isset($request['page'])) {
 $request['page']->setContainer($udiconfigdn);
 $request['page']->accept();
 
+$dn = get_request('dn', 'REQUEST');
 $request['page']->drawTitle(sprintf('<b>%s</b>',_('UDI Reactivate ').get_rdn($dn)));
 $request['page']->drawSubTitle(sprintf('%s: <b>%s</b> %s: <b>%s</b>',_('Server'),$app['server']->getName(), _('Distinguished Name'), $dn));
 
-$dn = get_request('dn', 'REQUEST');
 echo $request['page']->confirmationPage(_('User Account'), 
                                         _('Reactivate'), 
                                         $dn, 

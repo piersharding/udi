@@ -23,6 +23,8 @@ if ($app['server']->isReadOnly()) {
     'index.php');
 }
 
+$dn = get_request('dn', 'REQUEST');
+
 // setup the page renderer
 $request['page'] = new UdiRender($app['server']->getIndex(),get_request('template','REQUEST',false,'none'));
 
