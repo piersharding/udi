@@ -36,7 +36,7 @@ function account_update_after_01() {
     list($server, $udiconfig, $account) = func_get_args();
 
     $request['page']->log_to_file('Users Updated', preg_replace('/\n/', '', var_export($account, true)));
-    return false;
+    return true;
 }
 add_hook('account_update_after','account_update_after_01');
 

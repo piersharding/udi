@@ -48,7 +48,7 @@ function account_reactivate_after_01() {
     }
     
     $request['page']->log_to_file('Users Reactivated', preg_replace('/\n/', '', var_export($report, true)));
-    return false;
+    return true;
 }
 add_hook('account_reactivate_after','account_reactivate_after_01');
 

@@ -48,7 +48,7 @@ function account_delete_after_01() {
     }
     
     $request['page']->log_to_file('Users Deleted', preg_replace('/\n/', '', var_export($report, true)));
-    return false;
+    return true;
 }
 add_hook('account_delete_after','account_delete_after_01');
 

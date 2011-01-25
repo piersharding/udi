@@ -48,7 +48,7 @@ function account_deactivate_after_01() {
     }
 
     $request['page']->log_to_file('Users Deactivated', preg_replace('/\n/', '', var_export($report, true)));
-    return false;
+    return true;
 }
 add_hook('account_deactivate_after','account_deactivate_after_01');
 
