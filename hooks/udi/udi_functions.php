@@ -2016,14 +2016,12 @@ class Processor {
             $template->setDN($dn);
             $template->accept(false, 'user');
 
-            // run userid hook
-            if (!isset($this->cfg['ignore_userids']) || $this->cfg['ignore_userids'] != 'checked') {
-                $result = udi_run_hook('account_update_before',array($this->server, $this->udiconfig, $account), $this->cfg['userid_algo']);
+            // run before update hooks
+            $result = udi_run_hook('account_update_before',array($this->server, $this->udiconfig, $account));
+            if (is_array($result)) {
+                $result = array_pop($result);
                 if (is_array($result)) {
-                    $result = array_pop($result);
-                    if (is_array($result)) {
-                        $account = $result;
-                    }
+                    $account = $result;
                 }
             }
 
