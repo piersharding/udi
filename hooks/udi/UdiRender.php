@@ -454,10 +454,12 @@ class UdiRender extends PageRender {
         foreach ($attrs as $attr) {
             $opt_name = $attr->getName(false);
             $opt_text = $attr->getName(false);
+
             if (empty($opt_name) && $opt_name !== '0') {
                 $opt_name = 'none';
                 $opt_text = _(' - unselected - ');
             }
+            $opt_text = htmlspecialchars($opt_text);
             $select .= sprintf('<option value="%s" %s>%s</option>',
                     $opt_name,strtolower($opt_name) === strtolower("".$default) ? 'selected ': '',$opt_text);
         }
