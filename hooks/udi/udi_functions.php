@@ -1298,7 +1298,9 @@ class Processor {
                         $mail = $targets_to_source['mail']; // constant value
                     }
                 }
-                if (!empty($mail)) {
+                // only bother checking if there is a mail address, and it doesn't
+                // have attribute substitutions
+                if (!empty($mail) && !preg_match('/\%\[.*?\]/', $mail)) {
                     if (isset($mail_duplicates[$mail])) {
                         $request['page']->warning(_('User email (mail) address is duplicate in import file: ').$mail._(' record: ').$account['_row_cnt']._(' - skipping'), _('processing'));
                         $remove_duplicates[]= $row_cnt;
