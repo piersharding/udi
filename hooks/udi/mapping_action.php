@@ -13,10 +13,10 @@ $delete_action = get_request('delete');
 switch ($delete_action) {
 case 'mapping':
     $mapping = get_request('mapping');
-    if (!empty($mapping)) {
+    if (!empty($mapping) || $mapping === "0") {
         $pos = 0;
         foreach ($cfg_mappings as $map) {
-            if ($map['source'] == $mapping) {
+            if ($map['source'] === $mapping) {
                 // delete this mapping
                 array_splice($cfg_mappings, $pos, 1);
                 $cfg = $udiconfig->updateMappings($cfg_mappings);
