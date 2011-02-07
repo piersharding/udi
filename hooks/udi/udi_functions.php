@@ -2069,11 +2069,12 @@ class Processor {
                 if (strtolower($attr) == 'mlepgroupmembership') {
                     continue;
                 }
+
                 // store UserId candidates
                 if (strtolower($attr) == 'mlepusername') {
                     $mlepusername = $value;
                 }
-                else if(strtolower($attr) == 'uid') {
+                if(strtolower($attr) == 'uid') {
                     $uid = $value;
                 }
 
