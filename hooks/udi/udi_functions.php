@@ -2057,6 +2057,19 @@ class Processor {
             $uid = false;
             $mlepusername = false;
 
+            if (isset($ignore_attrs['uid'])) {
+                // if ignore - try and override with existing
+                if (isset($existing_account['uid']) && !empty($existing_account['uid'][0])) {
+                    $uid = $existing_account['uid'][0];
+                }
+            }
+            if (isset($ignore_attrs['mlepusername'])) {
+                // if ignore - try and override with existing
+                if (isset($existing_account['mlepusername']) && !empty($existing_account['mlepusername'][0])) {
+                    $mlepusername = $existing_account['mlepusername'][0];
+                }
+            }
+
             // count and compare the changes against the dn_cache
             // if there are none then don't do an update XXX
             $changed = false;
@@ -2070,15 +2083,17 @@ class Processor {
                     continue;
                 }
 
+                $value = trim($value);
+
                 // store UserId candidates
-                if (strtolower($attr) == 'mlepusername') {
+                if (strtolower($attr) == 'mlepusername' && !isset($ignore_attrs['mlepusername'])) {
+                    // default to incoming
                     $mlepusername = $value;
                 }
-                if(strtolower($attr) == 'uid') {
+                if(strtolower($attr) == 'uid' && !isset($ignore_attrs['uid'])) {
+                    // default to incoming
                     $uid = $value;
                 }
-
-                $value = trim($value);
 
                 // split the multi-value attributes
                 if (strtolower($attr) == 'mlepassociatednsn') {
