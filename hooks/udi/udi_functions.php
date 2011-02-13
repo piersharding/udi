@@ -1413,7 +1413,6 @@ class Processor {
         // run through all the search bases
         foreach ($bases as $base) {
             // ensure that accounts inspected have the mlepPerson object class
-            $base = 'ou=People,dc=example,dc=com';
             //$query = $this->server->query(array('base' => $base, 'filter' => "(&(objectclass=mlepperson)($id=*))"), 'user');
             $query = $this->server->query(array('base' => $base, 'filter' => "(|(objectclass=user)(objectclass=inetorgperson)(objectclass=mlepperson))"), 'user');
             if (!empty($query)) {
