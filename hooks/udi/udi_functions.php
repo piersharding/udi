@@ -1392,12 +1392,13 @@ class Processor {
         foreach ($classes as $class) {
             foreach ($socs[strtolower($class)]->getMustAttrs(true) as $attr) {
                 if (!in_array($attr->getName(), $skip)) {
-                    $total_attrs[$attr->getName()] = $attr->getName();
+                    $total_attrs[$attr->getName()] = $attr->getName(false);
+                    var_dump($attr);
                 }
             }
             foreach ($socs[strtolower($class)]->getMayAttrs(true) as $attr) {
                 if (!in_array($attr->getName(), $skip)) {
-                    $total_attrs[$attr->getName()] = $attr->getName();
+                    $total_attrs[$attr->getName()] = $attr->getName(false);
                 }
             }
         }
@@ -1412,7 +1413,9 @@ class Processor {
         // run through all the search bases
         foreach ($bases as $base) {
             // ensure that accounts inspected have the mlepPerson object class
-            $query = $this->server->query(array('base' => $base, 'filter' => "(&(objectclass=mlepperson)($id=*))"), 'user');
+            $base = 'ou=People,dc=example,dc=com';
+            //$query = $this->server->query(array('base' => $base, 'filter' => "(&(objectclass=mlepperson)($id=*))"), 'user');
+            $query = $this->server->query(array('base' => $base, 'filter' => "(|(objectclass=user)(objectclass=inetorgperson)(objectclass=mlepperson))"), 'user');
             if (!empty($query)) {
                 // run through each discovered account
                 foreach ($query as $user) {
