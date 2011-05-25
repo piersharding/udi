@@ -14,7 +14,8 @@ This is the UDI import file to User Directory mapping utility.  Here, you can sp
   The following defines an email address based on a static character string with the mlepUsername embedded in it:
   <span class=\'tiny\'>%[mlepFirstName]@hogwarts.school.nz</span> would create an email address of daisy@hogwarts.school.nz where mlepUsername = 'daisy'.<br/>
  All substitutions can be given an optional length specfier which will truncate accordingly eg: <span class=\'tiny\'>%[mlepfirstName].%[mlepLastName:3]</span>
-  would give daisy.duc
+  would give daisy.duc <br/>
+  There is a special case for mlepGroupMembership which is a multi-value colum.  This can be addressed as:<br/> <span class=\'tiny\'>%[mlepGroupMembership:1:3]</span> where 1 is the item in the multi-value to choose, and 3 is the length specifier.
   </p>
 <p>
 <h2>Group Membership Mappings</h2>

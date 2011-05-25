@@ -1393,7 +1393,7 @@ class Processor {
             foreach ($socs[strtolower($class)]->getMustAttrs(true) as $attr) {
                 if (!in_array($attr->getName(), $skip)) {
                     $total_attrs[$attr->getName()] = $attr->getName(false);
-                    var_dump($attr);
+                    //var_dump($attr);
                 }
             }
             foreach ($socs[strtolower($class)]->getMayAttrs(true) as $attr) {
@@ -1799,9 +1799,16 @@ class Processor {
                         foreach ($matches[1] as $match) {
                             $parts = explode(':', $match);
                             $attr = array_shift($parts);
+                            if (strtolower($attr) == 'mlepgroupmembership') {
+                                $element = empty($parts) ? 1 : (int)array_shift($parts);
+                                $groups = explode('#', $group_membership);
+                                $part = isset($groups[$element]) ? $groups[$element] : '';
+                            }
+                            else {
+                                $part = isset($total_fields[$attr]) ? $total_fields[$attr] : '';
+                            }
                             $length = empty($parts) ? 0 : (int)array_shift($parts);
                             $length = (int)$length;
-                            $part = isset($total_fields[$attr]) ? $total_fields[$attr] : '';
                             if ($length > 0) {
                                 $part = substr($part, 0, $length);
                             }
@@ -2164,9 +2171,16 @@ class Processor {
                         foreach ($matches[1] as $match) {
                             $parts = explode(':', $match);
                             $attr = array_shift($parts);
+                            if (strtolower($attr) == 'mlepgroupmembership') {
+                                $element = empty($parts) ? 1 : (int)array_shift($parts);
+                                $groups = explode('#', $group_membership);
+                                $part = isset($groups[$element]) ? $groups[$element] : '';
+                            }
+                            else {
+                                $part = isset($total_fields[$attr]) ? $total_fields[$attr] : '';
+                            }
                             $length = empty($parts) ? 0 : (int)array_shift($parts);
                             $length = (int)$length;
-                            $part = isset($existing_account[strtolower($attr)]) ? $existing_account[strtolower($attr)][0] : '';
                             if ($length > 0) {
                                 $part = substr($part, 0, $length);
                             }
@@ -2391,6 +2405,7 @@ class Processor {
 
         // calculate skips
         $total_skips = array();
+
         foreach ($skip as $membership) {
             if (isset($this->group_mappings[$membership])) {
                 $total_skips = array_merge($total_skips, $this->group_mappings[$membership]);
@@ -2402,7 +2417,7 @@ class Processor {
             if (in_array($group, $total_skips)) {
                 // the user is staying in this group - just check that the
                 // targets haven't changed
-//                echo "saved an update!<br/>";
+                //echo "saved an update!<br/>";
                 continue;
             }
             // check and delete from group
@@ -2495,7 +2510,7 @@ class Processor {
         }
 //        var_dump($this->total_groups);
 //        var_dump($this->group_mappings);
-//        exit(0);
+        //exit(0);
         return true;
     }
 
@@ -2532,7 +2547,7 @@ class Processor {
     private function replaceGroupMembership($old_uid, $new_uid, $group_membership, $user_dn) {
         global $request;
 
-//        echo "old: $old_uid  new: $new_uid groups: $group_membership dn: $user_dn\n";
+        //echo "old: $old_uid  new: $new_uid groups: $group_membership dn: $user_dn\n";
 
         // don't process group membership if disabled in the config
         if (!isset($this->cfg['groups_enabled']) || $this->cfg['groups_enabled'] != 'checked') {
