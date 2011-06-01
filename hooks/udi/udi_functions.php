@@ -1859,7 +1859,7 @@ class Processor {
             $template->setRDNAttributes($rdn);
 
             // set the CN
-            var_dump($template->getLDAPadd());
+            //var_dump($template->getLDAPadd());
             //continue;
             $result = $this->server->add($dn, $template->getLDAPadd(), 'user');
             if (!$result) {
