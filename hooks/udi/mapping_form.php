@@ -77,10 +77,11 @@ if (isset($cfg['mappings'])) {
         $field .= '</table>';
         $field .= $request['page']->configField('no_of_fields_in_mapping_'.$no_mappings, array('type' => 'hidden', 'value' => $no_fields), array());
 
+        $src = preg_replace('/'.preg_quote('\\').'/', '\\\\\\', $source);
         echo $request['page']->configRow(
                     $request['page']->configFieldLabel(
                                         'mapping_'.$no_mappings,
-        '<span style="white-space: nowrap;"><a href="" title="'._('Delete entire source').'" onclick="post_to_url(\'cmd.php\', {\'delete\': \'mapping\', \'mapping\': \''.$source.'\'}); return false;"><img src="images/udi/trash.png" alt="'._('Delete entire source').'"/></a> &nbsp;'.
+        '<span style="white-space: nowrap;"><a href="" title="'._('Delete entire source').'" onclick="post_to_url(\'cmd.php\', {\'delete\': \'mapping\', \'mapping\': \''.$src.'\'}); return false;"><img src="images/udi/trash.png" alt="'._('Delete entire source').'"/></a> &nbsp;'.
                                         $request['page']->configSelect(
                                                             'mapping_'.$no_mappings,
                                                             $source_attrs,

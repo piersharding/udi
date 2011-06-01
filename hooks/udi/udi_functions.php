@@ -1814,6 +1814,10 @@ class Processor {
                             }
                             $value = preg_replace('/\%\['.preg_quote($match).'\]/', $part, $value, 1);
                         }
+                        // handle \a - bell character \c and \d - there maybe others, but not sure yet
+                        foreach (array("a", "b", "c", "d", "e") as $chr) {
+                            $value = preg_replace('/'.preg_quote("\\".$chr).'/', "\\\\\\\\".dechex(ord($chr)), $value);
+                        }
                     }
                     // do the mapping
                     foreach ($targets as $target) {
@@ -1855,7 +1859,8 @@ class Processor {
             $template->setRDNAttributes($rdn);
 
             // set the CN
-//            var_dump($template->getLDAPadd());
+            var_dump($template->getLDAPadd());
+            //continue;
             $result = $this->server->add($dn, $template->getLDAPadd(), 'user');
             if (!$result) {
 //                var_dump($dn);
@@ -2185,6 +2190,10 @@ class Processor {
                                 $part = substr($part, 0, $length);
                             }
                             $value = preg_replace('/\%\['.preg_quote($match).'\]/', $part, $value, 1);
+                        }
+                        // handle \a - bell character \c and \d - there maybe others, but not sure yet
+                        foreach (array("a", "b", "c", "d", "e") as $chr) {
+                            $value = preg_replace('/'.preg_quote("\\".$chr).'/', "\\\\\\\\".dechex(ord($chr)), $value);
                         }
                     }
                     if (!is_array($value)) {
