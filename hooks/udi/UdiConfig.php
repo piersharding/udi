@@ -653,6 +653,7 @@ class UdiConfig {
             $query = array_pop($query);
             if (isset($query['description'])) {
                 $b64 = false;
+                asort($query['description']);
                 foreach ($query['description'] as $attr) {
                     if (preg_match('/.+?\=/', $attr)) {
                         $config_var = explode('=', $attr, 2);
