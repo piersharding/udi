@@ -6,6 +6,25 @@
  * @package phpLDAPadmin
  */
 
+
+/**
+ *  specialised sort routine for udiconfig query results
+ *
+ */
+function udiconfig_cmp($a, $b) {
+    if (preg_match('/^(\d+?)\_(.+?)\=(.*?)$/', $a, $matchesa)) {
+        if (preg_match('/^(\d+?)\_(.+?)\=(.*?)$/', $b, $matchesb)) {
+            $a = (int)$matchesa[1];
+            $b = (int)$matchesb[1];
+        }
+    }
+
+    if ($a == $b) {
+        return 0;
+    }
+    return ($a < $b) ? -1 : 1;
+}
+
 /**
  * UdiRender class
  *
@@ -653,7 +672,7 @@ class UdiConfig {
             $query = array_pop($query);
             if (isset($query['description'])) {
                 $b64 = false;
-                asort($query['description']);
+                uasort($query['description'], 'udiconfig_cmp');
                 foreach ($query['description'] as $attr) {
                     if (preg_match('/.+?\=/', $attr)) {
                         $config_var = explode('=', $attr, 2);
