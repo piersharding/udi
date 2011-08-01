@@ -2170,8 +2170,8 @@ class Processor {
 
                 if (preg_match('/\%\[.+\]/', $source)) {
                     // do the expansion then map to fields
-                    $value = $source;
                     // find the substitutions
+                    $value = $source;
                     if (preg_match_all('/\%\[(.+?)\]/', $source, $matches)) {
                         foreach ($matches[1] as $match) {
                             $parts = explode(':', $match);
@@ -2182,14 +2182,14 @@ class Processor {
                                 $part = isset($groups[$element]) ? $groups[$element] : '';
                             }
                             else {
-                                $part = isset($total_fields[$attr]) ? $total_fields[$attr] : '';
+                                $part = isset($existing_account[strtolower($attr)]) ? $existing_account[strtolower($attr)][0] : '';
                             }
                             $length = empty($parts) ? 0 : (int)array_shift($parts);
                             $length = (int)$length;
                             if ($length > 0) {
                                 $part = substr($part, 0, $length);
                             }
-                            $value = preg_replace('/\%\['.preg_quote($match).'\]/', $part, $value, 1);
+                            $value = preg_replace('/\%\['.preg_quote($attr).'\]/', $part, $value, 1);
                         }
                         // handle \a - bell character \c and \d - there maybe others, but not sure yet
                         foreach (array("a", "b", "c", "d", "e") as $chr) {
@@ -2263,8 +2263,9 @@ class Processor {
 
             // if ! changed then skip XXX
             if ($changed) {
-//                var_dump($dn);
-//                var_dump($template->getLDAPmodify());
+                //var_dump($dn);
+                //var_dump($template->getLDAPmodify());
+                //continue;
                 $result = $this->server->modify($dn, $template->getLDAPmodify(), 'user');
                 if (!$result) {
 //                    var_dump($dn);
