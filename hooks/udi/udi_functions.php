@@ -76,6 +76,16 @@ function get_canonical_name($dn) {
     foreach ($parts as $part) {
         $els = explode('=', $part);
         $attr_type = strtolower(trim($els[0]));
+        if (!isset($els[1])) {
+            system_message(array(
+                'title'=>_('Serious error in DN structure'),
+                'body'=>_('There was a bad problem with the structure of a DN: '.$dn.' Where part ('.$part.') did not conform.'),
+                'type'=>'error'),
+            sprintf('cmd.php?cmd=udi_form&udi_nav=%s&server_id=%s',
+            get_request('udi_nav','REQUEST'),
+            get_request('server_id','REQUEST')));
+            die();
+        }
         $attr = strtolower(trim($els[1]));
         $cleaned[]= $attr_type."=".$attr;
     }
