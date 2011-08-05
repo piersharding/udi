@@ -315,7 +315,7 @@ require_once HOOKSDIR.'udi/udi_functions.php';
 @set_time_limit(0);
 
 /// increase memory limit (PHP 5.2 does different calculation, we need more memory now)
-ini_set('memory_limit', '512M');
+ini_set('memory_limit', '1024M');
 
 // setup the page renderer
 $request['page'] = new UdiRender($app['server']->getIndex(),get_request('template','REQUEST',false,'none'));

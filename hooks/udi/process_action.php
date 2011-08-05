@@ -10,7 +10,7 @@ $action = (get_request('cancel') ? 'cancel' : '').
 set_time_limit(0);
 
 // up the memory limit as this could be big
-ini_set('memory_limit', '512M');
+ini_set('memory_limit', '1024M');
 
 switch ($action) {
     case 'cancel':
