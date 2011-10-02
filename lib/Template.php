@@ -330,6 +330,13 @@ class Template extends xmlTemplate {
 				unset($_REQUEST['new_values']['objectclass']);
 			}
 
+		} elseif (get_request('create_base')) {
+			if (get_request('rdn')) {
+				$rdn = explode('=',get_request('rdn'));
+				$attribute = $this->addAttribute($rdn[0],array('values'=>array($rdn[1])));
+				$attribute->setRDN(1);
+			}
+
 		} else {
 			debug_dump_backtrace('No DN or CONTAINER?',1);
 		}
@@ -343,7 +350,7 @@ class Template extends xmlTemplate {
 						continue;
 
 					# If _REQUEST['skip_array'] with this attr set, we'll ignore this new_value
-					if (isset($_REQUEST['skip_array'][$attr]))
+					if (isset($_REQUEST['skip_array'][$attr]) && $_REQUEST['skip_array'][$attr] == 'on')
 						continue;
 
 					# Prune out entries with a blank value.
@@ -535,7 +542,8 @@ class Template extends xmlTemplate {
 		# If this is the default creation template, we need to set some additional values
 		if ($this->isType('default') && $this->getContext() == 'create') {
 			# Load our schema, based on the objectclasses that may have already been defined.
-			$this->rebuildTemplateAttrs();
+			if (! get_request('create_base'))
+				$this->rebuildTemplateAttrs();
 
 			# Set the RDN attribute
 			$counter = 1;
@@ -620,6 +628,18 @@ class Template extends xmlTemplate {
 		# If DN is not set, our DN will be made from our RDN and Container.
 		elseif ($this->getRDN() && $this->getContainer())
 			return sprintf('%s,%s',$this->getRDN(),$this->GetContainer());
+
+		# If container is not set, we're probably creating the base
+		elseif ($this->getRDN() && get_request('create_base'))
+			return $this->getRDN();
+	}
+
+	public function getDNEncode($url=true) {
+		// @todo Be nice to do all this in 1 location
+		if ($url)
+			return urlencode(preg_replace('/%([0-9a-fA-F]+)/',"%25\\1",$this->getDN()));
+		else
+			return preg_replace('/%([0-9a-fA-F]+)/',"%25\\1",$this->getDN());
 	}
 
 	/**
@@ -653,10 +673,18 @@ class Template extends xmlTemplate {
 		return $this->container;
 	}
 
+	public function getContainerEncode($url=true) {
+		// @todo Be nice to do all this in 1 location
+		if ($url)
+			return urlencode(preg_replace('/%([0-9a-fA-F]+)/',"%25\\1",$this->container));
+		else
+			return preg_replace('/%([0-9a-fA-F]+)/',"%25\\1",$this->container);
+	}
+
 	/**
 	 * Copy a DN
 	 */
-	public function copy($template,$rdn) {
+	public function copy($template,$rdn,$asnew=false) {
 		if (DEBUG_ENABLED && (($fargs=func_get_args())||$fargs='NOARGS'))
 			debug_log('Entered (%%)',5,0,__FILE__,__LINE__,__METHOD__,$fargs);
 
@@ -696,6 +724,10 @@ class Template extends xmlTemplate {
 					}
 				}
 			}
+
+			// @todo If this is a Jpeg Attribute, we need to mark it read only, since it cant be deleted like text attributes can
+			if (strcasecmp(get_class($attribute),'jpegAttribute') == 0)
+				$attribute->setReadOnly();
 		}
 
 		# If we have any RDN values left over, there werent in the original entry and need to be added.
@@ -709,6 +741,11 @@ class Template extends xmlTemplate {
 			else
 				$attribute->setRDN($counter++);
 		}
+
+		# If we are copying into a new entry, we need to discard all the "old values"
+		if ($asnew)
+			foreach ($this->getAttributes(true) as $sattribute)
+				$sattribute->setOldValue(array());
 	}
 
 	/**
@@ -815,7 +852,7 @@ class Template extends xmlTemplate {
 				return '';
 
 			foreach ($vals as $val)
-				$rdn .= sprintf('%s=%s+',$attribute->getName(),$val);
+				$rdn .= sprintf('%s=%s+',$attribute->getName(false),$val);
 		}
 
 		# Chop the last plus sign off when returning
@@ -854,7 +891,9 @@ class Template extends xmlTemplate {
 		if (DEBUG_ENABLED && (($fargs=func_get_args())||$fargs='NOARGS'))
 			debug_log('Entered (%%)',5,0,__FILE__,__LINE__,__METHOD__,$fargs);
 
-		if ($this->getContainer())
+		if ($this->getContainer() && get_request('cmd','REQUEST') == 'copy')
+			return 'copyasnew';
+		elseif ($this->getContainer() || get_request('create_base'))
 			return 'create';
 		elseif ($this->getDN())
 			return 'edit';
@@ -872,6 +911,14 @@ class Template extends xmlTemplate {
 			debug_log('Entered (%%)',5,1,__FILE__,__LINE__,__METHOD__,$fargs,$this->visible);
 
 		return $this->visible;
+	}
+
+	public function setVisible() {
+		$this->visible = true;
+	}
+
+	public function setInvisible() {
+		$this->visible = false;
 	}
 
 	public function getRegExp() {
@@ -1243,7 +1290,7 @@ class Template extends xmlTemplate {
 		# Collect our structural, MUST & MAY attributes.
 		$oclass_processed = array();
 		$superclasslist = array();
-		$allattrs = array();
+		$allattrs = array('objectclass');
 
 		foreach ($this->getObjectClasses() as $oclass) {
 			# If we get some superclasses - then we'll need to go through them too.
@@ -1505,7 +1552,7 @@ class Template extends xmlTemplate {
 
 			foreach ($this->getObjectClasses() as $oc) {
 				$soc = $server->getSchemaObjectClass($oc);
-				$attrs = array_merge($attrs,$soc->getMustAttrNames(),$soc->getMayAttrNames());
+				$attrs = array_merge($attrs,$soc->getMustAttrNames(true),$soc->getMayAttrNames(true));
 				$attrs = array_unique($attrs);
 			}
 

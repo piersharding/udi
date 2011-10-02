@@ -15,6 +15,11 @@ require './common.php';
 $request = array();
 $request['dn'] = get_request('dn','GET');
 
+$request['page'] = new PageRender($app['server']->getIndex(),get_request('template','REQUEST',false,'none'));
+$request['page']->setDN($request['dn']);
+$request['page']->accept();
+$request['template'] = $request['page']->getTemplate();
+
 # Check if the entry exists.
 if (! $request['dn'] || ! $app['server']->dnExists($request['dn']))
 	system_message(array(
@@ -25,7 +30,7 @@ if (! $request['dn'] || ! $app['server']->dnExists($request['dn']))
 # We search all children, not only the visible children in the tree
 $request['children'] = $app['server']->getContainerContents($request['dn'],null,0,'(objectClass=*)',LDAP_DEREF_NEVER);
 
-printf('<h3 class="title">%s %s</h3>',_('Delete'),get_rdn($request['dn']));
+printf('<h3 class="title">%s %s</h3>',_('Delete'),htmlspecialchars(get_rdn($request['dn'])));
 printf('<h3 class="subtitle">%s: <b>%s</b> &nbsp;&nbsp;&nbsp; %s: <b>%s</b></h3>',
 	_('Server'),$app['server']->getName(),_('Distinguished Name'),$request['dn']);
 echo "\n";
@@ -46,43 +51,48 @@ if (count($request['children'])) {
 	$query['deref'] = LDAP_DEREF_NEVER;
 	$request['search'] = $app['server']->query($query,null);
 
-	echo '<table class="forminput" border=0>';
+	echo '<table class="forminput" border="0">';
 	echo '<tr>';
-	echo '<td colspan=2>';
+	echo '<td colspan="2">';
 	printf(_('This entry is the root of a sub-tree containing %s entries.'),count($request['search']));
 	printf(' <small>(<a href="%s">%s</a>)</small>',
 		$search['href'],_('view entries'));
 	echo '</td></tr>';
 
-	echo '<tr><td colspan=2>&nbsp;</td></tr>';
+	echo '<tr><td colspan="2">&nbsp;</td></tr>';
 
-	printf('<tr><td colspan=2>%s</td></tr>',
+	printf('<tr><td colspan="2">%s</td></tr>',
 		sprintf(_('phpLDAPadmin can recursively delete this entry and all %s of its children. See below for a list of all the entries that this action will delete. Do you want to do this?'),count($request['search'])));
 
-	echo '<tr><td colspan=2>&nbsp;</td></tr>';
+	echo '<tr><td colspan="2">&nbsp;</td></tr>';
 
-	printf('<tr><td colspan=2><small>%s</small></td></tr>',
+	printf('<tr><td colspan="2"><small>%s</small></td></tr>',
 		_('Note: this is potentially very dangerous and you do this at your own risk. This operation cannot be undone. Take into consideration aliases, referrals, and other things that may cause problems.'));
 	echo "\n";
 
 	echo '<tr>';
-	echo '<td width=50%><center>';
-	echo '<form action="cmd.php" method="post">';
+	echo '<td style="width: 50%; text-align: center;">';
+	echo '<form action="cmd.php" method="post" id="delete_form">';
 	echo '<input type="hidden" name="cmd" value="rdelete" />';
 	printf('<input type="hidden" name="server_id" value="%s" />',$app['server']->getIndex());
-	printf('<input type="hidden" name="dn" value="%s" />',htmlspecialchars($request['dn']));
-	printf('<input type="submit" value="%s" />',sprintf(_('Delete all %s objects'),count($request['search'])));
+	printf('<input type="hidden" name="dn" value="%s" />',$request['template']->getDNEncode(false));
+	//@todo need to refresh the tree after a delete
+	printf('<input type="submit" value="%s" %s />',
+		sprintf(_('Delete all %s objects'),count($request['search'])),
+		(isAjaxEnabled() ? sprintf('onclick="return ajSUBMIT(\'BODY\',document.getElementById(\'delete_form\'),\'%s\');"',_('Deleting Object(s)')) : ''));
 	echo '</form>';
-	echo '</center></td>';
+	echo '</td>';
 
-	echo '<td width=50%><center>';
+	echo '<td style="width: 50%; text-align: center;">';
 	echo '<form action="cmd.php" method="get">';
 	echo '<input type="hidden" name="cmd" value="template_engine" />';
 	printf('<input type="hidden" name="server_id" value="%s" />',$app['server']->getIndex());
-	printf('<input type="hidden" name="dn" value="%s" />',htmlspecialchars($request['dn']));
-	printf('<input type="submit" name="submit" value="%s" />',_('Cancel'));
+	printf('<input type="hidden" name="dn" value="%s" />',$request['template']->getDNEncode(false));
+	printf('<input type="submit" name="submit" value="%s" %s />',
+		_('Cancel'),
+		(isAjaxEnabled() ? sprintf('onclick="return ajDISPLAY(\'BODY\',\'cmd=template_engine&server_id=%s&dn=%s\',\'%s\');"',$app['server']->getIndex(),$request['template']->getDNEncode(),_('Retrieving DN')) : ''));
 	echo '</form>';
-	echo '</center></td>';
+	echo '</td>';
 	echo '</tr>';
 	echo "\n";
 
@@ -101,37 +111,42 @@ if (count($request['children'])) {
 	echo "\n";
 
 } else {
-	echo '<table class="forminput" border=0>';
+	echo '<table class="forminput" border="0">';
 
-	printf('<tr><td colspan=4>%s</td></tr>',_('Are you sure you want to permanently delete this object?'));
-	echo '<tr><td colspan=4>&nbsp;</td></tr>';
+	printf('<tr><td colspan="4">%s</td></tr>',_('Are you sure you want to permanently delete this object?'));
+	echo '<tr><td colspan="4">&nbsp;</td></tr>';
 
-	printf('<tr><td width=10%%>%s:</td><td colspan=3 width=75%%><b>%s</b></td></tr>',_('Server'),$app['server']->getName());
-	printf('<tr><td width=10%%><acronym title="%s">%s</acronym></td><td colspan=3 width=75%%><b>%s</b></td></tr>',
+	printf('<tr><td style="width: 10%%;">%s:</td><td colspan="3" style="width: 75%%;"><b>%s</b></td></tr>',_('Server'),$app['server']->getName());
+	printf('<tr><td style="width: 10%%;"><acronym title="%s">%s</acronym></td><td colspan="3" style="width: 75%%;"><b>%s</b></td></tr>',
 		_('Distinguished Name'),_('DN'),$request['dn']);
-	echo '<tr><td colspan=4>&nbsp;</td></tr>';
+	echo '<tr><td colspan="4">&nbsp;</td></tr>';
 	echo "\n";
 
 	echo '<tr>';
-	echo '<td colspan=2 width=50%><center>';
-	echo '<form action="cmd.php" method="post">';
+	echo '<td colspan="2" style="width: 50%; text-align: center;">';
+	echo '<form action="cmd.php" method="post" id="delete_form">';
 	echo '<input type="hidden" name="cmd" value="delete" />';
 	printf('<input type="hidden" name="server_id" value="%s" />',$app['server']->getIndex());
-	printf('<input type="hidden" name="dn" value="%s" />',htmlspecialchars($request['dn']));
-	printf('<input type="submit" name="submit" value="%s" />',_('Delete'));
+	printf('<input type="hidden" name="dn" value="%s" />',$request['template']->getDNEncode(false));
+	//@todo need to refresh the tree after a delete
+	printf('<input type="submit" name="submit" value="%s" %s />',
+		_('Delete'),
+		(isAjaxEnabled() ? sprintf('onclick="return ajSUBMIT(\'BODY\',document.getElementById(\'delete_form\'),\'%s\');"',_('Deleting Object(s)')) : ''));
 	echo '</form>';
 
-	echo '</center></td>';
-	echo '<td colspan=2 width=50%><center>';
+	echo '</td>';
+	echo '<td colspan="2" style="width: 50%; text-align: center;">';
 
 	echo '<form action="cmd.php" method="get">';
 	echo '<input type="hidden" name="cmd" value="template_engine" />';
 	printf('<input type="hidden" name="server_id" value="%s" />',$app['server']->getIndex());
-	printf('<input type="hidden" name="dn" value="%s" />',htmlspecialchars($request['dn']));
-	printf('<input type="submit" name="submit" value="%s" />',_('Cancel'));
+	printf('<input type="hidden" name="dn" value="%s" />',$request['template']->getDNEncode(false));
+	printf('<input type="submit" name="submit" value="%s" %s />',
+		_('Cancel'),
+		(isAjaxEnabled() ? sprintf('onclick="return ajDISPLAY(\'BODY\',\'cmd=template_engine&server_id=%s&dn=%s\',\'%s\');"',$app['server']->getIndex(),$request['template']->getDNEncode(),_('Retrieving DN')) : ''));
 	echo '</form>';
 
-	echo '</center></td>';
+	echo '</td>';
 	echo '</tr>';
 	echo '</table>';
 	echo "\n";

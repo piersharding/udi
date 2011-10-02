@@ -778,7 +778,20 @@ class Attribute {
 
 					case 'value':
 						if (is_array($value))
-							$this->values = $value;
+							foreach ($value as $y) {
+								if (! $this->haveMoreValues()) {
+									system_message(array(
+									'title'=>_('Automatically removed attribute values from template'),
+										'body'=>sprintf('%s <small>[%s]</small>',_('Template defines more values than can be accepted by attribute.'),$this->getName(true)),
+										'type'=>'warn'));
+
+									$this->clearValue();
+
+									break;
+
+								} else
+									$this->addValue($y);
+							}
 
 						else
 							# Check to see if the value is auto generated.
@@ -791,7 +804,7 @@ class Attribute {
 									$this->hint = _('Automatically determined');
 
 							} else
-								$this->values = array($value);
+								$this->addValue($value);
 
 						break;
 
@@ -838,13 +851,7 @@ class Attribute {
 		if (DEBUG_ENABLED && (($fargs=func_get_args())||$fargs='NOARGS'))
 			debug_log('Entered (%%)',5,0,__FILE__,__LINE__,__METHOD__,$fargs);
 
-		$return = array();
-
-		foreach ($this->getOldValues() as $value)
-			if (! in_array($value,$this->getValues()))
-				array_push($return,$value);
-
-		return $return;
+		return array_diff($this->getOldValues(),$this->getValues());
 	}
 
 	/**
@@ -854,13 +861,7 @@ class Attribute {
 		if (DEBUG_ENABLED && (($fargs=func_get_args())||$fargs='NOARGS'))
 			debug_log('Entered (%%)',5,0,__FILE__,__LINE__,__METHOD__,$fargs);
 
-		$return = array();
-
-		foreach ($this->getValues() as $value)
-			if (! in_array($value,$this->getOldValues()))
-				array_push($return,$value);
-
-		return $return;
+		return array_diff($this->getValues(),$this->getOldValues());
 	}
 
 	/**

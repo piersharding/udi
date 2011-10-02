@@ -51,6 +51,10 @@ class ldap_pla extends ldap {
 			'desc'=>'Custom operational attributes to be treated as internal attributes',
 			'default'=>array('+'));
 
+		$this->default->server['jpeg_attributes'] = array(
+			'desc'=>'Additional attributes to treat as Jpeg Attributes',
+			'default'=>array());
+
 		# This was added in case the LDAP server doesnt provide them with a base +,* query.
 		$this->default->server['root_dse_attributes'] = array(
 			'desc'=>'RootDSE attributes for use when displaying server info',
@@ -121,6 +125,19 @@ class ldap_pla extends ldap {
 		$this->default->unique['pass'] = array(
 			'desc'=>'Password for DN to use when evaluating attribute uniqueness',
 			'default'=>null);
+	}
+
+	public function __get($key) {
+		switch ($key) {
+			case 'name':
+				return $this->getValue('server','name');
+
+			default:
+				system_message(array(
+					'title'=>_('Unknown request for Object value.'),
+					'body'=>sprintf(_('Attempt to obtain value %s from %s'),$key,get_class($this)),
+					'type'=>'error'));
+		}
 	}
 
 	/**
@@ -359,7 +376,12 @@ class ldap_pla extends ldap {
 			if ($result) {
 				# Update the tree
 				$tree = get_cached_item($this->index,'tree');
-				if (!$tree) return $result;
+				if (!$tree) return $result; // XXX This may be unecessary now
+
+				# If we created the base, delete it, then add it back
+				if (get_request('create_base'))
+					$tree->delEntry($dn);
+
 				$tree->addEntry($dn);
 
 				set_cached_item($this->index,'tree','null',$tree);

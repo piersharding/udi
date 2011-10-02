@@ -32,20 +32,23 @@ $request['page']->drawSubTitle();
 
 # Confirm the updates
 if (count($request['template']->getLDAPmodify(true))) {
-	echo '<center>';
+	echo '<div style="text-align: center;">';
 	echo _('Do you want to make these changes?');
 	echo '<br /><br />';
+	echo '</div>';
 
 	echo "\n\n";
-	echo '<form action="cmd.php" method="post">';
+	echo '<form action="cmd.php" method="post" id="update_form">';
+	echo '<div>';
 	echo '<input type="hidden" name="cmd" value="update" />';
 	printf('<input type="hidden" name="server_id" value="%s" />',$app['server']->getIndex());
-	printf('<input type="hidden" name="dn" value="%s" />',htmlspecialchars($request['dn']));
+	printf('<input type="hidden" name="dn" value="%s" />',$request['template']->getDNEncode(false));
 	echo "\n";
 
 	$request['page']->drawHiddenAttributes();
+	echo '</div>';
 
-	echo '<table class="result_table">';
+	echo '<table class="result_table" style="margin-left: auto; margin-right: auto;">';
 	echo "\n";
 
 	printf('<tr class="heading"><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>',
@@ -68,15 +71,16 @@ if (count($request['template']->getLDAPmodify(true))) {
 		if (! $attribute->getOldValues())
 			printf('<span style="color: green">[%s]</span>',_('attribute doesnt exist'));
 
+		$dv = $attribute->getRemovedValues();
 		foreach ($attribute->getOldValues() as $key => $value) {
 			# For multiple values, we'll highlight the changed ones
-			if ((count($attribute->getOldValues()) > 5) && in_array($value,$attribute->getRemovedValues()) && count($attribute->getValues()))
+			if ($x = ((count($attribute->getOldValues()) > 5) && count($attribute->getValues()) && in_array($value,$dv)))
 				echo '<span style="color:#880000; background:#FFFFA0">';
 
 			$request['page']->draw('OldValue',$attribute,$key);
 
 			# For multiple values, close the highlighting
-			if ((count($attribute->getOldValues()) > 5) && in_array($value,$attribute->getRemovedValues()) && count($attribute->getValues()))
+			if ($x)
 				echo '</span>';
 
 			echo '<br />';
@@ -90,15 +94,16 @@ if (count($request['template']->getLDAPmodify(true))) {
 		if (! $attribute->getValueCount() || $attribute->isForceDelete())
 			printf('<span style="color: red">[%s]</span>',_('attribute deleted'));
 
+		$dv = $attribute->getAddedValues();
 		foreach ($attribute->getValues() as $key => $value) {
 			# For multiple values, we'll highlight the changed ones
-			if ((count($attribute->getValues()) > 5) && in_array($value,$attribute->getAddedValues()))
+			if ($x = ((count($attribute->getValues()) > 5) && count($attribute->getOldValues()) && in_array($value,$dv)))
 				echo '<span style="color:#004400; background:#FFFFA0">';
 
 			$request['page']->draw('CurrentValue',$attribute,$key);
 
 			# For multiple values, close the highlighting
-			if ((count($attribute->getValues()) > 5) && in_array($value,$attribute->getAddedValues()))
+			if ($x)
 				echo '</span>';
 
 			echo '<br />';
@@ -186,14 +191,22 @@ if (count($request['template']->getLDAPmodify(true))) {
 
 	echo '</table>';
 
+	echo '<div style="text-align: center;">';
 	echo '<br />';
-	printf('<input type="submit" value="%s" />',_('Commit'));
-	printf('<input type="submit" name="cancel" value="%s" />',_('Cancel'));
+	// @todo cant use AJAX here, it affects file uploads.
+	printf('<input type="submit" value="%s" />',
+		_('Update Object'));
+
+	printf('<input type="submit" name="cancel" value="%s" %s/>',
+		_('Cancel'),
+		(isAjaxEnabled() ? sprintf('onclick="return ajDISPLAY(\'BODY\',\'cmd=template_engine&dn=%s\',\'%s\');"',htmlspecialchars($request['dn']),_('Retrieving DN')) : ''));
+
+	echo '</div>';
 	echo '</form>';
 	echo '<br />';
 
 	if (count($request['template']->getForceDeleteAttrs()) > 0) {
-		echo '<table class="result_table"><tr>';
+		echo '<table class="result_table" style="margin-left: auto; margin-right: auto;"><tr>';
 		printf('<td class="heading">%s:</td>',_('The deletion of objectClass(es)'));
 		printf('<td class="value"><b>%s</b></td>',implode('</b>, <b>',$request['template']->getAttribute('objectclass')->getRemovedValues()));
 		echo '</tr><tr>';
@@ -210,16 +223,20 @@ if (count($request['template']->getLDAPmodify(true))) {
 		echo '</b></td></tr></table>';
 	}
 
-	echo '</center>';
-
 } else {
-	echo '<center>';
-	echo _('You made no changes');
-	$href = sprintf('cmd.php?cmd=template_engine&server_id=%s&dn=%s',
-		 $app['server']->getIndex(),rawurlencode($request['dn']));
+	$href = sprintf('cmd=template_engine&server_id=%s&dn=%s',
+		 $app['server']->getIndex(),$request['template']->getDNEncode());
 
-	printf(' <a href="%s">%s</a>.',htmlspecialchars($href),_('Go back'));
-	echo '</center>';
+	echo '<div style="text-align: center;">';
+	echo _('You made no changes');
+
+	if (isAjaxEnabled())
+		printf(' <a href="cmd.php?%s" onclick="return ajDISPLAY(\'BODY\',\'%s\',\'%s\');">%s</a>.',
+			htmlspecialchars($href),htmlspecialchars($href),_('Retrieving DN'),_('Go back'));
+	else
+		printf(' <a href="cmd.php?%s">%s</a>.',htmlspecialchars($href),_('Go back'));
+
+	echo '</div>';
 }
 
 function getMustAttrs($oclasses) {

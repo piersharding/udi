@@ -83,7 +83,10 @@ class AttributeFactory {
 		if (isset($values['type']))
 			switch ($values['type']) {
 				case 'password':
-					return $this->newPasswordAttribute($name,$values,$server_id,$source);
+					if (! strcasecmp($name,'sambaLMPassword') || ! strcasecmp($name,'sambaNTPassword'))
+						return $this->newSambaPasswordAttribute($name,$values,$server_id,$source);
+					else
+						return $this->newPasswordAttribute($name,$values,$server_id,$source);
 
 				case 'multiselect':
 				case 'select':
@@ -96,7 +99,7 @@ class AttributeFactory {
 		if (! strcasecmp($name,'objectClass')) {
 			return $this->newObjectClassAttribute($name,$values,$server_id,$source);
 
-		} elseif ($app['server']->isJpegPhoto($name)) {
+		} elseif ($app['server']->isJpegPhoto($name) || in_array($name,$app['server']->getValue('server','jpeg_attributes'))) {
 			return $this->newJpegAttribute($name,$values,$server_id,$source);
 
 		} elseif ($app['server']->isAttrBinary($name)) {

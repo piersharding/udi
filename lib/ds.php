@@ -133,10 +133,12 @@ abstract class DS {
 			debug_log('Entered (%%)',17,0,__FILE__,__LINE__,__METHOD__,$fargs);
 
 		switch ($this->getValue('login','auth_type')) {
+			case 'cookie':
 			case 'config':
 			case 'http':
 			case 'proxy':
 			case 'session':
+			case 'sasl':
 				return $this->getValue('login','auth_type');
 
 			default:
@@ -164,6 +166,13 @@ abstract class DS {
 				return null;
 
 		switch ($this->getAuthType()) {
+			case 'cookie':
+				if (! isset($_COOKIE[$method.'-USER']))
+					# If our bind_id is set, we'll pass that back for logins.
+					return (! is_null($this->getValue('login','bind_id')) && $method == 'login') ? $this->getValue('login','bind_id') : null;
+				else
+					return blowfish_decrypt($_COOKIE[$method.'-USER']);
+
 			case 'config':
 				if (! isset($_SESSION['USER'][$this->index][$method]['name']))
 					return $this->getValue('login','bind_id');
@@ -178,6 +187,7 @@ abstract class DS {
 
 			case 'http':
 			case 'session':
+			case 'sasl':
 				if (! isset($_SESSION['USER'][$this->index][$method]['name']))
 					# If our bind_id is set, we'll pass that back for logins.
 					return (! is_null($this->getValue('login','bind_id')) && $method == 'login') ? $this->getValue('login','bind_id') : null;
@@ -199,6 +209,11 @@ abstract class DS {
 		$method = $this->getMethod($method);
 
 		switch ($this->getAuthType()) {
+			case 'cookie':
+				set_cookie($method.'-USER',blowfish_encrypt($user),NULL,'/');
+				set_cookie($method.'-PASS',blowfish_encrypt($pass),NULL,'/');
+				return true;
+
 			case 'config':
 				return true;
 
@@ -208,6 +223,7 @@ abstract class DS {
 
 			case 'http':
 			case 'session':
+			case 'sasl':
 				$_SESSION['USER'][$this->index][$method]['name'] = blowfish_encrypt($user);
 				$_SESSION['USER'][$this->index][$method]['pass'] = blowfish_encrypt($pass);
 
@@ -235,6 +251,13 @@ abstract class DS {
 				return null;
 
 		switch ($this->getAuthType()) {
+			case 'cookie':
+				if (! isset($_COOKIE[$method.'-PASS']))
+					# If our bind_id is set, we'll pass that back for logins.
+					return (! is_null($this->getValue('login','bind_pass')) && $method == 'login') ? $this->getValue('login','bind_pass') : null;
+				else
+					return blowfish_decrypt($_COOKIE[$method.'-PASS']);
+
 			case 'config':
 			case 'proxy':
 				if (! isset($_SESSION['USER'][$this->index][$method]['pass']))
@@ -244,6 +267,7 @@ abstract class DS {
 
 			case 'http':
 			case 'session':
+			case 'sasl':
 				if (! isset($_SESSION['USER'][$this->index][$method]['pass']))
 					# If our bind_pass is set, we'll pass that back for logins.
 					return (! is_null($this->getValue('login','bind_pass')) && $method == 'login') ? $this->getValue('login','bind_pass') : null;
@@ -329,6 +353,29 @@ abstract class DS {
 
 				break;
 
+			case 'sasl':
+				# Propogate any given Kerberos credential cache location
+				if (isset($_ENV['REDIRECT_KRB5CCNAME']))
+					putenv(sprintf('KRB5CCNAME=%s',$_ENV['REDIRECT_KRB5CCNAME']));
+				elseif (isset($_SERVER['KRB5CCNAME']))
+					putenv(sprintf('KRB5CCNAME=%s',$_SERVER['KRB5CCNAME']));
+
+				# Map the SASL auth ID to a DN
+				$regex = $this->getValue('login', 'sasl_dn_regex');
+				$replacement = $this->getValue('login', 'sasl_dn_replacement');
+
+				if ($regex && $replacement) {
+					$userDN = preg_replace($regex, $replacement, $_SERVER['REMOTE_USER']);
+
+					$CACHE[$this->index][$method] = $this->login($userDN, '', $method);
+
+				# Otherwise, use the user name as is
+				# For GSSAPI Authentication + mod_auth_kerb and Basic Authentication
+				} else
+					$CACHE[$this->index][$method] = $this->login(isset($_SERVER['REMOTE_USER']) ? $_SERVER['REMOTE_USER'] : '', '', $method);
+
+				break;
+
 			default:
 				$CACHE[$this->index][$method] = is_null($this->getLogin($method)) ? false : true;
 		}
@@ -348,12 +395,17 @@ abstract class DS {
 		unset ($_SESSION['cache'][$this->index]);
 
 		switch ($this->getAuthType()) {
+			case 'cookie':
+				set_cookie($method.'-USER','',time()-3600,'/');
+				set_cookie($method.'-PASS','',time()-3600,'/');
+
 			case 'config':
 				return true;
 
 			case 'http':
 			case 'proxy':
 			case 'session':
+			case 'sasl':
 				if (isset($_SESSION['USER'][$this->index][$method]))
 					unset($_SESSION['USER'][$this->index][$method]);
 
@@ -490,6 +542,10 @@ class Datastore {
 			'desc'=>'Whether this server is visible',
 			'default'=>true);
 
+		$this->default->server['hide_noaccess_base'] = array(
+			'desc'=>'If base DNs are not accessible, hide them instead of showing create',
+			'default'=>false);
+
 		# Authentication Information
 		$this->default->login['auth_type'] = array(
 			'desc'=>'Authentication Type',
@@ -525,6 +581,16 @@ class Datastore {
 		$this->default->login['timeout'] = array(
 			'desc'=>'Session timout in seconds',
 			'default'=>session_cache_expire()-1);
+
+		$this->default->login['sasl_dn_regex'] = array(
+			'desc'=>'SASL authorization id to user dn PCRE regular expression',
+			'untested'=>true,
+			'default'=>null);
+
+		$this->default->login['sasl_dn_replacement'] = array(
+			'desc'=>'SASL authorization id to user dn PCRE regular expression replacement string',
+			'untested'=>true,
+			'default'=>null);
 
 		# Prefix for custom pages
 		$this->default->custom['pages_prefix'] = array(
@@ -611,6 +677,8 @@ class Datastore {
 			if (! $isVisible || ($isVisible && $server->getValue('server','visible')))
 				$CACHE[$isVisible][$id] = $server;
 
+		masort($CACHE[$isVisible],'name');
+
 		return $CACHE[$isVisible];
 	}
 
@@ -625,7 +693,7 @@ class Datastore {
 			debug_log('Entered (%%)',17,0,__FILE__,__LINE__,__METHOD__,$fargs);
 
 		# If no index defined, then pick the lowest one.
-		if (is_null($index))
+		if (is_null($index) || ! trim($index) || ! is_numeric($index))
 			$index = min($this->GetServerList())->getIndex();
 
 		if (! isset($this->objects[$index]))

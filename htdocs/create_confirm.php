@@ -24,11 +24,12 @@ if (! $request['template']->getContainer() || ! $app['server']->dnExists($reques
 
 # Check if the container is a leaf - we shouldnt really return a hit here, the template engine shouldnt have allowed a user to attempt to create an entry...
 $tree = get_cached_item($app['server']->getIndex(),'tree');
-$request['container'] = $tree->getEntry($request['template']->getContainer());
-if (! $request['container'])
-	$tree->addEntry($request['template']->getContainer());
 
 $request['container'] = $tree->getEntry($request['template']->getContainer());
+if (! $request['container']) {
+	$tree->addEntry($request['template']->getContainer());
+	$request['container'] = $tree->getEntry($request['template']->getContainer());
+}
 
 # Check our RDN
 if (! count($request['template']->getRDNAttrs()))
@@ -54,23 +55,26 @@ $request['page']->drawSubTitle(sprintf('%s: <b>%s</b>&nbsp;&nbsp;&nbsp;%s: <b>%s
 
 # Confirm the creation
 if (count($request['template']->getLDAPadd(true))) {
-	echo '<center>';
+	echo '<div style="text-align: center;">';
 	echo _('Do you want to create this entry?');
 	echo '<br /><br />';
+	echo '</div>';
 
 	echo "\n\n";
-	echo '<form action="cmd.php" method="post">';
+	echo '<form action="cmd.php" method="post" id="create_form">';
+	echo '<div>';
 	echo '<input type="hidden" name="cmd" value="create" />';
 	printf('<input type="hidden" name="server_id" value="%s" />',$app['server']->getIndex());
-	printf('<input type="hidden" name="container" value="%s" />',htmlspecialchars($request['template']->getContainer()));
+	printf('<input type="hidden" name="container" value="%s" />',$request['template']->getContainerEncode(false));
 	printf('<input type="hidden" name="template" value="%s" />',$request['template']->getID());
 	foreach ($request['template']->getRDNAttrs() as $rdn)
 		printf('<input type="hidden" name="rdn_attribute[]" value="%s" />',htmlspecialchars($rdn));
 	echo "\n";
 
 	$request['page']->drawHiddenAttributes();
+	echo '</div>';
 
-	echo '<table class="result_table">';
+	echo '<table class="result_table" style="margin-left: auto; margin-right: auto;">';
 	echo "\n";
 
 	printf('<tr class="heading"><td>%s</td><td>%s</td><td>%s</td></tr>',
@@ -78,7 +82,7 @@ if (count($request['template']->getLDAPadd(true))) {
 	echo "\n\n";
 
 	$counter = 0;
-	printf('<tr class="%s"><td colspan=3><center><b>%s</b></center></td><tr>',$counter%2 ? 'even' : 'odd',$request['template']->getDN());
+	printf('<tr class="%s"><td colspan="3" style="text-align: center;"><b>%s</b></td></tr>',$counter%2 ? 'even' : 'odd',htmlspecialchars($request['template']->getDN()));
 
 	foreach ($request['template']->getLDAPadd(true) as $attribute) {
 		$counter++;
@@ -106,21 +110,34 @@ if (count($request['template']->getLDAPadd(true))) {
 
 	echo '</table>';
 
+	echo '<div style="text-align: center;">';
 	echo '<br />';
-	printf('<input type="submit" value="%s" />',_('Commit'));
-	printf('<input type="submit" name="cancel" value="%s" />',_('Cancel'));
+
+	printf('<input type="submit" value="%s" %s/>',
+		_('Commit'),
+		(isAjaxEnabled() ? sprintf('onclick="return ajSUBMIT(\'BODY\',document.getElementById(\'create_form\'),\'%s\');"',_('Updating Object')) : ''));
+
+	printf('<input type="submit" name="cancel" value="%s" %s/>',
+		_('Cancel'),
+		(isAjaxEnabled() ? sprintf('onclick="return ajDISPLAY(\'BODY\',\'cmd=template_engine&server_id=%s&container=%s\',\'%s\');"',$app['server']->getIndex(),$request['template']->getContainer(),_('Retrieving DN')) : ''));
+
+	echo '</div>';
 	echo '</form>';
 	echo '<br />';
 
-	echo '</center>';
-
 } else {
-	echo '<center>';
-	echo _('You made no changes');
-	$href = sprintf('cmd.php?cmd=template_engine&server_id=%s&dn=%s',
-		$app['server']->getIndex(),rawurlencode($request['dn']));
+	$href = sprintf('cmd=template_engine&server_id=%s&dn=%s',
+		$app['server']->getIndex(),$request['template']->getDNEncode());
 
-	printf(' <a href="%s">%s</a>.',htmlspecialchars($href),_('Go back'));
-	echo '</center>';
+	echo '<div style="text-align: center;">';
+	echo _('You made no changes');
+
+	if (isAjaxEnabled())
+		printf(' <a href="cmd.php?%s" onclick="return ajDISPLAY(\'BODY\',\'%s\',\'%s\');">%s</a>.',
+			htmlspecialchars($href),htmlspecialchars($href),_('Retrieving DN'),_('Go back'));
+	else
+		printf(' <a href="cmd.php?%s">%s</a>.',htmlspecialchars($href),_('Go back'));
+
+	echo '</div>';
 }
 ?>

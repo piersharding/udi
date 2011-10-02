@@ -16,8 +16,8 @@
 # all-merge-pot	merge last POT with each current translations
 
 LOCALEDIR = ../../locale
-TEMPLATEFILES=`find ../../templates -iname *xml -exec echo -m {} \;`
-EXPORTFILE = $(shell echo $${EXPORTFILE:-/tmp/launchpad-export.tgz})
+TEMPLATEFILES=`find ../../templates -iname *xml -exec echo -m {} \;|grep -v /test_|grep -v /custom_`
+EXPORTFILE = $(shell echo $${EXPORTFILE:-/tmp/launchpad-export.tar.gz})
 
 all:
 	@echo Please, specify a target [pot, xml-pot, all-mo, all-merge, all-merge-pot, launchpad-export]
@@ -58,3 +58,8 @@ launchpad-extract:
 	rmdir $(LOCALEDIR)/phpldapadmin
 
 launchpad-export: launchpad-extract all-mo
+
+launchpad-import:
+	@[ -d /tmp/pla ] && rmdir /tmp/pla
+	@mkdir /tmp/pla
+	@for i in $(LOCALEDIR)/*/LC_MESSAGES/messages.po; do echo $$i; x=$${i##$(LOCALEDIR)/}; x=$${x/_??\/LC_MESSAGES\/messages/}; [ ! -e /tmp/pla/$$x ] && cp $$i /tmp/pla/$$x || echo "$$x Already exists!"; done

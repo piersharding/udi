@@ -111,6 +111,10 @@ class Config {
 			'desc'=>'Hide the features that may provide sensitive debugging information to the browser',
 			'default'=>true);
 
+		$this->default->appearance['hide_template_regexp'] = array(
+			'desc'=>'Templates that are disabled by their regex are not shown',
+			'default'=>false);
+
 		$this->default->appearance['hide_template_warning'] = array(
 			'desc'=>'Hide template errors from being displayed',
 			'default'=>false);
@@ -288,6 +292,10 @@ class Config {
 
 		/** Confirm actions
 		 */
+		$this->default->confirm['copy'] = array(
+			'desc'=>'Confirm copy actions',
+			'default'=>true);
+
 		$this->default->confirm['create'] = array(
 			'desc'=>'Confirm creation actions',
 			'default'=>true);
@@ -477,14 +485,6 @@ class Config {
 			'desc'=>'Blowfish key to encrypt cookie details',
 			'default'=>null);
 
-		$this->default->session['memorylimit'] = array(
-			'desc'=>'Set the PHP memorylimit warning threshold.',
-			'default'=>24);
-
-		$this->default->session['timelimit'] = array(
-			'desc'=>'Set the PHP timelimit.',
-			'default'=>30);
-
 		/** Cookie Time
 		 * If you used auth_type 'form' in the servers list, you can adjust how long the cookie will last
 		 * (default is 0 seconds, which expires when you close the browser)
@@ -492,6 +492,18 @@ class Config {
 		$this->default->session['cookie_time'] = array(
 			'desc'=>'Time in seconds for the life of cookies',
 			'default'=>0);
+
+		$this->default->session['http_realm'] = array(
+			'desc'=>'HTTP Authentication Realm',
+			'default'=>sprintf('%s %s',app_name(),_('login')));
+
+		$this->default->session['memorylimit'] = array(
+			'desc'=>'Set the PHP memorylimit warning threshold.',
+			'default'=>24);
+
+		$this->default->session['timelimit'] = array(
+			'desc'=>'Set the PHP timelimit.',
+			'default'=>30);
 
 		/**
 		 * Session Menu
