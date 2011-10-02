@@ -34,7 +34,14 @@ olcAttributeTypes: {9}( 1.3.6.1.4.1.36350.1.1.1.10  NAME 'mlepFirstAttending'
 olcAttributeTypes: {10}( 1.3.6.1.4.1.36350.1.1.1.11  NAME 'mlepLastAttendance'
   DESC 'MLEP Schema definition' EQUALITY caseIgnoreMatch SUBSTR caseIgnoreSubs
  tringsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
+olcAttributeTypes: {11}( 1.3.6.1.4.1.36350.1.1.1.12 NAME 'mlepGlobalUserId' DE
+ SC 'MLEP Schema definition' EQUALITY caseIgnoreMatch SUBSTR caseIgnoreSubstri
+ ngsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
+olcAttributeTypes: {11}( 1.3.6.1.4.1.36350.1.1.1.13 NAME 'mlepPreferredName' D
+ ESC 'MLEP Schema definition' EQUALITY caseIgnoreMatch SUBSTR caseIgnoreSubstr
+ ingsMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
 olcObjectClasses: {0}( 1.3.6.1.4.1.36350.1.1.1 NAME 'mlepPerson' DESC 'MLEP Sc
  hema definition' AUXILIARY MUST ( mlepRole $ mlepSmsPersonId $ mlepFirstName 
  $ mlepLastName ) MAY ( mlepUsername $ mlepStudentNSN $ mlepAssociatedNSN $ ml
- epFirstAttending $ mlepLastAttendance $ mlepEmail $ mlepOrganisation ) )
+ epFirstAttending $ mlepLastAttendance $ mlepEmail $ mlepOrganisation $ mlepGl
+ obalUserId $ mlepPreferredName ) )
