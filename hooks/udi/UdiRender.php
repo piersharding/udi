@@ -385,7 +385,7 @@ class UdiRender extends PageRender {
 
     public function configChooser($name) {
         ob_start();
-        draw_chooser_link('udi_form.'.$name, false);
+        draw_chooser_link('id_'.$name, '', false, '');
         $chooser = ob_get_contents();
         ob_end_clean();
         return $chooser;

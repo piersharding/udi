@@ -24,7 +24,12 @@ printf('<h3 class="subtitle">%s</h3>',_('Entry Chooser'));
 
 echo '<script type="text/javascript">';
 echo '	function returnDN(dn) {';
-printf("	eval ('o = opener.document.getElementById(\"%s\").%s;');",$request['form'],$request['element']);
+if (empty($request['element'])) {
+    printf("    eval ('o = opener.document.getElementById(\"%s\");');",$request['form']);
+}
+else {
+    printf("	eval ('o = opener.document.getElementById(\"%s\").%s;');",$request['form'],$request['element']);
+}
 echo '		o.value = dn;';
 echo '		close();';
 echo '	}';

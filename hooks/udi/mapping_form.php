@@ -16,6 +16,7 @@ $mandatory_fields = array(
                             'mlepLastAttendance',
                             'mlepFirstName',
                             'mlepLastName',
+                            'mlepPreferredName',
                             'mlepRole',
                             'mlepAssociatedNSN',
                             'mlepEmail',
