@@ -460,8 +460,13 @@ class UdiRender extends PageRender {
                 $opt_text = _(' - unselected - ');
             }
             $opt_text = htmlspecialchars($opt_text);
+            if (empty($default)) {
+                $default = "";
+            }
+            //error_log('opt_name: ' . var_export($opt_name, TRUE));
+            //error_log('default: ' . var_export($default, TRUE));
             $select .= sprintf('<option value="%s" %s>%s</option>',
-                    $opt_name,strtolower($opt_name) === strtolower("".$default) ? 'selected ': '',$opt_text);
+                    $opt_name, strtolower($opt_name) === strtolower("".$default) ? 'selected ': '',$opt_text);
         }
         $select .= '</select>';
         return $select;

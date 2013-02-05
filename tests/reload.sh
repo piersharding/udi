@@ -1,14 +1,20 @@
 #!/bin/sh
 
 sudo /etc/init.d/slapd stop
-#sudo apt-get -y remove slapd
+sleep 2
+killall -9 slapd
+sudo apt-get -y purge slapd
 sudo rm -rf /var/lib/ldap
-sudo mkdir /var/lib/ldap
-sudo chown openldap:openldap /var/lib/ldap
+sudo rm -rf /var/lib/slapd
+sudo mkdir /var/lib/ldap /var/lib/slapd
+sudo chown openldap:openldap /var/lib/ldap /var/lib/slapd
+sudo rm -rf /var/lib/example.com
+sudo mkdir /var/lib/example.com
+sudo chown openldap:openldap /var/lib/example.com
 sudo rm -rf /etc/ldap/slapd.d
-#sudo mkdir /etc/ldap/slapd.d
-#sudo chown openldap:openldap /etc/ldap/slapd.d
-#sudo apt-get --force-yes -y install slapd
+sudo mkdir /etc/ldap/slapd.d
+sudo chown openldap:openldap /etc/ldap/slapd.d
+sudo apt-get --force-yes -y install slapd
 sudo dpkg-reconfigure --force -f noninteractive slapd
 sudo /etc/init.d/slapd start
 
