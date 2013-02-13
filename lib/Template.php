@@ -258,7 +258,7 @@ class Template extends xmlTemplate {
 	 * or delete.
 	 * (OLD values are IGNORED, we will have got them when we build this object from the LDAP server DN.)
 	 */
-	public function accept($makeVisible=false, $method=null) {
+	public function accept($makeVisible=false, $nocache=false, $method=null) {
 		if (DEBUG_ENABLED && (($fargs=func_get_args())||$fargs='NOARGS'))
 			debug_log('Entered (%%)',5,0,__FILE__,__LINE__,__METHOD__,$fargs);
 
@@ -275,7 +275,7 @@ class Template extends xmlTemplate {
 			$rdnarray = rdn_explode(strtolower(get_rdn(dn_escape($this->dn))));
 
 			$counter = 1;
-			foreach ($server->getDNAttrValues($this->dn,null,LDAP_DEREF_NEVER,array_merge(array('*'),$server->getValue('server','custom_attrs'))) as $attr => $values) {
+			foreach ($server->getDNAttrValues($this->dn,null,LDAP_DEREF_NEVER,array_merge(array('*'),$server->getValue('server','custom_attrs')),$nocache) as $attr => $values) {
 				# We ignore DNs.
 				if ($attr == 'dn')
 					continue;
@@ -1349,7 +1349,7 @@ class Template extends xmlTemplate {
 							continue;
 
 						if (! $this->isAttrType($objectclassattr,'may'))
-							$this->setAttrLDAPtype($sattr->getName(false),'optional');
+							$this->setAttrLDAPtype($sattr->getName(false),'may');
 
 						if (! in_array($objectclassattr,$allattrs))
 							array_push($allattrs,$objectclassattr);
@@ -1569,6 +1569,10 @@ class Template extends xmlTemplate {
 
 	public function isNoLeaf() {
 		return $this->noleaf;
+	}
+
+	public function sort() {
+		usort($this->attributes,'sortAttrs');
 	}
 }
 ?>

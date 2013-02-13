@@ -51,15 +51,22 @@ abstract class Tree {
 				return null;
 
 			$treeclass = $_SESSION[APPCONFIG]->getValue('appearance','tree');
-			eval('$tree = new '.$treeclass.'($server_id);');
+			$tree = new $treeclass($server_id);
 
 			# If we are not logged in, just return the empty tree.
 			if (is_null($server->getLogin(null)))
 				return $tree;
 
-			foreach ($server->getBaseDN(null) as $base)
-				if ($base)
+			foreach ($server->getBaseDN(null) as $base) {
+				if ($base) {
 					$tree->addEntry($base);
+
+					if ($server->getValue('appearance','open_tree')) {
+						$baseEntry = $tree->getEntry($base);
+						$baseEntry->open();
+					}
+				}
+			}
 
 			set_cached_item($server_id,'tree','null',$tree);
 		}

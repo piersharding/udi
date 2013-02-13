@@ -355,11 +355,14 @@ function cmd_control_pane($type) {
 					'link'=>sprintf('href="index.php" title="%s"',_('Home')),
 					'image'=>sprintf('<img src="%s/home-big.png" alt="%s" />',IMGDIR,_('Home'))),
 
+/*
+// disabled until time can be spent on making it secure - 14/03/2013
 				'kiosk'=>array(
 					'title'=>_('Kiosk'),
 					'enable'=> isset($_SESSION[APPCONFIG]) ? $_SESSION[APPCONFIG]->isCommandAvailable('script','kiosk') : false,
 					'link'=>sprintf('href="kiosk.php" title="%s"',_('Kiosk')),
 					'image'=>sprintf('<img src="%s/home-big.png" alt="%s" />',IMGDIR,_('Kiosk'))),
+                    */
 
 				'purge'=>array(
 					'title'=>_('Purge caches'),
@@ -656,11 +659,11 @@ function error($msg,$type='note',$redirect=null,$fatal=false,$backtrace=false) {
 function get_request($attr,$type='POST',$die=false,$default=null) {
 	switch($type) {
 		case 'GET':
-			$value = isset($_GET[$attr]) ? (is_array($_GET[$attr]) ? $_GET[$attr] : (trim(empty($_GET['nodecode'][$attr]) ? rawurldecode($_GET[$attr]) : $_GET[$attr]))) : $default;
+			$value = isset($_GET[$attr]) ? (is_array($_GET[$attr]) ? $_GET[$attr] : (empty($_GET['nodecode'][$attr]) ? rawurldecode($_GET[$attr]) : $_GET[$attr])) : $default;
 			break;
 
 		case 'REQUEST':
-			$value = isset($_REQUEST[$attr]) ? (is_array($_REQUEST[$attr]) ? $_REQUEST[$attr] : trim(empty($_REQUEST['nodecode'][$attr]) ? rawurldecode($_REQUEST[$attr]) : $_REQUEST[$attr])) : $default;
+			$value = isset($_REQUEST[$attr]) ? (is_array($_REQUEST[$attr]) ? $_REQUEST[$attr] : (empty($_REQUEST['nodecode'][$attr]) ? rawurldecode($_REQUEST[$attr]) : $_REQUEST[$attr])) : $default;
 			break;
 
 		case 'SESSION':
@@ -669,7 +672,7 @@ function get_request($attr,$type='POST',$die=false,$default=null) {
 
 		case 'POST':
 		default:
-			$value = isset($_POST[$attr]) ? (is_array($_POST[$attr]) ? $_POST[$attr] : trim(empty($_POST['nodecode'][$attr]) ? rawurldecode($_POST[$attr]) : $_POST[$attr])) : $default;
+			$value = isset($_POST[$attr]) ? (is_array($_POST[$attr]) ? $_POST[$attr] : (empty($_POST['nodecode'][$attr]) ? rawurldecode($_POST[$attr]) : $_POST[$attr])) : $default;
 			break;
 	}
 
@@ -753,7 +756,7 @@ function blowfish_encrypt($data,$secret=null) {
 	if (! trim($secret))
 		return $data;
 
-	if (function_exists('mcrypt_module_open') && trim($data)) {
+	if (function_exists('mcrypt_module_open') && ! empty($data)) {
 		$td = mcrypt_module_open(MCRYPT_BLOWFISH,'',MCRYPT_MODE_ECB,'');
 		$iv = mcrypt_create_iv(mcrypt_enc_get_iv_size($td),MCRYPT_DEV_URANDOM);
 		mcrypt_generic_init($td,substr($secret,0,mcrypt_enc_get_key_size($td)),$iv);
@@ -779,6 +782,7 @@ function blowfish_encrypt($data,$secret=null) {
 
 		$encrypt .= $pma_cipher->encryptBlock($block, $secret);
 	}
+
 	return base64_encode($encrypt);
 }
 
@@ -808,7 +812,7 @@ function blowfish_decrypt($encdata,$secret=null) {
 	if (! trim($secret))
 		return $encdata;
 
-	if (function_exists('mcrypt_module_open') && trim($encdata)) {
+	if (function_exists('mcrypt_module_open') && ! empty($encdata)) {
 		$td = mcrypt_module_open(MCRYPT_BLOWFISH,'',MCRYPT_MODE_ECB,'');
 		$iv = mcrypt_create_iv(mcrypt_enc_get_iv_size($td),MCRYPT_DEV_URANDOM);
 		mcrypt_generic_init($td,substr($secret,0,mcrypt_enc_get_key_size($td)),$iv);
@@ -830,7 +834,8 @@ function blowfish_decrypt($encdata,$secret=null) {
 	for ($i=0; $i<strlen($data); $i+=8)
 		$decrypt .= $pma_cipher->decryptBlock(substr($data, $i, 8), $secret);
 
-	$return = trim($decrypt);
+	// Strip off our \0's that were added.
+	$return = preg_replace("/\\0*$/",'',$decrypt);
 	$CACHE[$encdata] = $return;
 	return $return;
 }
@@ -1011,8 +1016,9 @@ function masort(&$data,$sortby,$rev=0) {
 	if (defined('DEBUG_ENABLED') && DEBUG_ENABLED && (($fargs=func_get_args())||$fargs='NOARGS'))
 		debug_log('Entered (%%)',1,0,__FILE__,__LINE__,__METHOD__,$fargs);
 
-	# if the array to sort is null or empty
-	if (! $data) return;
+	# if the array to sort is null or empty, or if we have some nasty chars
+	if (! preg_match('/^[a-zA-Z0-9_]+(\([a-zA-Z0-9_,]*\))?$/',$sortby) || ! $data)
+		return;
 
 	static $CACHE = array();
 
@@ -1476,10 +1482,10 @@ function get_next_number($base,$attr,$increment=false,$filter=false,$startmin=nu
 			for ($i=0;$i<count($autonum);$i++) {
 				$num = $autonum[$i] < $minNumber ? $minNumber : $autonum[$i];
 
-				/* If we're at the end of the list, or we've found a gap between this number and the 
-				   following, use the next available number in the gap. */ 
-				if ($i+1 == count($autonum) || $autonum[$i+1] > $num+1) 
-					return $autonum[$i] >= $num ? $num+1 : $num; 
+				/* If we're at the end of the list, or we've found a gap between this number and the
+				   following, use the next available number in the gap. */
+				if ($i+1 == count($autonum) || $autonum[$i+1] > $num+1)
+					return $autonum[$i] >= $num ? $num+1 : $num;
 			}
 
 			# If we didnt find a suitable gap and are all above the minNumber, we'll just return the $minNumber
@@ -2119,7 +2125,8 @@ function password_types() {
 		'md5crypt'=>'md5crypt',
 		'sha'=>'sha',
 		'smd5'=>'smd5',
-		'ssha'=>'ssha'
+		'ssha'=>'ssha',
+		'sha512'=>'sha512',
 	);
 }
 
@@ -2128,7 +2135,7 @@ function password_types() {
  *
  * @param string The password to hash in clear text.
  * @param string Standard LDAP encryption type which must be one of
- *        crypt, ext_des, md5crypt, blowfish, md5, sha, smd5, ssha, or clear.
+ *        crypt, ext_des, md5crypt, blowfish, md5, sha, smd5, ssha, sha512, or clear.
  * @return string The hashed password.
  */
 function password_hash($password_clear,$enc_type) {
@@ -2221,6 +2228,16 @@ function password_hash($password_clear,$enc_type) {
 
 			break;
 
+		case 'sha512':
+			if (function_exists('openssl_digest') && function_exists('base64_encode')) {
+				$new_value = sprintf('{SHA512}%s', base64_encode(openssl_digest($password_clear, 'sha512', true)));
+
+			} else {
+				error(_('Your PHP install doest not have the openssl_digest() or base64_encode() function. Cannot do SHA512 hashes. '),'error','index.php');
+			}
+
+			break;
+
 		case 'clear':
 		default:
 			$new_value = $password_clear;
@@ -2246,13 +2263,13 @@ function password_check($cryptedpassword,$plainpassword,$attribute='userpassword
 
 		switch($attribute) {
 			case 'sambalmpassword':
-				if (strcmp($smb->lmhash($plainpassword),$cryptedpassword) == 0)
+				if (strcmp($smb->lmhash($plainpassword),strtoupper($cryptedpassword)) == 0)
 					return true;
 				else
 					return false;
 
 			case 'sambantpassword':
-				if (strcmp($smb->nthash($plainpassword),$cryptedpassword) == 0)
+				if (strcmp($smb->nthash($plainpassword),strtoupper($cryptedpassword)) == 0)
 					return true;
 				else
 					return false;
@@ -2381,6 +2398,15 @@ function password_check($cryptedpassword,$plainpassword,$attribute='userpassword
 				else
 					return false;
 			}
+
+			break;
+
+		# SHA512 crypted passwords
+		case 'sha512':
+			if (strcasecmp(password_hash($plainpassword,'sha512'),'{SHA512}'.$cryptedpassword) == 0)
+				return true;
+			else
+				return false;
 
 			break;
 
@@ -2787,7 +2813,7 @@ function draw_formatted_dn($server,$entry) {
 
 	$formats = $_SESSION[APPCONFIG]->getValue('appearance','tree_display_format');
 
-	foreach ($formats as $format) { 
+	foreach ($formats as $format) {
 		$has_none = false;
 		preg_match_all('/%[a-zA-Z_0-9]+/',$format,$tokens);
 		$tokens = $tokens[0];

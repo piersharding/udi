@@ -53,10 +53,11 @@
 // $config->custom->session['http_realm'] = sprintf('%s %s',app_name(),'login');
 
 /* The language setting. If you set this to 'auto', phpLDAPadmin will attempt
-   to determine your language automatically. Otherwise, available lanaguages
-   are: 'ct', 'de', 'en', 'es', 'fr', 'it', 'nl', and 'ru'
-   Localization is not complete yet, but most strings have been translated.
-   Please help by writing language files. See lang/en.php for an example. */
+   to determine your language automatically.
+   If PLA doesnt show (all) strings in your language, then you can do some
+   translation at http://translations.launchpad.net/phpldapadmin and download
+   the translation files, replacing those provided with PLA.
+   (We'll pick up the translations before making the next release too!) */
 // $config->custom->appearance['language'] = 'auto';
 
 /* The temporary storage directory where we will put jpegPhoto data
@@ -158,6 +159,9 @@ $config->custom->commands['script'] = array(
 
 /* Hide the warnings for invalid objectClasses/attributes in templates. */
 // $config->custom->appearance['hide_template_warning'] = false;
+
+/* Set to true if you would like to hide header and footer parts. */
+// $config->custom->appearance['minimalMode'] = false;
 
 /* Configure what objects are shown in left hand tree */
 // $config->custom->appearance['tree_filter'] = '(objectclass=*)';
@@ -413,6 +417,9 @@ $servers->setValue('server','name','My LDAP Server');
    in the tree viewer. */
 // $servers->setValue('appearance','show_create',true);
 
+/* Set to true if you would like to initially open the first level of each tree. */
+// $servers->setValue('appearance','open_tree',false);
+
 /* This feature allows phpLDAPadmin to automatically determine the next
    available uidNumber for a new entry. */
 // $servers->setValue('auto_number','enable',true);
@@ -491,8 +498,8 @@ $servers->setValue('server','name','My LDAP Server');
    server may automatically calculate a default value.
    In Fedora Directory Server using the DNA Plugin one could ignore uidNumber,
    gidNumber and sambaSID. */
-// $servers->setValue('force_may','attrs',array(''));
-#  $servers->setValue('force_may','attrs',array('uidNumber','gidNumber','sambaSID'));
+// $servers->setValue('server','force_may',array(''));
+#  $servers->setValue('server','force_may',array('uidNumber','gidNumber','sambaSID'));
 
 /*********************************************
  * Unique attributes                         *
@@ -564,6 +571,6 @@ $servers->setValue('login','timeout',30);
 $servers->setValue('server','branch_rename',false);
 $servers->setValue('server','custom_sys_attrs',array('passwordExpirationTime','passwordAllowChangeTime'));
 $servers->setValue('server','custom_attrs',array('nsRoleDN','nsRole','nsAccountLock'));
-$servers->setValue('force_may','attrs',array('uidNumber','gidNumber','sambaSID'));
+$servers->setValue('server','force_may',array('uidNumber','gidNumber','sambaSID'));
 */
 ?>

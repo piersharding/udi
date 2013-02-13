@@ -19,8 +19,6 @@ class ldap extends DS {
 	private $_schema_entries = null;
 	# Schema DN
 	private $_schemaDN = null;
-	# Attributes that should be treated as MAY attributes, even though the scheme has them as MUST attributes.
-	private $force_may = array();
 
 	public function __construct($index) {
 		if (defined('DEBUG_ENABLED') && DEBUG_ENABLED && (($fargs=func_get_args())||$fargs='NOARGS'))
@@ -1379,6 +1377,40 @@ class ldap extends DS {
 			}
 		}
 
+		# Option 3: try cn=config
+		$olc_schema = 'olc'.$schema_to_fetch;
+		$olc_schema_found = false;
+		if (is_null($schema_search)) {
+			if (DEBUG_ENABLED)
+				debug_log('Attempting cn=config work-around...',24,0,__FILE__,__LINE__,__METHOD__);
+
+			$ldap_dn = 'cn=schema,cn=config';
+			$ldap_filter = '(objectClass=*)';
+
+			$schema_search = @ldap_search($this->connect($method),$ldap_dn,$ldap_filter,array($olc_schema),false,0,10,LDAP_DEREF_NEVER);
+
+			if (! is_null($schema_search)) {
+				$schema_entries = @ldap_get_entries($this->connect($method),$schema_search);
+
+				if (DEBUG_ENABLED)
+					debug_log('Search returned [%s]',24,0,__FILE__,__LINE__,__METHOD__,$schema_entries);
+
+				if ($schema_entries) {
+					if (DEBUG_ENABLED)
+						debug_log('Found schema with filter of (%s) and attribute filter (%s)',24,0,__FILE__,__LINE__,__METHOD__,$ldap_filter,$olc_schema);
+
+					$olc_schema_found = true;
+
+				} else {
+					if (DEBUG_ENABLED)
+						debug_log('Didnt find schema with filter (%s) and attribute filter (%s)',24,0,__FILE__,__LINE__,__METHOD__,$ldap_filter,$olc_schema);
+
+					unset($schema_entries);
+					$schema_search = null;
+				}
+			}
+		}
+
 		if (is_null($schema_search)) {
 			/* Still cant find the schema, try with the RootDSE
 			 * Attempt to pull schema from Root DSE with scope "base", or
@@ -1448,9 +1480,35 @@ class ldap extends DS {
 			return $return;
 		}
 
-		if(! isset($schema_entries[0][$schema_to_fetch])) {
+		if ($olc_schema_found) {
+			unset ($schema_entries['count']);
+
+			foreach ($schema_entries as $entry) {
+				if (isset($entry[$olc_schema])) {
+					unset($entry[$olc_schema]['count']);
+
+					foreach ($entry[$olc_schema] as $schema_definition)
+						/* Schema definitions in child nodes prefix the schema entries with "{n}"
+						  the preg_replace call strips out this prefix. */
+						$schema[] = preg_replace('/^\{\d*\}\(/','(',$schema_definition);
+				}
+			}
+
+			if (isset($schema)) {
+				$this->_schema_entries[$olc_schema] = $schema;
+
+				if (DEBUG_ENABLED)
+					debug_log('Returning (%s)',25,0,__FILE__,__LINE__,__METHOD__,$schema);
+
+				return $schema;
+
+			} else
+				return null;
+		}
+
+		if (! isset($schema_entries[0][$schema_to_fetch])) {
 			if (in_array($schema_to_fetch,$schema_error_message_array)) {
-				error(sprintf('Our attempts to find your SCHEMA for "%s" has return UNEXPECTED results.<br /><br /><small>(We expected a "%s" in the $schema array but it wasnt there.)</small><br /><br />%s<br /><br />Dump of $schema_search:<hr /><pre><small>%s</small></pre>',
+				error(sprintf('Our attempts to find your SCHEMA for "%s" have return UNEXPECTED results.<br /><br /><small>(We expected a "%s" in the $schema array but it wasnt there.)</small><br /><br />%s<br /><br />Dump of $schema_search:<hr /><pre><small>%s</small></pre>',
 					$schema_to_fetch,gettype($schema_search),$schema_error_message,serialize($schema_entries)),'error','index.php');
 
 			} else {
@@ -1914,14 +1972,13 @@ class ldap extends DS {
 	 * This function determines if the specified attribute is contained in the force_may list
 	 * as configured in config.php.
 	 *
-	 * @return boolean True if the specified attribute is in the $force_may list and false
-	 *              otherwise.
+	 * @return boolean True if the specified attribute is configured to be force as a may attribute
 	 */
 	function isForceMay($attr_name) {
 		if (DEBUG_ENABLED && (($fargs=func_get_args())||$fargs='NOARGS'))
 			debug_log('Entered (%%)',17,0,__FILE__,__LINE__,__METHOD__,$fargs);
 
-		return in_array($attr_name,$this->force_may);
+		return in_array($attr_name,unserialize(strtolower(serialize($this->getValue('server','force_may')))));
 	}
 
 	/**
@@ -2006,7 +2063,7 @@ class ldap extends DS {
 	 * @see getDNSysAttrs
 	 * @see getDNAttrValue
 	 */
-	public function getDNAttrValues($dn,$method=null,$deref=LDAP_DEREF_NEVER,$attrs=array('*','+')) {
+	public function getDNAttrValues($dn,$method=null,$deref=LDAP_DEREF_NEVER,$attrs=array('*','+'),$nocache=false) {
 		if (DEBUG_ENABLED && (($fargs=func_get_args())||$fargs='NOARGS'))
 			debug_log('Entered (%%)',17,0,__FILE__,__LINE__,__METHOD__,$fargs);
 
@@ -2022,7 +2079,7 @@ class ldap extends DS {
 		elseif (in_array('*',$attrs))
 			$cacheindex = '*';
 
-		if (! is_null($cacheindex) && isset($CACHE[$this->index][$method][$dn][$cacheindex])) {
+		if (! $nocache && ! is_null($cacheindex) && isset($CACHE[$this->index][$method][$dn][$cacheindex])) {
 			$results = $CACHE[$this->index][$method][$dn][$cacheindex];
 
 			if (DEBUG_ENABLED)
@@ -2222,6 +2279,8 @@ class ldap extends DS {
 			strcasecmp($attr_name,'objectSID') == 0 ||
 			strcasecmp($attr_name,'auditingPolicy') == 0 ||
 			strcasecmp($attr_name,'jpegPhoto') == 0 ||
+			strcasecmp($attr_name,'krbExtraData') == 0 ||
+			strcasecmp($attr_name,'krbPrincipalKey') == 0 ||
 			$syntax == '1.3.6.1.4.1.1466.115.121.1.10' ||
 			$syntax == '1.3.6.1.4.1.1466.115.121.1.28' ||
 			$syntax == '1.3.6.1.4.1.1466.115.121.1.5' ||

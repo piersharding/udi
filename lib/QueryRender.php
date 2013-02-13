@@ -229,7 +229,6 @@ class QueryRender extends PageRender {
 		# If Mass Actions Enabled
 		if ($_SESSION[APPCONFIG]->getValue('mass','enabled')) {
 			$mass_actions = array(
-				'&nbsp;' => '',
 				_('delete') => 'mass_delete',
 				_('edit') => 'mass_edit'
 			);
@@ -281,6 +280,8 @@ class QueryRender extends PageRender {
 
 						# Iterate over each attribute for this entry
 						foreach (explode(',',$ado) as $attr) {
+							$attr = strtolower($attr);
+
 							# Ignore DN, we've already displayed it.
 							if ($attr == 'dn')
 								continue;
@@ -406,12 +407,10 @@ class QueryRender extends PageRender {
 						printf('<tr class="%s">',++$j%2 ? 'odd' : 'even');
 						printf('<td><input type="checkbox" name="allbox" value="1" onclick="CheckAll(1,\'massform_\',%s);" /></td>',$counter);
 						printf('<td colspan="%s">',2+count(explode(',',$ado)));
-						echo '<select name="cmd" onchange="if (this.value) submit();" style="font-size: 12px">';
 
-						foreach ($mass_actions as $action => $display)
-							printf('<option value="%s">%s</option>',$display,$action);
+						foreach ($mass_actions as $display => $action)
+							printf('<button type="submit" name="cmd" value="%s">%s</button>&nbsp;&nbsp;',$action,$display);
 
-						echo '</select>';
 						echo '</td>';
 						echo '</tr>';
 					}
@@ -462,7 +461,7 @@ class QueryRender extends PageRender {
 		$results = array();
 
 		foreach (explode(',',$this->template->getAttrDisplayOrder()) as $attr)
-			$results[$attr] = $attribute_factory->newAttribute($attr,array('values'=>array()),$this->getServerID());
+			$results[strtolower($attr)] = $attribute_factory->newAttribute($attr,array('values'=>array()),$this->getServerID());
 
 		return $results;
 	}
@@ -497,7 +496,7 @@ class QueryRender extends PageRender {
 				$this->getAjaxRef($base),
 				$this->getAjaxRef($base),
 				($show == $this->getAjaxRef($base) ? '#F0F0F0' : '#E0E0E0'),
-				$base);
+				htmlspecialchars($base));
 		}
 		echo '</tr>';
 		echo '</table>';
@@ -545,7 +544,7 @@ class QueryRender extends PageRender {
 		echo ' ]</small>';
 
 		echo '<br />';
-		printf('<small>%s: <b>%s</b></small>',_('Base DN'),$base);
+		printf('<small>%s: <b>%s</b></small>',_('Base DN'),htmlspecialchars($base));
 
 		echo '<br />';
 		printf('<small>%s: <b>%s</b></small>',_('Filter performed'),htmlspecialchars($this->template->resultsdata[$base]['filter']));

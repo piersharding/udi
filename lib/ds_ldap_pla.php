@@ -13,9 +13,6 @@
  * @subpackage DataStore
  */
 class ldap_pla extends ldap {
-	# Attributes that should be treated as MAY attributes, even though the scheme has them as MUST attributes.
-	private $force_may = array();
-
 	function __construct($index) {
 		parent::__construct($index);
 
@@ -26,6 +23,10 @@ class ldap_pla extends ldap {
 		$this->default->appearance['show_create'] = array(
 			'desc'=>'Whether to show the "Create new Entry here" in the tree browser',
 			'default'=>true);
+
+		$this->default->appearance['open_tree'] = array(
+			'desc'=>'Whether to initially open each tree',
+			'default'=>false);
 
 		$this->default->login['fallback_dn'] = array(
 			'desc'=>'If the attribute base login fails, see if a DN was entered',
@@ -87,6 +88,11 @@ class ldap_pla extends ldap {
 				'dseType',
 				'+',
 				'*'
+			));
+
+		$this->default->server['force_may'] = array(
+			'desc'=>'Force server MUST attributes as MAY attributes',
+			'default'=>array(
 			));
 
 		# Settings for auto_number
