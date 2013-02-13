@@ -36,21 +36,21 @@ div.gridbox_dhx_web table.hdr td {
 div.gridbox_dhx_web {
   border:1px solid  #8B8B8B;
 }
-div.gridbox table.obj tr  td{
+div.gridbox_dhx_web table.obj tr  td{
     padding-top:8px;
     padding-bottom:8px;
 }
-div.gridbox table.obj.row20px tr  td{
+div.gridbox_dhx_web table.obj.row20px tr  td{
     padding-top:0px;
     padding-bottom:0px;
     height:30px;
 
 }
 
-div.gridbox table.obj tr  td.editable{
+div.gridbox_dhx_web table.obj tr  td.editable{
     padding:0px;
 }
-div.gridbox table.obj tr  td.editable div.treegrid_cell{
+div.gridbox_dhx_web table.obj tr  td.editable div.treegrid_cell{
 	padding-left:4px;
 	padding-top:1px;
 }

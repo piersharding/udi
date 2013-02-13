@@ -14,6 +14,7 @@ div.gridbox table.obj{
 	height:1px;
 }
 div.gridbox table.hdr td {
+	line-height:normal;
 	font-family:arial;
 	font-size:12px;
 	background-Color:#D4D0C8;
@@ -56,7 +57,8 @@ div.gridbox table.row20px tr  td{
 div.gridbox .objbox {
 	background-color:white;
 	position:relative;
-	}
+    -webkit-overflow-scrolling: touch;
+}
 div.gridbox table.obj td span.space, div.gridbox table.obj td img.space{
 	width:18px;
 	}
@@ -204,7 +206,7 @@ div.gridbox_xp table.obj tr.rowselected td{
 	background-color:whitesmoke;
 	color:black;
 	}
-div.gridbox_xp table.obj tr.rowselected td.cellselected, div.gridbox table.obj td.cellselected {
+div.gridbox_xp table.obj tr.rowselected td.cellselected, div.gridbox_xp table.obj td.cellselected {
 	background-color:whitesmoke;
 	}
 div.gridbox_xp table.row20px tr  td{
@@ -271,7 +273,7 @@ div.gridbox_mt table.obj tr.rowselected td{
 	background-color:#D6D3FA;
 	color:black;
 	}
-div.gridbox_mt table.obj tr.rowselected td.cellselected, div.gridbox table.obj td.cellselected {
+div.gridbox_mt table.obj tr.rowselected td.cellselected, div.gridbox_mt table.obj td.cellselected {
 	background-color:#D6D3FA;
 	}
 div.gridbox_mt table.row20px tr  td{
@@ -390,7 +392,7 @@ div.gridbox_light table.obj tr.rowselected td{
 	background-color:#ededed;
 	color:black;
 	}
-div.gridbox_light table.obj tr.rowselected td.cellselected, div.gridbox table.obj td.cellselected {
+div.gridbox_light table.obj tr.rowselected td.cellselected, div.gridbox_light table.obj td.cellselected {
 	background-color:#ededed;
 	}
 div.gridbox_light .odd_light{
@@ -462,7 +464,7 @@ div.gridbox_modern table.obj tr.rowselected td{
 	background-color:#9ac2e5;
 	color:black;
 	}
-div.gridbox_modern table.obj tr.rowselected td.cellselected, div.gridbox table.obj td.cellselected {
+div.gridbox_modern table.obj tr.rowselected td.cellselected, div.gridbox_modern table.obj td.cellselected {
 	background-color:#9ac2e5;
 	}
 div.gridbox_modern .odd_modern{
@@ -679,6 +681,7 @@ div.gridbox_dhx_skyblue div.ftr td{
 	background-image:url(./imgs/sky_blue_grid.gif);
 	border-color:#A4BED4;
 }
-div.gridbox table.hdr td:last-child {
-	border-right-width: 0px !important;
+
+div.gridbox td.filter input, div.gridbox td.filter select{
+	width:90%; font-size:8pt; font-family:Tahoma; -moz-user-select:text;
 }
