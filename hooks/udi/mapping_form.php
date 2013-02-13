@@ -22,6 +22,9 @@ $mandatory_fields = array(
                             'mlepEmail',
                             'mlepOrganisation',
                             'mlepGroupMembership',
+                            'mlepDOB',
+                            'mlepHomeGroup',
+                            'mlepGender'
                             );
 
 $socs = $app['server']->SchemaObjectClasses('user');

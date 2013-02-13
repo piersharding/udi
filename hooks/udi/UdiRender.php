@@ -463,8 +463,6 @@ class UdiRender extends PageRender {
             if (empty($default)) {
                 $default = "";
             }
-            //error_log('opt_name: ' . var_export($opt_name, TRUE));
-            //error_log('default: ' . var_export($default, TRUE));
             $select .= sprintf('<option value="%s" %s>%s</option>',
                     $opt_name, strtolower($opt_name) === strtolower("".$default) ? 'selected ': '',$opt_text);
         }

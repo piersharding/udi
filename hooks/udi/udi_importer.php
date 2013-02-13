@@ -105,6 +105,8 @@ abstract class Import {
     protected $source = array();
     protected $delimiter;
     protected $stamp;
+    public $version = null;
+    public $school = null;
 
     /**
      * Constructor
@@ -171,7 +173,26 @@ abstract class Import {
                     $last = current($this->input);
                 }
                 reset($this->input);
-                if (preg_match('/\d\d\d\d\-\d\d\-\d\d \d\d\:\d\d\:\d\d/', $last)) {
+                // 0119#1.71#2013-02-14 07:02:34
+                // if (preg_match('/^(\d{4})\#1\.71\#(\d\d\d\d\-\d\d\-\d\d \d\d\:\d\d\:\d\d)/', $last, $matches)) { // until eTap fix their file XXX
+                if (preg_match('/^(\d{4})\#1\.71?\#(\d\d\d\d\-\d\d\-\d\d \d\d\:\d\d\:\d\d)/', $last, $matches)) {
+                    $this->version = '1.71';
+                    $this->school = $matches[1];
+                    $this->stamp = $matches[2];
+                    // discard timestamp record
+                    array_pop($this->input);
+                }
+                // 0119#1.72#2013-02-14 07:02:34
+                else if (preg_match('/^(\d{4})\#1\.72\#(\d\d\d\d\-\d\d\-\d\d \d\d\:\d\d\:\d\d)/', $last, $matches)) {
+                    $this->version = '1.72';
+                    $this->school = $matches[1];
+                    $this->stamp = $matches[2];
+                    // discard timestamp record
+                    array_pop($this->input);
+                }
+                // 2013-02-14 07:02:34 // old 1.6 version
+                else if (preg_match('/\d\d\d\d\-\d\d\-\d\d \d\d\:\d\d\:\d\d/', $last)) {
+                    $this->version = '1.6';
                     $this->stamp = $last;
                     // discard timestamp record
                     array_pop($this->input);

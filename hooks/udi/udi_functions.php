@@ -23,8 +23,6 @@ $mlep_mandatory_fields = array(
                             'mlepUsername' => array('mandatory' => false, 'match' => '/.+/'),
                             'mlepFirstAttending' => array('mandatory' => true, 'match' => '/^\d{4}\-\d{2}\-\d{2}$/', 'group' => array('Student')),
                             'mlepLastAttendance' => array('mandatory' => false, 'match' => '/^\d{4}\-\d{2}\-\d{2}$/', 'group' => array('Student')),
-//                            'mlepFirstName' => array('mandatory' => true, 'match' => '/^[^\*\?\;\,\<\>\!\%\^\&\|]+$/'),
-//                            'mlepLastName' => array('mandatory' => true, 'match' => '/^[^\*\?\;\,\<\>\!\%\^\&\|]+$/'),
                             'mlepFirstName' => array('mandatory' => true, 'match' => '/^[^\*\?\;\,\<\>\!\%\^\|]+$/'),
                             'mlepLastName' => array('mandatory' => true, 'match' => '/^[^\*\?\;\,\<\>\!\%\^\|]+$/'),
                             'mlepPreferredName' => array('mandatory' => false, 'match' => '/^[^\*\?\;\,\<\>\!\%\^\|]+$/'),
@@ -36,6 +34,9 @@ $mlep_mandatory_fields = array(
                                                                                   '[-!\#$%&\'*+\\./0-9=?A-Z^_`a-z{|}~]+$#'),
                             'mlepOrganisation' => array('mandatory' => false, 'match' => '/^[\w\d\.-]+$/'),
                             'mlepGroupMembership' => array('mandatory' => false, 'match' => '/[\w\d\s\#]+/'),
+                            'mlepHomeGroup' => array('mandatory' => true, 'match' => '/[\w\d\s\#]+/', 'group' => array('Student')),
+                            'mlepGender' => array('mandatory' => false, 'match' => '/^(M|F)$/'),
+                            'mlepDOB' => array('mandatory' => true, 'match' => '/^\d{4}\-\d{2}\-\d{2}$/', 'group' => array('Student')),
                             );
 /**
  *  Check that a DN exists in the directory

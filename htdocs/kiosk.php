@@ -20,6 +20,9 @@ PHP is not installed on your web server!!!
 </pre>
 *******************************************/
 
+// disabled the kiosk until time can be spent on it to make it secure - 14/02/2013
+header("Location: index.php");
+
 /**
  * We will perform some sanity checking here, since this file is normally loaded first when users
  * first access the application.
