@@ -174,17 +174,8 @@ abstract class Import {
                 }
                 reset($this->input);
                 // 0119#1.71#2013-02-14 07:02:34
-                // if (preg_match('/^(\d{4})\#1\.71\#(\d\d\d\d\-\d\d\-\d\d \d\d\:\d\d\:\d\d)/', $last, $matches)) { // until eTap fix their file XXX
-                if (preg_match('/^(\d{4})\#1\.71?\#(\d\d\d\d\-\d\d\-\d\d \d\d\:\d\d\:\d\d)/', $last, $matches)) {
+                if (preg_match('/^(\d{4})\#1\.71\#(\d\d\d\d\-\d\d\-\d\d \d\d\:\d\d\:\d\d)/', $last, $matches)) {
                     $this->version = '1.71';
-                    $this->school = $matches[1];
-                    $this->stamp = $matches[2];
-                    // discard timestamp record
-                    array_pop($this->input);
-                }
-                // 0119#1.72#2013-02-14 07:02:34
-                else if (preg_match('/^(\d{4})\#1\.72\#(\d\d\d\d\-\d\d\-\d\d \d\d\:\d\d\:\d\d)/', $last, $matches)) {
-                    $this->version = '1.72';
                     $this->school = $matches[1];
                     $this->stamp = $matches[2];
                     // discard timestamp record
