@@ -23,7 +23,7 @@ $mandatory_fields = array(
                             'mlepOrganisation',
                             'mlepGroupMembership',
                             'mlepDOB',
-                            'mlepHomeGroup',
+                            //'mlepHomeGroup',  // this should be optional depending on the IDE extract version (1.6 vs 1.7)
                             'mlepGender'
                             );
 
@@ -130,7 +130,7 @@ if (isset($cfg['groups_enabled']) && $cfg['groups_enabled'] == 'checked') {
     $groups_enabled_opts['checked'] = 'checked';
     $groups_enabled_opts['value'] = 1;
 }
-echo $request['page']->configEntry('groups_enabled', _('Processing mlepGroupMembership Enabled:'), $groups_enabled_opts, true, false);
+echo $request['page']->configEntry('groups_enabled', _('Processing mlepGroupMembership &amp; mlepHomeGroup Enabled:'), $groups_enabled_opts, true, false);
 $group_attrs = array('none' => new ObjectClass_ObjectClassAttribute("", ""),
                      'member' => new ObjectClass_ObjectClassAttribute("member", "member"),
                      'memberuid' => new ObjectClass_ObjectClassAttribute("memberUid", "memberuid"),

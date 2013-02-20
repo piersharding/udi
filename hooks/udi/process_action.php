@@ -28,7 +28,8 @@ switch ($action) {
         // validate the file now
         if (isset($_SESSION['udi_import_file'])) {
             // validate the in memory file
-            $processor = new Processor($app['server'], $_SESSION['udi_import_file']);
+            // error_log('passing the version: '.$_SESSION['udi_import_file']['version']);
+            $processor = new Processor($app['server'], $_SESSION['udi_import_file'], $_SESSION['udi_import_file']['version']);
         }
         else {
             // validate the file specified in the config
@@ -39,7 +40,8 @@ switch ($action) {
             while ($entry = $import->readEntry()) {
                 $rows []= $entry;
             }
-            $processor = new Processor($app['server'], array('header' => $header, 'contents' => $rows));
+            // error_log('passing the version: '.$import->version);
+            $processor = new Processor($app['server'], array('header' => $header, 'contents' => $rows), $import->version);
         }
         // validate file contents
         $processor->validate();
@@ -59,7 +61,7 @@ switch ($action) {
         // really process the file now
         if (isset($_SESSION['udi_import_file'])) {
             // process the in memory file
-            $processor = new Processor($app['server'], $_SESSION['udi_import_file']);
+            $processor = new Processor($app['server'], $_SESSION['udi_import_file'], $_SESSION['udi_import_file']['version']);
         }
         else {
             // process the file specified in the config
@@ -71,7 +73,7 @@ switch ($action) {
             while ($entry = $import->readEntry()) {
                 $rows []= $entry;
             }
-            $processor = new Processor($app['server'], array('header' => $header, 'contents' => $rows));
+            $processor = new Processor($app['server'], array('header' => $header, 'contents' => $rows), $import->version);
         }
         if ($processor->validate(true)) {
             $processor->purge();

@@ -5,7 +5,7 @@ include ("Console/Getopt.php");
 define('UDI_CRON', 1);
 
 // increase error reporting
-error_reporting(E_ALL);
+error_reporting(E_ALL & ~E_STRICT); // to avoid error with Console_Getopt::readPHPArgv() under PHP strict
 
 // make sure that it is only run from the command line
 if (isset($_SERVER['REMOTE_ADDR']) || isset($_SERVER['GATEWAY_INTERFACE'])){
@@ -54,6 +54,7 @@ if (PEAR::isError($console_opt)) {
     console_write(help_text());
     exit(1);
 }
+error_reporting(E_ALL);
 
 // stash the values from the command line
 $values = array();
@@ -423,7 +424,7 @@ else {
         exit(1);
     }
     
-    $processor = new Processor($app['server'], array('header' => $header, 'contents' => $rows));
+    $processor = new Processor($app['server'], array('header' => $header, 'contents' => $rows), $import->version);
     if ($processor->validate(true)) {
         if (!$validate) {
             $processor->import();

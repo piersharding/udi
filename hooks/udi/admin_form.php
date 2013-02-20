@@ -231,7 +231,7 @@ else {
     $field .= '</span></div>';
     echo $request['page']->configRow($request['page']->configFieldLabel('create_in', _('Default new accounts container (with base):')), $field, (isset($create_in_opts['disabled']) ? false : true));
     
-    // map mlepGroupMembership values to directory containers                
+    // map mlepGroupMembership, mlepRole (as a group), and mlepHomeGroup values to directory containers                
     echo '<p class="shrink">'._('Map groups to containers:').'</p>';
     // indicate how many mappings to deal with
     $no_mappings = 0;

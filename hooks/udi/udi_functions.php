@@ -34,7 +34,7 @@ $mlep_mandatory_fields = array(
                                                                                   '[-!\#$%&\'*+\\./0-9=?A-Z^_`a-z{|}~]+$#'),
                             'mlepOrganisation' => array('mandatory' => false, 'match' => '/^[\w\d\.-]+$/'),
                             'mlepGroupMembership' => array('mandatory' => false, 'match' => '/[\w\d\s\#]+/'),
-                            'mlepHomeGroup' => array('mandatory' => true, 'match' => '/[\w\d\s\#]+/', 'group' => array('Student')),
+                            'mlepHomeGroup' => array('mandatory' => false, 'match' => '/[\w\d\s\#]+/', 'group' => array('Student', 'TeachingStaff', 'NonTeachingStaff')),
                             'mlepGender' => array('mandatory' => false, 'match' => '/^(M|F)$/'),
                             'mlepDOB' => array('mandatory' => true, 'match' => '/^\d{4}\-\d{2}\-\d{2}$/', 'group' => array('Student')),
                             );

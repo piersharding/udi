@@ -27,7 +27,7 @@ This should be 'cn' - most directory implementations name user entries like: cn=
 </p>
 <p>
 <h4>Map groups to containers</h4>
-Based on the values found in the mlepGroupMembership column of the CSV file, you can map users to be created in different 
+Based on the values found in the mlepGroupMembership and mlepHomeGroup columns of the CSV file, you can map users to be created in different 
 nodes/containers of the directory.  These containers must exists within one of the specified search bases.
 </p>
 <p>

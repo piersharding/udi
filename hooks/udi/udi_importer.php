@@ -105,7 +105,7 @@ abstract class Import {
     protected $source = array();
     protected $delimiter;
     protected $stamp;
-    public $version = null;
+    public $version = '1.6';
     public $school = null;
 
     /**
@@ -174,7 +174,7 @@ abstract class Import {
                 }
                 reset($this->input);
                 // 0119#1.71#2013-02-14 07:02:34
-                if (preg_match('/^(\d{4})\#1\.71\#(\d\d\d\d\-\d\d\-\d\d \d\d\:\d\d\:\d\d)/', $last, $matches)) {
+                if (preg_match('/^(\d{4})\#1\.71?\#(\d\d\d\d\-\d\d\-\d\d \d\d\:\d\d\:\d\d)/', $last, $matches)) {
                     $this->version = '1.71';
                     $this->school = $matches[1];
                     $this->stamp = $matches[2];
@@ -188,6 +188,8 @@ abstract class Import {
                     // discard timestamp record
                     array_pop($this->input);
                 }
+                // error_log('last record is: '.$last);
+                // error_log('determined version is: '.$this->version);
             }
 
         } else {
@@ -273,6 +275,8 @@ class ImportCSV extends Import {
         foreach ($this->_header_line as $hdr) {
             $headers[strtolower($hdr)]= $hdr;
         }
+        // error_log('mandatory headers: '.var_export($must, true));
+        // error_log('actual headers: '.var_export($headers, true));
         foreach ($must as $attr) {
             if (!isset($headers[$attr->getName()])) {
                 system_message(array(
@@ -331,6 +335,15 @@ class ImportCSV extends Import {
      */
     protected function getTemplate() {
         return $this->template;
+    }
+
+    /**
+     * Accessor for file version
+     *
+     * @return string the version
+     */
+    public function getFileVersion() {
+        return $this->version;
     }
 
     /**

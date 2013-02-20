@@ -36,7 +36,8 @@ else if (!empty($upload)) {
     }
     
     // stash file in session for real processing
-    $_SESSION['udi_import_file'] = array('header' => $header, 'contents' => $rows);
+    // error_log('uploaded version: '.$request['udi']->getFileVersion());
+    $_SESSION['udi_import_file'] = array('header' => $header, 'contents' => $rows, 'version' => $request['udi']->getFileVersion());
     
     $request['page']->info(sprintf(_('File uploaded and ready for processing.  File contained %s rows'), count($rows)));
 }

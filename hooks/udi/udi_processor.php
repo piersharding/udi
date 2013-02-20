@@ -23,6 +23,9 @@ class Processor {
     // Server that the export is linked to
     private $server;
 
+    // file version
+    private $version;
+
     // The actual import data
     private $data;
 
@@ -56,9 +59,10 @@ class Processor {
      * @param object $server LDAP directory
      * @param array $data CSV file contents
      */
-    public function __construct($server, $data=array()) {
+    public function __construct($server, $data=array(), $version='1.6') {
         $this->server = $server;
         $this->data = $data;
+        $this->version = $version;
         $this->udiconfig = new UdiConfig($this->server);
         $this->cfg = $this->udiconfig->getConfig();
         $this->group_cache = array();
@@ -202,8 +206,9 @@ class Processor {
 
         // check for duplication of fields in header line
         foreach ($this->data['header'] as $header) {
-            // skip the group membership column
-            if (strtolower($header) == 'mlepgroupmembership') {
+            // skip the group membership columns
+            if (strtolower($header) == 'mlepgroupmembership' ||
+                strtolower($header) == 'mlephomegroup') {
                 continue;
             }
             // dont worry about the ones covered by mappings
@@ -221,7 +226,7 @@ class Processor {
         foreach ($cfg_mappings as $mapping) {
             foreach($mapping['targets'] as $field) {
                 if (isset($total_fields[strtolower($field)])) {
-                    $request['page']->error(_('Duplicate target field in mapping source: ').$mapping['source']._(' to target: ').$field, _('processing'));
+                    $request['page']->error(_('Duplicate target field in mapping source: ').$mapping['source']._(' to target: ').$field, _('processing (check columns in file)'));
                     return false;
                 }
                 $total_fields[strtolower($field)] = $field;
@@ -285,7 +290,9 @@ class Processor {
             // check for MUST mapped values
             foreach ($this->data['header'] as $header) {
                 $user[$header] = $row[$cell];
-                if (strtolower($header) == 'mlepgroupmembership') {
+                // skip past the group columns
+                if (strtolower($header) == 'mlepgroupmembership' ||
+                    strtolower($header) == 'mlephomegroup') {
                     $cell++;
                     continue;
                 }
@@ -331,6 +338,7 @@ class Processor {
 
             // check for bad records values
             // if problems found then log, and remove ID from read directory list $accounts
+            // error_log('version: '.$this->version);  
             $field_errors = array();
             if ($this->cfg['strict_checks'] == 'checked') {
                 foreach ($mlep_mandatory_fields as $field => $tests) {
@@ -342,9 +350,21 @@ class Processor {
                                 // they are OK - this is allowed to be empty
                                 continue;
                             }
+
+                            // check file version related new mandatory fields
+                            if ($this->version < 1.71 && in_array(strtolower($field), array('mlepgender', 'mlepdob'))) {
+                                // error_log('skipping field: '.$field);
+                                // error_log('mandatory fields: '.var_export($mlep_mandatory_fields, true));
+                                continue;
+                            }
+
+                            // mandatory fields for every file version - 1.6 onwards
                             if (empty($user[$field]) && in_array($user['mlepRole'], $tests['group'])) {
                                 //meh - you are bad!
-                                $field_errors[]= $field.'('.$user[$field].')';
+                                if (!isset($user[$field])) {
+                                    return $request['page']->error(_('Mandatory value: ').$field._(' is missing from file version: ').$this->version, _('processing'));
+                                }
+                                $field_errors[]= $field.'('.$user[$field].')'._(' is empty');
                                 continue;
                             }
                         }
@@ -816,22 +836,31 @@ class Processor {
      */
     protected function makeGroupMembership ($account) {
         $group_membership = false;
+        // find the group memberships
         if (isset($account['mlepgroupmembership'])) {
             $group_membership = $account['mlepgroupmembership'];
         }
         else if (isset($account['mlepGroupMembership'])) {
             $group_membership = $account['mlepGroupMembership'];
         }
+
+        // add on the home groups
+        if (isset($account['mlephomegroup']) && !empty($account['mlephomegroup'])) {
+            $group_membership = implode('#', array($group_membership, $account['mlephomegroup']));
+        }
+        else if (isset($account['mlepHomeGroup']) && !empty($account['mlepHomeGroup'])) {
+            $group_membership = implode('#', array($group_membership, $account['mlepHomeGroup']));
+        }
+
         // combine role and groupmembership
         if (isset($account['mleprole']) && is_array($account['mleprole'])) {
-            return implode('#', array($account['mleprole'][0], $group_membership));
+            $group_membership = implode('#', array($account['mleprole'][0], $group_membership));
         }
         else if (isset($account['mlepRole'])) {
-            return implode('#', array($account['mlepRole'], $group_membership));
+            $group_membership =  implode('#', array($account['mlepRole'], $group_membership));
         }
-        else {
-            return $group_membership;
-        }
+
+        return implode('#', array_unique(explode('#', $group_membership)));
     }
 
     /**
@@ -1016,7 +1045,8 @@ class Processor {
                 }
 
                 // skip the mlepgroupmembership
-                if (strtolower($attr) == 'mlepgroupmembership') {
+                if (strtolower($attr) == 'mlepgroupmembership' ||
+                    strtolower($attr) == 'mlephomegroup') {
                     continue;
                 }
 
@@ -1094,6 +1124,9 @@ class Processor {
                         foreach ($matches[1] as $match) {
                             $parts = explode(':', $match);
                             $attr = array_shift($parts);
+                            if (strtolower($attr) == 'mlephomegroup') {
+                                continue;  // this is concatenated with mlepGroupMembership
+                            }
                             if (strtolower($attr) == 'mlepgroupmembership') {
                                 $element = empty($parts) ? 1 : (int)array_shift($parts);
                                 $groups = explode('#', $group_membership);
@@ -1154,8 +1187,8 @@ class Processor {
             $template->setRDNAttributes($rdn);
 
             // set the CN
-            //var_dump($template->getLDAPadd());
-            //continue;
+            // var_dump($template->getLDAPadd());
+            // continue;
             $result = $this->server->add($dn, $template->getLDAPadd(), 'user');
             if (!$result) {
 //                var_dump($dn);
@@ -1228,6 +1261,7 @@ class Processor {
                     // it must a member style DN group
                     $uid = $dn;
                 }
+                var_dump($group_membership);
                 if (!$this->replaceGroupMembership(false, $uid, $group_membership, $dn)) {
                     return false;
                 }
@@ -1393,7 +1427,8 @@ class Processor {
                     continue;
                 }
                 // skip the mlepgroupmembership
-                if (strtolower($attr) == 'mlepgroupmembership') {
+                if (strtolower($attr) == 'mlepgroupmembership' ||
+                    strtolower($attr) == 'mlephomegroup') {
                     continue;
                 }
 

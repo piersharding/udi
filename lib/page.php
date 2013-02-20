@@ -133,7 +133,7 @@ class page {
             printf('<script type="text/javascript" language="javascript"  src="%sdhtmlx/codebase/dhtmlxgrid.js"></script>',JSDIR);
             printf('<script type="text/javascript" language="javascript" src="%sdhtmlx/codebase/ext/dhtmlxgrid_srnd.js"></script>',JSDIR);
             printf('<script type="text/javascript" language="javascript" src="%sdhtmlx/codebase/dhtmlxgridcell.js"></script>',JSDIR);
-            // printf('<script type="text/javascript" language="javascript" src="%sdhtmlx/codebase/dhtmlxdataprocessor.js"></script>',JSDIR);
+            printf('<script type="text/javascript" language="javascript" src="%sdhtmlx/codebase/dhtmlxdataprocessor.js"></script>',JSDIR);
             printf('<link rel="stylesheet" type="text/css" href="%sdhtmlx/codebase/dhtmlxgrid.css">', JSDIR);
             printf('<link rel="stylesheet" type="text/css" href="%sdhtmlx/codebase/skins/dhtmlxgrid_dhx_skyblue.css">', JSDIR);
             echo "\n";
