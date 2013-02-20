@@ -126,5 +126,22 @@
 	<order>17</order>
 	<page>1</page>
 </attribute>
+<attribute id="mlepDOB">
+	<display>mlep Date of Birth - YYYY-MM-DD</display>
+	<order>18</order>
+	<page>1</page>
+</attribute>
+<attribute id="mlepGender">
+	<display>mlep Gender - M/F</display>
+	<default> </default>
+    <type>select</type>
+    <value id="M">M</value>
+    <value id="F">F</value>
+	<hint>M or F</hint>
+	<page>1</page>
+	<spacer>1</spacer>
+	<order>19</order>
+	<page>1</page>
+</attribute>
 </attributes>
 </template>
