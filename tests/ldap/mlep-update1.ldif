@@ -1,0 +1,19 @@
+dn: cn={7}mlep,cn=schema,cn=config
+changetype: modify
+add: olcAttributeTypes
+olcAttributeTypes: {13}( 1.3.6.1.4.1.36350.1.1.1.14 NAME 'mlepGender' DESC 'ML
+ EP Schema definition' EQUALITY caseIgnoreMatch SUBSTR caseIgnoreSubstringsMat
+ ch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
+-
+add: olcAttributeTypes
+olcAttributeTypes: {14}( 1.3.6.1.4.1.36350.1.1.1.15 NAME 'mlepDOB' DESC 'MLEP 
+  Schema definition' EQUALITY caseIgnoreMatch SUBSTR caseIgnoreSubstringsMatch 
+ SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
+-
+replace: olcObjectClasses
+olcObjectClasses: {0}( 1.3.6.1.4.1.36350.1.1.1 NAME 'mlepPerson' DESC 'MLEP Sc
+ hema definition' AUXILIARY MUST ( mlepRole $ mlepSmsPersonId $ mlepFirstName 
+ $ mlepLastName ) MAY ( mlepUsername $ mlepStudentNSN $ mlepAssociatedNSN $ ml
+ epFirstAttending $ mlepLastAttendance $ mlepEmail $ mlepOrganisation $ mlepGl
+ obalUserId $ mlepPreferredName $ mlepGender $ mlepDOB) )
+

@@ -1,0 +1,14 @@
+# test file
+
+"mlepSmsPersonId","mlepStudentNSN","mlepUsername","mlepFirstAttending","mlepLastAttendance","mlepFirstName","mlepLastName","mlepRole","mlepAssociatedNSN","mlepEmail","mlepOrganisation","mlepGroupMembership","sn","givenName","description","o","l","mlepDOB","mlepGender","mlepHomeGroup"
+"SMS01",9876543210,"piers","2010-02-08","2010-12-18","Piers","Harding","NonTeachingStaff"," ","piers@hogwarts.school.nz","hogwarts.school.nz","Staff","Harding","Piers","Piers","School","Kerikeri","","",""
+"SMS02",9876543211,"daffy","2010-02-08","2010-12-18","Daffy","Duck","Student"," ","daffy@hogwarts.school.nz","hogwarts.school.nz","Students#LMS Access","Duck","Daffy","Daffy","School","Kerikeri","2001-12-01","M","RM1"
+"SMS03",9876543212,"","2010-02-08","2010-12-18","Daisy Elorous","Duck","ParentCaregiver","0000000013#0000000026#9876543211","daisy@example.com","hogwarts.school.nz","Parent#Board of Trustees","Duck","Daisy","Daisy","School","Kerikeri","","",""
+"SMS04",9876543213,"prabbit","2010-02-08","2010-12-18","Peter","Rabbit","Student"," ","prabbit@hogwarts.school.nz","hogwarts.school.nz","Students#LMS Access","Rabbit","Peter","Peter","School","Kerikeri","2001-12-01","",""
+"SMS05",9876543214,"gemima","2010-02-08","2010-12-18","Gemima","Puddle-Duck","Student"," ","gemima@hogwarts.school.nz","hogwarts.school.nz","Students#LMS Access","Puddle-Duck","Gemima","Gemima","School","Kerikeri","2001-12-01","",""
+"SMS06",9876543215,"curly","2010-02-08","2010-12-18","Curly","Somebody","Student"," ","curly@hogwarts.school.nz","hogwarts.school.nz","Students#LMS Access","Somebody","Curly","Curly","School","Kerikeri","2001-12-01","",""
+"SMS07",9876543216,"mo","2010-02-08","2010-12-18","Mo","Somebody-Else","TeachingStaff"," ","mo@hogwarts.school.nz","hogwarts.school.nz","Staff","Somebody-Else","Mo","Mo","School","Kerikeri","","",""
+"SMS08",9876543217,"humpty","2010-02-08","2010-12-18","Humpty","Dumpty","Student"," ","humpty@hogwarts.school.nz","hogwarts.school.nz","Students#LMS Access","Dumpty","Humpty","Humpty","School","Kerikeri","2001-12-01","",""
+"SMS09",9876543218,"dumpty","2010-02-08","2010-12-18","Dumpty","Humpty","Student"," ","dumpty@hogwarts.school.nz","hogwarts.school.nz","Students#LMS Access","Humpty","Dumpty","Dumpty","School","Kerikeri","2001-12-01","",""
+"SMS10",9876543219,"sid","2010-02-08","2010-12-18","Sid","Sloth","TeachingStaff","SMS02","sid@hogwarts.school.nz","hogwarts.school.nz","Staff#Teachers","Sloth","Sid","Sidney baby","School","Kerikeri","","",""
+0119#1.71#2013-02-14 07:02:34

@@ -16,7 +16,7 @@ require_once(dirname(__FILE__).'/../test_config.php');
 // how to search
 // ldapsearch -x -LLL -s sub -b "ou=New People,dc=example,dc=com" -D "cn=admin,dc=example,dc=com" -w letmein '(&(objectclass=mlpeperson)(uid=*))'
 
-require_once 'PHPUnit/Framework.php';
+require_once 'PHPUnit/Framework/TestCase.php';
 
 class UDITestBase extends PHPUnit_Framework_TestCase {
 
@@ -34,7 +34,7 @@ class UDITestBase extends PHPUnit_Framework_TestCase {
         // reload LDAP directory
         $dir = dirname(__FILE__);
         chdir($dir.'/../');
-        self::call_exec(self::format_cmd('sudo ./reload.sh'));
+        self::call_exec(self::format_cmd('sudo ./reload2.sh'));
     }
 
 

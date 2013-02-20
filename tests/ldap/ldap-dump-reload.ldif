@@ -1,0 +1,480 @@
+dn: dc=example,dc=com
+objectClass: dcObject
+objectClass: organization
+o: example.com
+dc: example
+description: My LDAP Root
+structuralObjectClass: organization
+entryUUID: 486c58cc-0e9f-1032-9de5-2bb0e34f4db3
+creatorsName: gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth
+createTimestamp: 20130219051638Z
+entryCSN: 20130219051638.818155Z#000000#000#000000
+modifiersName: gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth
+modifyTimestamp: 20130219051638Z
+
+dn: cn=admin,dc=example,dc=com
+objectClass: simpleSecurityObject
+objectClass: organizationalRole
+cn: admin
+userPassword:: e01ENX1EUkI5Q2ZXNzVBeXQ0OTVjY2VucHR3PT0=
+description: LDAP administrator
+structuralObjectClass: organizationalRole
+entryUUID: 489ce212-0e9f-1032-9de6-2bb0e34f4db3
+creatorsName: gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth
+createTimestamp: 20130219051639Z
+entryCSN: 20130219051639.136246Z#000000#000#000000
+modifiersName: gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth
+modifyTimestamp: 20130219051639Z
+
+dn: cn=Groupees,dc=example,dc=com
+cn: Groupees
+gidNumber: 1000
+objectClass: posixGroup
+objectClass: top
+structuralObjectClass: posixGroup
+entryUUID: 4918c4e0-0e9f-1032-9df1-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051639Z
+entryCSN: 20130219051639.948148Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051639Z
+
+dn: cn=Staff,dc=example,dc=com
+cn: Staff
+gidNumber: 1004
+objectClass: posixGroup
+structuralObjectClass: posixGroup
+entryUUID: 491ad74e-0e9f-1032-9df2-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051639Z
+entryCSN: 20130219051639.961723Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051639Z
+
+dn: ou=Deactivated Accounts,dc=example,dc=com
+objectClass: organizationalUnit
+objectClass: top
+ou: Deactivated Accounts
+structuralObjectClass: organizationalUnit
+entryUUID: 491c9390-0e9f-1032-9df3-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051639Z
+entryCSN: 20130219051639.973071Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051639Z
+
+dn: ou=DSAME Users,dc=example,dc=com
+objectClass: top
+objectClass: organizationalUnit
+ou: DSAME Users
+structuralObjectClass: organizationalUnit
+entryUUID: 491e2a2a-0e9f-1032-9df4-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051639Z
+entryCSN: 20130219051639.983505Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051639Z
+
+dn: ou=New People,dc=example,dc=com
+objectClass: organizationalUnit
+objectClass: top
+ou: New People
+structuralObjectClass: organizationalUnit
+entryUUID: 4920601a-0e9f-1032-9df5-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051639Z
+entryCSN: 20130219051639.997891Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051639Z
+
+dn: ou=Parents,ou=New People,dc=example,dc=com
+objectClass: organizationalUnit
+objectClass: top
+ou: Parents
+structuralObjectClass: organizationalUnit
+entryUUID: 4921c11c-0e9f-1032-9df6-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051640Z
+entryCSN: 20130219051640.006974Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051640Z
+
+dn: ou=Staff,ou=New People,dc=example,dc=com
+objectClass: organizationalUnit
+objectClass: top
+ou: Staff
+structuralObjectClass: organizationalUnit
+entryUUID: 4923401e-0e9f-1032-9df7-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051640Z
+entryCSN: 20130219051640.016832Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051640Z
+
+dn: ou=Students,ou=New People,dc=example,dc=com
+objectClass: organizationalUnit
+objectClass: top
+ou: Students
+structuralObjectClass: organizationalUnit
+entryUUID: 49250430-0e9f-1032-9df8-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051640Z
+entryCSN: 20130219051640.028384Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051640Z
+
+dn: ou=People,dc=example,dc=com
+objectClass: organizationalUnit
+objectClass: top
+ou: People
+structuralObjectClass: organizationalUnit
+entryUUID: 49269afc-0e9f-1032-9df9-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051640Z
+entryCSN: 20130219051640.038822Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051640Z
+
+dn: cn=Gemima Duckery,ou=People,dc=example,dc=com
+cn: Gemima Duckery
+gidNumber: 1000
+givenName: Gemima
+homeDirectory: /home/users/gduck
+loginShell: /bin/sh
+mail: gduck@ompka.net
+o: wahoodle
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
+sn: Duckery
+uid: mothigh\mhstest
+uidNumber: 1001
+userPassword:: e01ENX1EUkI5Q2ZXNzVBeXQ0OTVjY2VucHR3PT0=
+structuralObjectClass: inetOrgPerson
+entryUUID: 49354c96-0e9f-1032-9dfa-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051640Z
+entryCSN: 20130219051640.135118Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051640Z
+
+dn: cn=Peter Rabbit,ou=People,dc=example,dc=com
+cn: Peter Rabbit
+gidNumber: 1000
+givenName: Peter
+homeDirectory: /home/users/prabbit
+loginShell: /bin/sh
+mail: prabbit@ompka.net
+o: wahoodle
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
+sn: Rabbit
+uid: p.rabbit
+uidNumber: 1002
+userPassword:: e01ENX1YMDNNTzFxblpkWWRneWZldUlMUG1RPT0=
+structuralObjectClass: inetOrgPerson
+entryUUID: 499e38c8-0e9f-1032-9dfb-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051640Z
+entryCSN: 20130219051640.822741Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051640Z
+
+dn: cn=Piers Harding,ou=People,dc=example,dc=com
+cn: Piers Harding
+gidNumber: 1000
+givenName: Piers
+homeDirectory: /home/piers
+loginShell: /bin/sh
+mail: piers@ompka.net
+o: wahoodle
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
+objectClass: eduPerson
+sn: Harding
+title: another title
+uid: admin
+uidNumber: 1000
+userPassword:: e01ENX1YMDNNTzFxblpkWWRneWZldUlMUG1RPT0=
+structuralObjectClass: inetOrgPerson
+entryUUID: 49a53150-0e9f-1032-9dfc-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051640Z
+entryCSN: 20130219051640.868416Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051640Z
+
+dn: ou=Services,dc=example,dc=com
+objectClass: organizationalUnit
+objectClass: top
+ou: Services
+structuralObjectClass: organizationalUnit
+entryUUID: 49abcf24-0e9f-1032-9dfd-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051640Z
+entryCSN: 20130219051640.911783Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051640Z
+
+dn: cn=ASambaGroup,ou=Services,dc=example,dc=com
+cn: ASambaGroup
+gidNumber: 1003
+objectClass: posixGroup
+objectClass: top
+structuralObjectClass: posixGroup
+entryUUID: 49b0f9c2-0e9f-1032-9dfe-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051640Z
+entryCSN: 20130219051640.945650Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051640Z
+
+dn: cn=BlahBlahGroup,ou=Services,dc=example,dc=com
+cn: BlahBlahGroup
+gidNumber: 1001
+objectClass: posixGroup
+structuralObjectClass: posixGroup
+entryUUID: 49b926ce-0e9f-1032-9dff-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051640Z
+entryCSN: 20130219051640.999228Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051640Z
+
+dn: cn=Board of trustees member,ou=Services,dc=example,dc=com
+cn: Board of trustees member
+member: cn=Bogus,ou=Staff,ou=New People,dc=example,dc=com
+objectClass: groupOfNames
+objectClass: top
+structuralObjectClass: groupOfNames
+entryUUID: 49bee794-0e9f-1032-9e00-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051641Z
+entryCSN: 20130219051641.036911Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051641Z
+
+dn: cn=Board of trustees posix,ou=Services,dc=example,dc=com
+cn: Board of trustees posix
+gidNumber: 1011
+objectClass: posixGroup
+objectClass: top
+structuralObjectClass: posixGroup
+entryUUID: 49c3f2b6-0e9f-1032-9e01-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051641Z
+entryCSN: 20130219051641.069976Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051641Z
+
+dn: cn=FullGroup,ou=Services,dc=example,dc=com
+cn: FullGroup
+gidNumber: 1002
+objectClass: posixGroup
+objectClass: top
+structuralObjectClass: posixGroup
+entryUUID: 49c6cd6a-0e9f-1032-9e02-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051641Z
+entryCSN: 20130219051641.088591Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051641Z
+
+dn: cn=ldapadmins,ou=Services,dc=example,dc=com
+cn: ldapadmins
+gidNumber: 1005
+objectClass: posixGroup
+objectClass: top
+structuralObjectClass: posixGroup
+entryUUID: 49c86fe4-0e9f-1032-9e03-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051641Z
+entryCSN: 20130219051641.099355Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051641Z
+
+dn: cn=LMS Access member,ou=Services,dc=example,dc=com
+cn: LMS Access member
+member: cn=Bogus,ou=Staff,ou=New People,dc=example,dc=com
+objectClass: groupOfNames
+objectClass: top
+structuralObjectClass: groupOfNames
+entryUUID: 49d1041a-0e9f-1032-9e04-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051641Z
+entryCSN: 20130219051641.155571Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051641Z
+
+dn: cn=LMS Access posix,ou=Services,dc=example,dc=com
+cn: LMS Access posix
+gidNumber: 1008
+objectClass: posixGroup
+objectClass: top
+structuralObjectClass: posixGroup
+entryUUID: 49d45444-0e9f-1032-9e05-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051641Z
+entryCSN: 20130219051641.177338Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051641Z
+
+dn: cn=Parents member,ou=Services,dc=example,dc=com
+cn: Parents member
+member: cn=Bogus,ou=Staff,ou=New People,dc=example,dc=com
+objectClass: groupOfNames
+objectClass: top
+structuralObjectClass: groupOfNames
+entryUUID: 49d5dcb0-0e9f-1032-9e06-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051641Z
+entryCSN: 20130219051641.187361Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051641Z
+
+dn: cn=Parents posix,ou=Services,dc=example,dc=com
+cn: Parents posix
+gidNumber: 1009
+objectClass: posixGroup
+objectClass: top
+structuralObjectClass: posixGroup
+entryUUID: 49d88168-0e9f-1032-9e07-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051641Z
+entryCSN: 20130219051641.204711Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051641Z
+
+dn: cn=Staff member,ou=Services,dc=example,dc=com
+cn: Staff member
+member: cn=Bogus,ou=Staff,ou=New People,dc=example,dc=com
+objectClass: groupOfNames
+objectClass: top
+structuralObjectClass: groupOfNames
+entryUUID: 49dae53e-0e9f-1032-9e08-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051641Z
+entryCSN: 20130219051641.220372Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051641Z
+
+dn: cn=Staff posix,ou=Services,dc=example,dc=com
+cn: Staff posix
+gidNumber: 1006
+objectClass: posixGroup
+objectClass: top
+structuralObjectClass: posixGroup
+entryUUID: 49dca356-0e9f-1032-9e09-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051641Z
+entryCSN: 20130219051641.231789Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051641Z
+
+dn: cn=Students member,ou=Services,dc=example,dc=com
+cn: Students member
+member: cn=Bogus,ou=Staff,ou=New People,dc=example,dc=com
+objectClass: groupOfNames
+objectClass: top
+structuralObjectClass: groupOfNames
+entryUUID: 49e38522-0e9f-1032-9e0a-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051641Z
+entryCSN: 20130219051641.276892Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051641Z
+
+dn: cn=Students posix,ou=Services,dc=example,dc=com
+cn: Students posix
+gidNumber: 1007
+objectClass: posixGroup
+objectClass: top
+structuralObjectClass: posixGroup
+entryUUID: 49ea582a-0e9f-1032-9e0b-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051641Z
+entryCSN: 20130219051641.321620Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051641Z
+
+dn: cn=Teachers member,ou=Services,dc=example,dc=com
+cn: Teachers member
+member: cn=Bogus,ou=Staff,ou=New People,dc=example,dc=com
+objectClass: groupOfNames
+objectClass: top
+structuralObjectClass: groupOfNames
+entryUUID: 49ec0ab2-0e9f-1032-9e0c-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051641Z
+entryCSN: 20130219051641.332713Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051641Z
+
+dn: cn=Teachers posix,ou=Services,dc=example,dc=com
+cn: Teachers posix
+gidNumber: 1010
+objectClass: posixGroup
+objectClass: top
+structuralObjectClass: posixGroup
+entryUUID: 49edb45c-0e9f-1032-9e0d-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051641Z
+entryCSN: 20130219051641.343641Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051641Z
+
+dn: cn=TestGroupMember,ou=Services,dc=example,dc=com
+cn: TestGroupMember
+member: cn=Bogus,ou=Staff,ou=New People,dc=example,dc=com
+objectClass: groupOfNames
+objectClass: top
+structuralObjectClass: groupOfNames
+entryUUID: 49ef67f2-0e9f-1032-9e0e-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051641Z
+entryCSN: 20130219051641.354778Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051641Z
+
+dn: cn=TestGroupOfUniqueNames,ou=Services,dc=example,dc=com
+cn: TestGroupOfUniqueNames
+description: desc
+objectClass: groupOfUniqueNames
+objectClass: top
+uniqueMember: cn=Bogus,ou=Staff,ou=New People,dc=example,dc=com
+structuralObjectClass: groupOfUniqueNames
+entryUUID: 49f309e8-0e9f-1032-9e0f-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051641Z
+entryCSN: 20130219051641.378594Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051641Z
+
+dn: cn=Internet Access member,ou=Services,dc=example,dc=com
+cn: Internet Access member
+member: cn=Bogus,ou=Staff,ou=New People,dc=example,dc=com
+objectClass: groupOfNames
+objectClass: top
+structuralObjectClass: groupOfNames
+entryUUID: 49f4753a-0e9f-1032-9e10-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051641Z
+entryCSN: 20130219051641.387898Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051641Z
+
+dn: cn=Internet Access posix,ou=Services,dc=example,dc=com
+cn: Internet Access posix
+gidNumber: 1012
+objectClass: posixGroup
+objectClass: top
+structuralObjectClass: posixGroup
+entryUUID: 49f62d44-0e9f-1032-9e11-2bb0e34f4db3
+creatorsName: cn=admin,dc=example,dc=com
+createTimestamp: 20130219051641Z
+entryCSN: 20130219051641.399160Z#000000#000#000000
+modifiersName: cn=admin,dc=example,dc=com
+modifyTimestamp: 20130219051641Z
+
