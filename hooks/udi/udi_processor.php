@@ -1261,7 +1261,7 @@ class Processor {
                     // it must a member style DN group
                     $uid = $dn;
                 }
-                var_dump($group_membership);
+                // var_dump($group_membership);
                 if (!$this->replaceGroupMembership(false, $uid, $group_membership, $dn)) {
                     return false;
                 }
