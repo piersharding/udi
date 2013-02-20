@@ -5,6 +5,10 @@ body { margin-top: 0px; }
 /* hide the standard phpldapadmin log at the top - takes up too much room */
 .pagehead div#ajHEAD table tr td img { display: none; } 
 
+/* global td alignment */
+td {
+	vertical-align: top;
+}
 /* Global Page */
 table.page {
 	font-weight: normal;
@@ -475,7 +479,7 @@ table.forminput {
 	padding: 10px;
 	border: 1px solid #AAAACC;
     width: 100%;
-    min-height: 600px;
+    min-height: 200px;
 }
 
 table.forminput td.title {
